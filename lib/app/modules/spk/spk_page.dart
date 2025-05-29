@@ -79,42 +79,45 @@ class SpkPage extends GetView<SpkController> {
                 ),
               ),
               Obx(() => GestureDetector(
-                onTap: () {
-                  _showPilihLokasiDialog(context, lokasiController);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.filter_alt, color: FigmaColors.primary, size: 20),
-                      const SizedBox(width: 6),
-                      Text(
-                        lokasiController.selectedArea.value?.name ?? 'Pilih Lokasi',
-                        style: GoogleFonts.dmSans(
-                          color: FigmaColors.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
+                    onTap: () {
+                      _showPilihLokasiDialog(context, lokasiController);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                    ],
-                  ),
-                ),
-              )),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.filter_alt,
+                              color: FigmaColors.primary, size: 20),
+                          const SizedBox(width: 6),
+                          Text(
+                            lokasiController.selectedArea.value?.name ??
+                                'Pilih Lokasi',
+                            style: GoogleFonts.dmSans(
+                              color: FigmaColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )),
               const SizedBox(width: 16),
             ],
           ),
-                        _buildSearchBar(lokasiController),
-
+          _buildSearchBar(lokasiController),
         ],
       ),
     );
   }
 
-  void _showPilihLokasiDialog(BuildContext context, LokasiController lokasiController) async {
+  void _showPilihLokasiDialog(
+      BuildContext context, LokasiController lokasiController) async {
     await lokasiController.fetchAreas();
     // Area khusus untuk Semua Lokasi
     final allArea = Area(
@@ -131,9 +134,11 @@ class SpkPage extends GetView<SpkController> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setState) => Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             child: Obx(() {
-              if (lokasiController.areas.isEmpty && !lokasiController.isLoading.value) {
+              if (lokasiController.areas.isEmpty &&
+                  !lokasiController.isLoading.value) {
                 print('[Dialog Lokasi] Area list kosong!');
               }
               return Column(
@@ -144,16 +149,20 @@ class SpkPage extends GetView<SpkController> {
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     decoration: BoxDecoration(
                       color: FigmaColors.primary,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(24)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(Icons.location_on, color: Colors.white),
                         const SizedBox(width: 8),
-                        Text('Pilih Lokasi', style: GoogleFonts.dmSans(
-                          color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20,
-                        )),
+                        Text('Pilih Lokasi',
+                            style: GoogleFonts.dmSans(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            )),
                       ],
                     ),
                   ),
@@ -164,12 +173,14 @@ class SpkPage extends GetView<SpkController> {
                     )
                   else ...[
                     ...areaList.map((area) => RadioListTile<Area>(
-                      value: area,
-                      groupValue: tempSelected,
-                      onChanged: (val) => setState(() => tempSelected = val),
-                      title: Text(area.name, style: GoogleFonts.dmSans(fontSize: 18)),
-                      activeColor: FigmaColors.primary,
-                    )),
+                          value: area,
+                          groupValue: tempSelected,
+                          onChanged: (val) =>
+                              setState(() => tempSelected = val),
+                          title: Text(area.name,
+                              style: GoogleFonts.dmSans(fontSize: 18)),
+                          activeColor: FigmaColors.primary,
+                        )),
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: SizedBox(
@@ -178,7 +189,8 @@ class SpkPage extends GetView<SpkController> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: FigmaColors.primary,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24)),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
                           onPressed: () {
@@ -188,12 +200,15 @@ class SpkPage extends GetView<SpkController> {
                                 // Semua Lokasi
                                 Get.find<SpkController>().fetchSPKs();
                               } else {
-                                Get.find<SpkController>().fetchSPKs(area: tempSelected);
+                                Get.find<SpkController>()
+                                    .fetchSPKs(area: tempSelected);
                               }
                             }
                             Navigator.pop(context);
                           },
-                          child: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                          child: const Text('Done',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 18)),
                         ),
                       ),
                     ),

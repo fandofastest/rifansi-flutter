@@ -10,4 +10,4 @@ class Location {
       name: json['name'],
     );
   }
-} 
+}

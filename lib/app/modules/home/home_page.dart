@@ -132,6 +132,7 @@ class HomePage extends StatelessWidget {
                   _MenuItem(
                     iconAsset: 'assets/images/icon_kerja_home.svg',
                     label: 'Laporan \nPekerjaan',
+                    onTap: () => Get.toNamed(Routes.workReport),
                   ),
                   _MenuItem(
                     iconAsset: 'assets/images/icon_absen_home.svg',

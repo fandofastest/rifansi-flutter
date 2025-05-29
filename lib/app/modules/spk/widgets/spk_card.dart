@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../data/models/spk_model.dart';
+import '../../../routes/app_routes.dart';
 
 class SpkCard extends StatelessWidget {
   final Spk spk;
@@ -10,7 +12,13 @@ class SpkCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        if (onTap != null) {
+          onTap!();
+        } else {
+          Get.toNamed(Routes.spkDetails, arguments: {'spkId': spk.id});
+        }
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -33,7 +41,8 @@ class SpkCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: const Color(0xFFFF6B00),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
               ),
               child: Row(
                 children: [
@@ -64,7 +73,8 @@ class SpkCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 18),
+                  const Icon(Icons.arrow_forward_ios,
+                      color: Colors.white, size: 18),
                 ],
               ),
             ),
@@ -75,23 +85,27 @@ class SpkCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.description, color: Color(0xFFFF6B00), size: 18),
+                      const Icon(Icons.description,
+                          color: Color(0xFFFF6B00), size: 18),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'SPK No: ${spk.spkNo}',
-                          style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w500),
+                          style: GoogleFonts.dmSans(
+                              fontSize: 13, fontWeight: FontWeight.w500),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Icon(Icons.push_pin, color: Color(0xFFFF6B00), size: 16),
+                      const Icon(Icons.push_pin,
+                          color: Color(0xFFFF6B00), size: 16),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, color: Color(0xFFFF6B00), size: 18),
+                      const Icon(Icons.location_on,
+                          color: Color(0xFFFF6B00), size: 18),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -105,7 +119,8 @@ class SpkCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.verified, color: Color(0xFFFF6B00), size: 18),
+                      const Icon(Icons.verified,
+                          color: Color(0xFFFF6B00), size: 18),
                       const SizedBox(width: 6),
                       Text(
                         'Status:',
@@ -113,14 +128,18 @@ class SpkCard extends StatelessWidget {
                       ),
                       Text(
                         'Aktif', // TODO: Ganti sesuai status spk jika ada field status
-                        style: GoogleFonts.dmSans(fontSize: 13, color: Color(0xFFFF6B00), fontWeight: FontWeight.w600),
+                        style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            color: Color(0xFFFF6B00),
+                            fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today, color: Color(0xFFFF6B00), size: 18),
+                      const Icon(Icons.calendar_today,
+                          color: Color(0xFFFF6B00), size: 18),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -134,7 +153,8 @@ class SpkCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.event_available, color: Color(0xFFFF6B00), size: 18),
+                      const Icon(Icons.event_available,
+                          color: Color(0xFFFF6B00), size: 18),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -148,12 +168,16 @@ class SpkCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.attach_money, color: Color(0xFFFF6B00), size: 18),
+                      const Icon(Icons.attach_money,
+                          color: Color(0xFFFF6B00), size: 18),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'Budget : ${_formatRupiah(spk.budget)}',
-                          style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFFF6B00)),
+                          style: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFFF6B00)),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -235,4 +259,4 @@ class SpkCard extends StatelessWidget {
     // Format sederhana, bisa pakai intl untuk format lebih baik
     return 'Rp${value.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
-} 
+}

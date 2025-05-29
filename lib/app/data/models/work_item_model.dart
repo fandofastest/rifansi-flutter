@@ -28,6 +28,35 @@ class WorkItem {
       workItem: WorkItemDetail.fromJson(json['workItem']),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'workItemId': workItemId,
+      'boqVolume': {
+        'nr': boqVolume.nr,
+        'r': boqVolume.r,
+      },
+      'amount': amount,
+      'rates': {
+        'nr': {
+          'rate': rates.nr.rate,
+          'description': rates.nr.description,
+        },
+        'r': {
+          'rate': rates.r.rate,
+          'description': rates.r.description,
+        },
+      },
+      'description': description,
+      'workItem': {
+        'id': workItem.id,
+        'name': workItem.name,
+        'category': workItem.category.toJson(),
+        'subCategory': workItem.subCategory.toJson(),
+        'unit': workItem.unit.toJson(),
+      },
+    };
+  }
 }
 
 class BoqVolume {
@@ -96,4 +125,4 @@ class WorkItemDetail {
       unit: Unit.fromJson(json['unit']),
     );
   }
-} 
+}

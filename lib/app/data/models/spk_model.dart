@@ -38,23 +38,28 @@ class Spk {
 
   factory Spk.fromJson(Map<String, dynamic> json) {
     return Spk(
-      id: json['id'],
-      spkNo: json['spkNo'],
-      wapNo: json['wapNo'],
-      title: json['title'],
-      projectName: json['projectName'],
-      date: json['date'],
-      contractor: json['contractor'],
-      workDescription: json['workDescription'],
-      location: Location.fromJson(json['location']),
-      startDate: json['startDate'],
-      endDate: json['endDate'],
-      budget: json['budget'],
-      workItems: (json['workItems'] as List)
-          .map((item) => WorkItem.fromJson(item))
-          .toList(),
-      createdAt: json['createdAt'],
-      updatedAt: json['updatedAt'],
+      id: json['id']?.toString() ?? '',
+      spkNo: json['spkNo']?.toString() ?? '',
+      wapNo: json['wapNo']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      projectName: json['projectName']?.toString() ?? '',
+      date: json['date']?.toString() ?? '',
+      contractor: json['contractor']?.toString() ?? '',
+      workDescription: json['workDescription']?.toString() ?? '',
+      location: json['location'] != null
+          ? Location.fromJson(json['location'])
+          : Location(id: '', name: ''),
+      startDate: json['startDate']?.toString() ?? '',
+      endDate: json['endDate']?.toString() ?? '',
+      budget: json['budget'] is int
+          ? json['budget']
+          : (json['budget'] is double ? json['budget'].toInt() : 0),
+      workItems: (json['workItems'] as List?)
+              ?.map((item) => WorkItem.fromJson(item))
+              .toList() ??
+          [],
+      createdAt: json['createdAt']?.toString() ?? '',
+      updatedAt: json['updatedAt']?.toString() ?? '',
     );
   }
-} 
+}

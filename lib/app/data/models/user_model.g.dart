@@ -3,21 +3,51 @@
 part of 'user_model.dart';
 
 // **************************************************************************
-// JsonSerializableGenerator
+// TypeAdapterGenerator
 // **************************************************************************
 
-User _$UserFromJson(Map<String, dynamic> json) => User(
-      id: json['id'] as String,
-      username: json['username'] as String,
-      fullName: json['fullName'] as String,
-      email: json['email'] as String,
-      role: Role.fromJson(json['role'] as Map<String, dynamic>),
-    );
+class UserAdapter extends TypeAdapter<User> {
+  @override
+  final int typeId = 14;
 
-Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
-      'id': instance.id,
-      'username': instance.username,
-      'fullName': instance.fullName,
-      'email': instance.email,
-      'role': instance.role,
+  @override
+  User read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+    return User(
+      id: fields[0] as String,
+      username: fields[1] as String,
+      fullName: fields[2] as String,
+      role: fields[3] as Role,
+      email: fields[4] as String?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, User obj) {
+    writer
+      ..writeByte(5)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.username)
+      ..writeByte(2)
+      ..write(obj.fullName)
+      ..writeByte(3)
+      ..write(obj.role)
+      ..writeByte(4)
+      ..write(obj.email);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

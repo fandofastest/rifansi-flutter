@@ -8,6 +8,12 @@ import 'auth_middleware.dart';
 import '../modules/settings/settings_page.dart';
 import '../modules/spk/spk_page.dart';
 import '../modules/spk/spk_binding.dart';
+import '../modules/spk/spk_details_page.dart';
+import '../modules/spk/spk_details_binding.dart';
+import '../modules/work_report/work_report_page.dart';
+import '../modules/work_report/work_report_binding.dart';
+import '../modules/add_work_report/add_work_report_page.dart';
+import '../modules/add_work_report/add_work_report_binding.dart';
 
 class AppPages {
   static final pages = [
@@ -35,5 +41,23 @@ class AppPages {
       binding: SpkBinding(),
       middlewares: [AuthMiddleware()],
     ),
+    GetPage(
+      name: Routes.spkDetails,
+      page: () => const SpkDetailsPage(),
+      binding: SpkDetailsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: Routes.workReport,
+      page: () => const WorkReportPage(),
+      binding: WorkReportBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: Routes.addWorkReport,
+      page: () => const AddWorkReportPage(),
+      binding: AddWorkReportBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
   ];
-} 
+}
