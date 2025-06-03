@@ -20,26 +20,12 @@ class WorkItem {
 
   factory WorkItem.fromJson(Map<String, dynamic> json) {
     return WorkItem(
-      workItemId: json['workItemId']?.toString() ?? '',
-      boqVolume: json['boqVolume'] != null
-          ? BoqVolume.fromJson(json['boqVolume'])
-          : BoqVolume(nr: 0, r: 0),
-      amount: json['amount'] is int
-          ? json['amount']
-          : (json['amount'] is double ? json['amount'].toInt() : 0),
-      rates: json['rates'] != null
-          ? Rates.fromJson(json['rates'])
-          : Rates(nr: Rate(rate: 0), r: Rate(rate: 0)),
-      description: json['description']?.toString(),
-      workItem: json['workItem'] != null
-          ? WorkItemDetail.fromJson(json['workItem'])
-          : WorkItemDetail(
-              id: '',
-              name: '',
-              category: Category(id: '', name: ''),
-              subCategory: Category(id: '', name: ''),
-              unit: Unit(id: '', name: ''),
-            ),
+      workItemId: json['workItemId'],
+      boqVolume: BoqVolume.fromJson(json['boqVolume']),
+      amount: json['amount'],
+      rates: Rates.fromJson(json['rates']),
+      description: json['description'] as String?,
+      workItem: WorkItemDetail.fromJson(json['workItem']),
     );
   }
 
@@ -81,12 +67,8 @@ class BoqVolume {
 
   factory BoqVolume.fromJson(Map<String, dynamic> json) {
     return BoqVolume(
-      nr: json['nr'] is int
-          ? json['nr']
-          : (json['nr'] is double ? json['nr'].toInt() : 0),
-      r: json['r'] is int
-          ? json['r']
-          : (json['r'] is double ? json['r'].toInt() : 0),
+      nr: (json['nr'] as num).toInt(),
+      r: (json['r'] as num).toInt(),
     );
   }
 }
@@ -99,8 +81,8 @@ class Rates {
 
   factory Rates.fromJson(Map<String, dynamic> json) {
     return Rates(
-      nr: json['nr'] != null ? Rate.fromJson(json['nr']) : Rate(rate: 0),
-      r: json['r'] != null ? Rate.fromJson(json['r']) : Rate(rate: 0),
+      nr: Rate.fromJson(json['nr']),
+      r: Rate.fromJson(json['r']),
     );
   }
 }
@@ -113,10 +95,8 @@ class Rate {
 
   factory Rate.fromJson(Map<String, dynamic> json) {
     return Rate(
-      rate: json['rate'] is int
-          ? json['rate']
-          : (json['rate'] is double ? json['rate'].toInt() : 0),
-      description: json['description']?.toString(),
+      rate: json['rate'],
+      description: json['description'] as String?,
     );
   }
 }
@@ -138,17 +118,11 @@ class WorkItemDetail {
 
   factory WorkItemDetail.fromJson(Map<String, dynamic> json) {
     return WorkItemDetail(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      category: json['category'] != null
-          ? Category.fromJson(json['category'])
-          : Category(id: '', name: ''),
-      subCategory: json['subCategory'] != null
-          ? Category.fromJson(json['subCategory'])
-          : Category(id: '', name: ''),
-      unit: json['unit'] != null
-          ? Unit.fromJson(json['unit'])
-          : Unit(id: '', name: ''),
+      id: json['id'],
+      name: json['name'],
+      category: Category.fromJson(json['category']),
+      subCategory: Category.fromJson(json['subCategory']),
+      unit: Unit.fromJson(json['unit']),
     );
   }
 }
