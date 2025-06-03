@@ -6,8 +6,8 @@ class Unit {
 
   factory Unit.fromJson(Map<String, dynamic> json) {
     return Unit(
-      id: json['id'],
-      name: json['name'],
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
     );
   }
 
