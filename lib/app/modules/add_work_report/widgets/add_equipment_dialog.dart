@@ -46,7 +46,7 @@ class _DialogContentState extends State<_DialogContent> {
   Equipment? selectedEquipment;
   double workingHours = 8.0;
   double? fuelIn;
-  double? fuelRemaining;
+  double fuelRemaining = 0.0;
   bool isBrokenReported = false;
   String? remarks;
 
@@ -243,7 +243,7 @@ class _DialogContentState extends State<_DialogContent> {
               ),
               const SizedBox(height: 12),
 
-              // Row untuk bahan bakar
+              // Row untuk bahan bakar - hanya Fuel In
               Text(
                 'Bahan Bakar',
                 style: GoogleFonts.dmSans(
@@ -252,50 +252,23 @@ class _DialogContentState extends State<_DialogContent> {
                 ),
               ),
               const SizedBox(height: 4),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        hintText: 'Fuel In (L)',
-                        labelText: 'Fuel In (L)',
-                        errorText: fuelIn == null ? 'Wajib diisi' : null,
-                      ),
-                      onChanged: (value) {
-                        setState(() {
-                          fuelIn = double.tryParse(value);
-                        });
-                      },
-                    ),
+              TextFormField(
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        hintText: 'Remaining (L)',
-                        labelText: 'Remaining (L)',
-                        errorText: fuelRemaining == null ? 'Wajib diisi' : null,
-                      ),
-                      onChanged: (value) {
-                        setState(() {
-                          fuelRemaining = double.tryParse(value);
-                        });
-                      },
-                    ),
-                  ),
-                ],
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                  hintText: 'Fuel In (L)',
+                  labelText: 'Fuel In (L)',
+                  errorText: fuelIn == null ? 'Wajib diisi' : null,
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    fuelIn = double.tryParse(value);
+                  });
+                },
               ),
               const SizedBox(height: 12),
 
@@ -368,8 +341,7 @@ class _DialogContentState extends State<_DialogContent> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: selectedEquipment == null ||
-                          fuelIn == null ||
-                          fuelRemaining == null
+                          fuelIn == null
                       ? null
                       : () {
                           // Buat entry equipment baru
@@ -453,7 +425,7 @@ class _DialogContentState extends State<_DialogContent> {
                                             equipment: selectedEquipment!,
                                             workingHours: workingHours,
                                             fuelIn: fuelIn!,
-                                            fuelRemaining: fuelRemaining!,
+                                            fuelRemaining: fuelRemaining,
                                             isBrokenReported: isBrokenReported,
                                             remarks: remarks,
                                             selectedContract: contract,
@@ -496,7 +468,7 @@ class _DialogContentState extends State<_DialogContent> {
                                 equipment: selectedEquipment!,
                                 workingHours: workingHours,
                                 fuelIn: fuelIn!,
-                                fuelRemaining: fuelRemaining!,
+                                fuelRemaining: fuelRemaining,
                                 isBrokenReported: isBrokenReported,
                                 remarks: remarks,
                                 selectedContract: selectedContract,

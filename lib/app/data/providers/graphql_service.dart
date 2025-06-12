@@ -14,7 +14,7 @@ import '../models/spk_detail_with_progress_response.dart' as spk_progress;
 
 class GraphQLService extends GetxService {
   late GraphQLClient client;
-  final String baseUrl = 'https://localhost3000.fando.id/graphql';
+  final String baseUrl = 'https://laptop3000.fando.id/graphql';
 
   Future<GraphQLService> init() async {
     final HttpLink httpLink = HttpLink(baseUrl);
@@ -316,6 +316,9 @@ class GraphQLService extends GetxService {
         roleCode
         roleName
         description
+        isPersonel
+        createdAt
+        updatedAt
         salaryComponent {
           id
           gajiPokok
@@ -323,31 +326,53 @@ class GraphQLService extends GetxService {
           tunjanganTidakTetap
           transport
           pulsa
+          bpjsKT
+          bpjsJP
+          bpjsKES
+          uangCuti
+          thr
+          santunan
+          hariPerBulan
+          totalGajiBulanan
+          biayaTetapHarian
+          upahLemburHarian
         }
-        createdAt
-        updatedAt
       }
     }
   ''';
 
   Future<List<PersonnelRole>> fetchPersonnelRoles() async {
     try {
-      print('[GraphQL] Fetching personnel roles');
+      print('[GraphQL] Starting fetchPersonnelRoles');
+      print('[GraphQL] Executing query: getAllPersonnelRolesQuery');
+      
       final result = await query(getAllPersonnelRolesQuery);
+      print('[GraphQL] Query execution completed');
 
       if (result.hasException) {
         print('[GraphQL] Error fetching personnel roles: ${result.exception}');
+        print('[GraphQL] Error details: ${result.exception?.graphqlErrors}');
         throw Exception(result.exception.toString());
       }
 
       final List personnelRoles = result.data?['personnelRoles'] ?? [];
-      print('[GraphQL] Fetched ${personnelRoles.length} personnel roles');
+      print('[GraphQL] Successfully fetched ${personnelRoles.length} personnel roles');
+      
+      if (personnelRoles.isEmpty) {
+        print('[GraphQL] Warning: No personnel roles found in response');
+      } else {
+        print('[GraphQL] First role sample: ${personnelRoles.first}');
+      }
 
-      return personnelRoles
+      final roles = personnelRoles
           .map((json) => PersonnelRole.fromJson(json))
           .toList();
+      
+      print('[GraphQL] Successfully parsed ${roles.length} personnel roles');
+      return roles;
     } catch (e) {
       print('[GraphQL] Error in fetchPersonnelRoles: $e');
+      print('[GraphQL] Stack trace: ${StackTrace.current}');
       throw Exception('Gagal mengambil data jabatan personel: $e');
     }
   }

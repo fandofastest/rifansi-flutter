@@ -19,6 +19,7 @@ class DailyActivityAdapter extends TypeAdapter<DailyActivity> {
     return DailyActivity(
       id: fields[0] as String,
       spkId: fields[1] as String,
+      spkDetails: fields[24] as SPKDetails?,
       date: fields[2] as String,
       areaId: fields[3] as String,
       weather: fields[4] as String,
@@ -47,11 +48,13 @@ class DailyActivityAdapter extends TypeAdapter<DailyActivity> {
   @override
   void write(BinaryWriter writer, DailyActivity obj) {
     writer
-      ..writeByte(24)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.spkId)
+      ..writeByte(24)
+      ..write(obj.spkDetails)
       ..writeByte(2)
       ..write(obj.date)
       ..writeByte(3)
@@ -381,6 +384,49 @@ class OtherCostAdapter extends TypeAdapter<OtherCost> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is OtherCostAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class SPKDetailsAdapter extends TypeAdapter<SPKDetails> {
+  @override
+  final int typeId = 8;
+
+  @override
+  SPKDetails read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return SPKDetails(
+      spkNo: fields[0] as String,
+      title: fields[1] as String,
+      projectName: fields[2] as String,
+      location: fields[3] as Location?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, SPKDetails obj) {
+    writer
+      ..writeByte(4)
+      ..writeByte(0)
+      ..write(obj.spkNo)
+      ..writeByte(1)
+      ..write(obj.title)
+      ..writeByte(2)
+      ..write(obj.projectName)
+      ..writeByte(3)
+      ..write(obj.location);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SPKDetailsAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

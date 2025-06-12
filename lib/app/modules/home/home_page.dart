@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_theme.dart';
 import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
+import '../../controllers/spk_controller.dart';
+import '../../controllers/daily_activity_controller.dart';
 import '../../routes/app_routes.dart';
 
 class HomePage extends StatelessWidget {
@@ -13,7 +15,16 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final AuthController authController = Get.find<AuthController>();
+    final SpkController spkController = Get.put(SpkController());
+    final DailyActivityController activityController = Get.put(DailyActivityController());
     final user = authController.currentUser.value;
+    
+    // Load SPK count and activity count when page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      spkController.fetchSPKs();
+      activityController.fetchActivities();
+    });
+    
     return Scaffold(
       backgroundColor: FigmaColors.background,
       body: SingleChildScrollView(
@@ -49,26 +60,102 @@ class HomePage extends StatelessWidget {
                       ),
                       const SizedBox(width: 16),
                       // Welcome Text
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user != null ? 'Selamat Datang, ${user.fullName}' : 'Selamat Datang',
-                            style: GoogleFonts.dmSans(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user != null ? 'Selamat Datang, ${user.fullName}' : 'Selamat Datang',
+                              style: GoogleFonts.dmSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                          Text(
-                            user != null ? user.role.roleName : '',
-                            style: GoogleFonts.dmSans(
-                              color: Colors.white.withOpacity(0.75),
-                              fontWeight: FontWeight.w400,
-                              fontSize: 12,
+                            Text(
+                              user != null ? user.role.roleName : '',
+                              style: GoogleFonts.dmSans(
+                                color: Colors.white.withOpacity(0.75),
+                                fontWeight: FontWeight.w400,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                        ],
+                            if (user?.area != null) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_on,
+                                    color: Colors.white.withOpacity(0.75),
+                                    size: 12,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    user!.area!.name,
+                                    style: GoogleFonts.dmSans(
+                                      color: Colors.white.withOpacity(0.75),
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      // Logout Button
+                      IconButton(
+                        onPressed: () async {
+                          // Show confirmation dialog
+                          final shouldLogout = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text(
+                                'Logout',
+                                style: GoogleFonts.dmSans(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              content: Text(
+                                'Apakah Anda yakin ingin keluar?',
+                                style: GoogleFonts.dmSans(),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                  child: Text(
+                                    'Batal',
+                                    style: GoogleFonts.dmSans(
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(true),
+                                  child: Text(
+                                    'Logout',
+                                    style: GoogleFonts.dmSans(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                          
+                          if (shouldLogout == true) {
+                            await authController.logout();
+                            Get.offAllNamed(Routes.login);
+                          }
+                        },
+                        icon: Icon(
+                          Icons.logout,
+                          color: Colors.white.withOpacity(0.9),
+                          size: 24,
+                        ),
+                        tooltip: 'Logout',
                       ),
                     ],
                   ),
@@ -103,10 +190,16 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: const [
-                      _InfoStat(title: 'SPK Aktif', value: '3'),
-                      _InfoStat(title: 'Absen Hari ini', value: '12'),
-                      _InfoStat(title: 'Progress', value: '65%'),
+                    children: [
+                      Obx(() => _InfoStat(
+                        title: 'SPK Aktif', 
+                        value: '${spkController.spks.length}',
+                      )),
+                      Obx(() => _InfoStat(
+                        title: 'Laporan Kerja', 
+                        value: '${activityController.activities.length}',
+                      )),
+                      const _InfoStat(title: 'Progress', value: '65%'),
                     ],
                   ),
                 ],
@@ -121,19 +214,19 @@ class HomePage extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 24,
-                crossAxisSpacing: 16,
+                crossAxisSpacing: 1,
                 childAspectRatio: 0.8,
                 children: [
-                  _MenuItem(
+                  Obx(() => _MenuItem(
                     iconAsset: 'assets/images/icon_spk_home.svg',
-                    label: 'Daftar SPK \n(6 file)',
+                    label: 'Daftar SPK \n(${spkController.spks.length} SPK)',
                     onTap: () => Get.toNamed(Routes.spk),
-                  ),
-                  _MenuItem(
+                  )),
+                  Obx(() => _MenuItem(
                     iconAsset: 'assets/images/icon_kerja_home.svg',
-                    label: 'Laporan \nPekerjaan',
+                    label: 'Laporan \nPekerjaan\n(${activityController.activities.length} laporan)',
                     onTap: () => Get.toNamed(Routes.workReport),
-                  ),
+                  )),
                   _MenuItem(
                     iconAsset: 'assets/images/icon_absen_home.svg',
                     label: 'Absen',

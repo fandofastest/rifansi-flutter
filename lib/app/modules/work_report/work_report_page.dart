@@ -8,6 +8,7 @@ import '../../data/models/area_model.dart';
 import '../../data/models/daily_activity_response.dart';
 import '../../routes/app_routes.dart';
 import 'widgets/daily_activity_card.dart';
+import '../../controllers/auth_controller.dart';
 
 class WorkReportPage extends StatelessWidget {
   const WorkReportPage({super.key});
@@ -76,9 +77,9 @@ class WorkReportPage extends StatelessWidget {
                     controller: controller.tabController,
                     children: [
                       // Tab 1: Laporan Terkirim (Server)
-                      _buildActivitiesList(controller),
+                      _buildActivitiesListWithStatus(controller),
                       // Tab 2: Draft & Lokal (Local)
-                      _buildActivitiesList(controller),
+                      _buildActivitiesListWithStatus(controller),
                     ],
                   )
                 : const SizedBox(),
@@ -112,47 +113,92 @@ class WorkReportPage extends StatelessWidget {
                 onPressed: () => Get.offAllNamed('/home'),
               ),
               Expanded(
-                child: Text(
-                  'Laporan Kerja',
-                  style: GoogleFonts.dmSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 24,
-                    height: 1.2,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              // Filter lokasi
-              GestureDetector(
-                onTap: () {
-                  _showPilihLokasiDialog(context, controller, lokasiController);
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  margin: const EdgeInsets.only(right: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.filter_alt,
-                          color: FigmaColors.primary, size: 20),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Pilih Lokasi',
-                        style: GoogleFonts.dmSans(
-                          color: FigmaColors.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Laporan Kerja',
+                      style: GoogleFonts.dmSans(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 24,
+                        height: 1.2,
                       ),
-                    ],
-                  ),
+                      textAlign: TextAlign.center,
+                    ),
+                    // Show user area if available
+                    Obx(() {
+                      final authController = Get.find<AuthController>();
+                      final userArea = authController.currentUser.value?.area;
+                      
+                      if (userArea != null && userArea.id.isNotEmpty && userArea.name.toLowerCase() != 'allarea') {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                color: Colors.white.withOpacity(0.75),
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                userArea.name,
+                                style: GoogleFonts.dmSans(
+                                  color: Colors.white.withOpacity(0.75),
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      return const SizedBox();
+                    }),
+                  ],
                 ),
               ),
+              // Only show filter if user has AllArea
+              Obx(() {
+                final authController = Get.find<AuthController>();
+                final userArea = authController.currentUser.value?.area;
+                final hasAllArea = userArea == null || userArea.id.isEmpty || userArea.name.toLowerCase() == 'allarea';
+                
+                if (hasAllArea) {
+                  return GestureDetector(
+                    onTap: () {
+                      _showPilihLokasiDialog(context, controller, lokasiController);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      margin: const EdgeInsets.only(right: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.filter_alt,
+                              color: FigmaColors.primary, size: 20),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Pilih Lokasi',
+                            style: GoogleFonts.dmSans(
+                              color: FigmaColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                } else {
+                  // Spacer to maintain layout balance
+                  return const SizedBox(width: 60);
+                }
+              }),
             ],
           ),
           _buildSearchBar(controller),
@@ -258,8 +304,6 @@ class WorkReportPage extends StatelessWidget {
         id: '',
         name: 'Semua Lokasi',
         location: Location(type: '', coordinates: []),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
       );
 
       List<Area> areaList = [allArea];
@@ -535,6 +579,260 @@ class WorkReportPage extends StatelessWidget {
               },
             );
           },
+        ),
+      );
+    });
+  }
+
+  Widget _buildStatusInfoCard(DailyActivityController controller) {
+    return Obx(() {
+      // Hitung status dari server activities
+      final serverActivities = controller.serverActivities;
+      
+      int approvedCount = 0;
+      int rejectedCount = 0;
+      int submittedCount = 0;
+      int draftCount = controller.localActivities.length;
+
+      for (var activity in serverActivities) {
+        final status = activity.status.toLowerCase();
+        if (status.contains('disetujui') || status.contains('approved')) {
+          approvedCount++;
+        } else if (status.contains('ditolak') || status.contains('rejected')) {
+          rejectedCount++;
+        } else if (status.contains('submitted') || status.contains('terkirim')) {
+          submittedCount++;
+        }
+      }
+
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [FigmaColors.primary, FigmaColors.error],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Status Laporan',
+              style: GoogleFonts.dmSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatusItem(
+                    icon: Icons.check_circle,
+                    label: 'Disetujui',
+                    count: approvedCount,
+                    color: Colors.green.shade300,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildStatusItem(
+                    icon: Icons.cancel,
+                    label: 'Ditolak',
+                    count: rejectedCount,
+                    color: Colors.red.shade300,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatusItem(
+                    icon: Icons.send,
+                    label: 'Terkirim',
+                    count: submittedCount,
+                    color: Colors.blue.shade300,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildStatusItem(
+                    icon: Icons.edit_note,
+                    label: 'Draft',
+                    count: draftCount,
+                    color: Colors.orange.shade300,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildStatusItem({
+    required IconData icon,
+    required String label,
+    required int count,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 20,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            count.toString(),
+            style: GoogleFonts.dmSans(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: GoogleFonts.dmSans(
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w500,
+              fontSize: 10,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivitiesListWithStatus(DailyActivityController controller) {
+    return Obx(() {
+      if (controller.isLoading.value) {
+        return const Center(
+          child: CircularProgressIndicator(
+            color: FigmaColors.primary,
+          ),
+        );
+      }
+
+      if (controller.activities.isEmpty) {
+        String message = controller.selectedTabIndex.value == 0
+            ? 'Tidak ada laporan terkirim yang ditemukan'
+            : 'Tidak ada laporan draft yang tersimpan';
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              // Status card tetap ditampilkan meski list kosong
+              _buildStatusInfoCard(controller),
+              const SizedBox(height: 32),
+              Icon(
+                controller.selectedTabIndex.value == 0
+                    ? Icons.cloud_off_outlined
+                    : Icons.edit_note_outlined,
+                color: FigmaColors.abu,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                style: GoogleFonts.dmSans(
+                  color: FigmaColors.abu,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (controller.error.value.isNotEmpty &&
+                  controller.selectedTabIndex.value == 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0, left: 24, right: 24),
+                  child: Text(
+                    'Error: ${controller.error.value}',
+                    style: GoogleFonts.dmSans(
+                      color: FigmaColors.error,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              if (controller.selectedTabIndex.value == 0) ...[
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => controller.fetchActivities(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: FigmaColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Muat Ulang'),
+                ),
+              ],
+            ],
+          ),
+        );
+      }
+
+      return RefreshIndicator(
+        onRefresh: () async {
+          await controller.fetchActivities();
+        },
+        child: CustomScrollView(
+          slivers: [
+            // Status card sebagai sliver
+            SliverToBoxAdapter(
+              child: _buildStatusInfoCard(controller),
+            ),
+            // List laporan sebagai sliver
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final DailyActivityResponse activity = controller.activities[index];
+
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      bottom: index == controller.activities.length - 1 ? 16 : 0,
+                    ),
+                    child: DailyActivityCard(
+                      activity: activity,
+                      onTap: () {
+                        print('Tapped on activity: ${activity.id}');
+                        print('SPK ID: ${activity.spkId}');
+                        print('Status: ${activity.status}');
+                      },
+                    ),
+                  );
+                },
+                childCount: controller.activities.length,
+              ),
+            ),
+          ],
         ),
       );
     });

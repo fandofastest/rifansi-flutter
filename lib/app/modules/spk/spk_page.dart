@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../controllers/spk_controller.dart';
+import '../../controllers/auth_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../data/models/spk_model.dart';
 import 'widgets/spk_card.dart';
@@ -14,6 +15,13 @@ class SpkPage extends GetView<SpkController> {
   @override
   Widget build(BuildContext context) {
     final lokasiController = Get.find<LokasiController>();
+    final authController = Get.find<AuthController>();
+    
+    // Reset and initialize page every time it's built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializePage(authController, lokasiController);
+    });
+    
     return Scaffold(
       backgroundColor: FigmaColors.background,
       body: Obx(() {
@@ -36,7 +44,7 @@ class SpkPage extends GetView<SpkController> {
         return SingleChildScrollView(
           child: Column(
             children: [
-              _buildHeader(context, lokasiController),
+              _buildHeader(context, lokasiController, authController),
               const SizedBox(height: 24),
               _buildSpkList(),
             ],
@@ -46,7 +54,55 @@ class SpkPage extends GetView<SpkController> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, LokasiController lokasiController) {
+  void _initializePage(AuthController authController, LokasiController lokasiController) async {
+    // Prevent multiple simultaneous calls
+    if (controller.isLoading.value) {
+      print('[SPK Page] Already loading, skipping initialization');
+      return;
+    }
+
+    // Reset controller state first
+    controller.spks.clear();
+    controller.error.value = '';
+    
+    // Wait a bit to ensure user data is loaded
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    // Get fresh user data
+    await authController.fetchCurrentUser();
+    
+    // Debug user area information
+    final user = authController.currentUser.value;
+    final userArea = user?.area;
+    
+    print('[SPK Page] =================================');
+    print('[SPK Page] User: ${user?.fullName}');
+    print('[SPK Page] User Area: ${userArea?.name}');
+    print('[SPK Page] User Area ID: ${userArea?.id}');
+    print('[SPK Page] =================================');
+    
+    // Fetch SPKs - controller will automatically handle area filtering
+    await controller.fetchSPKs();
+    
+    // Set location controller based on user area
+    if (userArea != null && userArea.id.isNotEmpty && userArea.name.toLowerCase() != 'allarea') {
+      lokasiController.selectArea(userArea);
+    } else {
+      // Reset location controller to default
+      lokasiController.selectedArea.value = Area(
+        id: '',
+        name: 'Semua Lokasi',
+        location: Location(type: '', coordinates: []),
+      );
+    }
+    
+    print('[SPK Page] Initialization complete. SPKs loaded: ${controller.spks.length}');
+  }
+
+  Widget _buildHeader(BuildContext context, LokasiController lokasiController, AuthController authController) {
+    final userArea = authController.currentUser.value?.area;
+    final hasSpecificArea = userArea != null && userArea.id.isNotEmpty;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 48, bottom: 24),
@@ -69,48 +125,78 @@ class SpkPage extends GetView<SpkController> {
                 onPressed: () => Get.back(),
               ),
               Expanded(
-                child: Text(
-                  'Daftar SPK',
-                  style: GoogleFonts.dmSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 24,
-                  ),
-                ),
-              ),
-              Obx(() => GestureDetector(
-                    onTap: () {
-                      _showPilihLokasiDialog(context, lokasiController);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
+                child: Column(
+                  children: [
+                    Text(
+                      'Daftar SPK',
+                      style: GoogleFonts.dmSans(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 24,
                       ),
-                      child: Row(
+                    ),
+                    if (hasSpecificArea) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.filter_alt,
-                              color: FigmaColors.primary, size: 20),
-                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.location_on,
+                            color: Colors.white.withOpacity(0.75),
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
                           Text(
-                            lokasiController.selectedArea.value?.name ??
-                                'Pilih Lokasi',
+                            userArea!.name,
                             style: GoogleFonts.dmSans(
-                              color: FigmaColors.primary,
-                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withOpacity(0.75),
+                              fontWeight: FontWeight.w400,
                               fontSize: 14,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  )),
+                    ],
+                  ],
+                ),
+              ),
+              // Only show filter if user doesn't have a specific area
+              if (!hasSpecificArea)
+                Obx(() => GestureDetector(
+                      onTap: () {
+                        _showPilihLokasiDialog(context, lokasiController);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.filter_alt,
+                                color: FigmaColors.primary, size: 20),
+                            const SizedBox(width: 6),
+                            Text(
+                              lokasiController.selectedArea.value?.name ??
+                                  'Pilih Lokasi',
+                              style: GoogleFonts.dmSans(
+                                color: FigmaColors.primary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ))
+              else
+                const SizedBox(width: 60), // Spacer to maintain layout balance
               const SizedBox(width: 16),
             ],
           ),
-          _buildSearchBar(lokasiController),
+          _buildSearchBar(lokasiController, authController),
         ],
       ),
     );
@@ -118,17 +204,36 @@ class SpkPage extends GetView<SpkController> {
 
   void _showPilihLokasiDialog(
       BuildContext context, LokasiController lokasiController) async {
-    await lokasiController.fetchAreas();
-    // Area khusus untuk Semua Lokasi
-    final allArea = Area(
-      id: '',
-      name: 'Semua Lokasi',
-      location: Location(type: '', coordinates: []),
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    List<Area> areaList = [allArea, ...lokasiController.areas];
-    Area? tempSelected = lokasiController.selectedArea.value ?? allArea;
+    
+    print('[Dialog Lokasi] =================================');
+    print('[Dialog Lokasi] Opening location picker dialog');
+    print('[Dialog Lokasi] Current areas count: ${lokasiController.areas.length}');
+    print('[Dialog Lokasi] Current areas: ${lokasiController.areas.map((a) => a.name).toList()}');
+    print('[Dialog Lokasi] Has loaded areas: ${lokasiController.hasLoadedAreas.value}');
+    print('[Dialog Lokasi] Is loading: ${lokasiController.isLoading.value}');
+    print('[Dialog Lokasi] Error: ${lokasiController.error.value}');
+    
+    // Force fetch areas
+    print('[Dialog Lokasi] Force fetching areas...');
+    final success = await lokasiController.fetchAreas();
+    print('[Dialog Lokasi] Fetch result: $success');
+    print('[Dialog Lokasi] After fetch - areas count: ${lokasiController.areas.length}');
+    print('[Dialog Lokasi] After fetch - areas: ${lokasiController.areas.map((a) => a.name).toList()}');
+    print('[Dialog Lokasi] =================================');
+    
+    // Use only actual areas, no default "Semua Lokasi"
+    List<Area> areaList = [...lokasiController.areas];
+    Area? tempSelected = lokasiController.selectedArea.value;
+    
+    print('[Dialog Lokasi] Area list for dialog: ${areaList.map((a) => a.name).toList()}');
+    print('[Dialog Lokasi] Current selected: ${tempSelected?.name}');
+    
+    // If current selection is "Semua Lokasi", reset to first actual area
+    if (tempSelected?.id == '' || tempSelected?.name == 'Semua Lokasi') {
+      tempSelected = areaList.isNotEmpty ? areaList.first : null;
+      print('[Dialog Lokasi] Reset selection to: ${tempSelected?.name}');
+    }
+    
     await showDialog(
       context: context,
       builder: (ctx) {
@@ -137,6 +242,9 @@ class SpkPage extends GetView<SpkController> {
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             child: Obx(() {
+              print('[Dialog Lokasi] Building dialog - areas count: ${lokasiController.areas.length}');
+              print('[Dialog Lokasi] Building dialog - is loading: ${lokasiController.isLoading.value}');
+              
               if (lokasiController.areas.isEmpty &&
                   !lokasiController.isLoading.value) {
                 print('[Dialog Lokasi] Area list kosong!');
@@ -171,16 +279,57 @@ class SpkPage extends GetView<SpkController> {
                       padding: EdgeInsets.all(24.0),
                       child: CircularProgressIndicator(),
                     )
+                  else if (lokasiController.error.value.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        children: [
+                          Text('Error: ${lokasiController.error.value}',
+                              style: GoogleFonts.dmSans(
+                                color: Colors.red,
+                                fontSize: 14,
+                              )),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () async {
+                              print('[Dialog Lokasi] Retry button pressed');
+                              await lokasiController.fetchAreas();
+                            },
+                            child: const Text('Coba Lagi'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (areaList.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: Text('Tidak ada area tersedia'),
+                    )
                   else ...[
-                    ...areaList.map((area) => RadioListTile<Area>(
-                          value: area,
-                          groupValue: tempSelected,
-                          onChanged: (val) =>
-                              setState(() => tempSelected = val),
-                          title: Text(area.name,
-                              style: GoogleFonts.dmSans(fontSize: 18)),
-                          activeColor: FigmaColors.primary,
-                        )),
+                    Container(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.4,
+                      ),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: areaList.length,
+                        itemBuilder: (context, index) {
+                          final area = areaList[index];
+                          print('[Dialog Lokasi] Rendering area: ${area.name} (${area.id})');
+                          return RadioListTile<Area>(
+                            value: area,
+                            groupValue: tempSelected,
+                            onChanged: (val) {
+                              print('[Dialog Lokasi] Selected: ${val?.name}');
+                              setState(() => tempSelected = val);
+                            },
+                            title: Text(area.name,
+                                style: GoogleFonts.dmSans(fontSize: 18)),
+                            activeColor: FigmaColors.primary,
+                          );
+                        },
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: SizedBox(
@@ -195,14 +344,9 @@ class SpkPage extends GetView<SpkController> {
                           ),
                           onPressed: () {
                             if (tempSelected != null) {
+                              print('[Dialog Lokasi] Applying selection: ${tempSelected!.name}');
                               lokasiController.selectArea(tempSelected!);
-                              if (tempSelected?.id == '') {
-                                // Semua Lokasi
-                                Get.find<SpkController>().fetchSPKs();
-                              } else {
-                                Get.find<SpkController>()
-                                    .fetchSPKs(area: tempSelected);
-                              }
+                              Get.find<SpkController>().fetchSPKs(area: tempSelected);
                             }
                             Navigator.pop(context);
                           },
@@ -222,7 +366,7 @@ class SpkPage extends GetView<SpkController> {
     );
   }
 
-  Widget _buildSearchBar(LokasiController lokasiController) {
+  Widget _buildSearchBar(LokasiController lokasiController, AuthController authController) {
     final TextEditingController searchController = TextEditingController();
     return Padding(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 20),
@@ -246,10 +390,20 @@ class SpkPage extends GetView<SpkController> {
               child: TextField(
                 controller: searchController,
                 onSubmitted: (value) {
-                  Get.find<SpkController>().fetchSPKs(
-                    keyword: value,
-                    area: lokasiController.selectedArea.value,
-                  );
+                  final userArea = authController.currentUser.value?.area;
+                  if (userArea != null && userArea.id.isNotEmpty) {
+                    // User has specific area, search within that area
+                    Get.find<SpkController>().fetchSPKs(
+                      keyword: value,
+                      area: userArea,
+                    );
+                  } else {
+                    // User doesn't have specific area, use selected area from filter
+                    Get.find<SpkController>().fetchSPKs(
+                      keyword: value,
+                      area: lokasiController.selectedArea.value,
+                    );
+                  }
                 },
                 decoration: InputDecoration(
                   hintText: 'Cari SPK ...',
@@ -269,10 +423,20 @@ class SpkPage extends GetView<SpkController> {
             ),
             GestureDetector(
               onTap: () {
-                Get.find<SpkController>().fetchSPKs(
-                  keyword: searchController.text,
-                  area: lokasiController.selectedArea.value,
-                );
+                final userArea = authController.currentUser.value?.area;
+                if (userArea != null && userArea.id.isNotEmpty) {
+                  // User has specific area, search within that area
+                  Get.find<SpkController>().fetchSPKs(
+                    keyword: searchController.text,
+                    area: userArea,
+                  );
+                } else {
+                  // User doesn't have specific area, use selected area from filter
+                  Get.find<SpkController>().fetchSPKs(
+                    keyword: searchController.text,
+                    area: lokasiController.selectedArea.value,
+                  );
+                }
               },
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),

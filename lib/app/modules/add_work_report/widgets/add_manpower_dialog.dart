@@ -63,6 +63,36 @@ class _DialogContentState extends State<_DialogContent> {
             ),
             const SizedBox(height: 16),
             
+            // Jam kerja normal
+            Text(
+              'Jam Kerja (Per Crew)',
+              style: GoogleFonts.dmSans(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                suffixText: 'jam',
+              ),
+              initialValue: normalHours.toString(),
+              onChanged: (value) {
+                final doubleValue = double.tryParse(value);
+                if (doubleValue != null && doubleValue > 0) {
+                  setState(() {
+                    normalHours = doubleValue;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            
             // Pilih jabatan
             Text(
               'Jabatan',
@@ -109,7 +139,9 @@ class _DialogContentState extends State<_DialogContent> {
                 ),
                 hint: const Text('Pilih jabatan'),
                 value: selectedRole,
-                items: widget.controller.personnelRoles.map((role) {
+                items: widget.controller.personnelRoles
+                    .where((role) => role.isPersonel == true)
+                    .map((role) {
                   return DropdownMenuItem<PersonnelRole>(
                     value: role,
                     child: Text(role.roleName),
@@ -170,36 +202,6 @@ class _DialogContentState extends State<_DialogContent> {
                   color: FigmaColors.primary,
                 ),
               ],
-            ),
-            const SizedBox(height: 16),
-            
-            // Jam kerja normal
-            Text(
-              'Jam kerja (per orang)',
-              style: GoogleFonts.dmSans(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                suffixText: 'jam',
-              ),
-              initialValue: normalHours.toString(),
-              onChanged: (value) {
-                final doubleValue = double.tryParse(value);
-                if (doubleValue != null && doubleValue > 0) {
-                  setState(() {
-                    normalHours = doubleValue;
-                  });
-                }
-              },
             ),
             const SizedBox(height: 8),
             Text(

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../controllers/add_work_report_controller.dart';
 import '../../../controllers/lokasi_controller.dart';
+import '../../../controllers/auth_controller.dart';
 import '../../../theme/app_theme.dart';
 import '../../../data/models/area_model.dart';
 import '../../../data/models/spk_model.dart';
@@ -46,8 +47,31 @@ class _DialogContent extends StatefulWidget {
 }
 
 class _DialogContentState extends State<_DialogContent> {
+  final authController = Get.find<AuthController>();
+
+  @override
+  void initState() {
+    super.initState();
+    // Use post-frame callback to fetch SPKs after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchSPKsByUserArea();
+    });
+  }
+
+  void _fetchSPKsByUserArea() {
+    final userArea = authController.currentUser.value?.area;
+    if (userArea != null && userArea.id.isNotEmpty && userArea.name.toLowerCase() != 'allarea') {
+      widget.controller.fetchSPKs(area: userArea);
+    } else {
+      widget.controller.fetchSPKs();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final userArea = authController.currentUser.value?.area;
+    final hasAllArea = userArea == null || userArea.id.isEmpty || userArea.name.toLowerCase() == 'allarea';
+
     return Container(
       width: MediaQuery.of(context).size.width * 0.9,
       padding: const EdgeInsets.all(16),
@@ -77,6 +101,37 @@ class _DialogContentState extends State<_DialogContent> {
             ],
           ),
           const SizedBox(height: 16),
+
+          // Show user's area if not AllArea
+          if (!hasAllArea) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: FigmaColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    color: FigmaColors.primary,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Area: ${userArea?.name}',
+                    style: GoogleFonts.dmSans(
+                      color: FigmaColors.primary,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // Search bar
           Container(
@@ -116,32 +171,37 @@ class _DialogContentState extends State<_DialogContent> {
                     cursorColor: FigmaColors.primary,
                     onChanged: (value) {
                       widget.controller.searchKeyword.value = value;
-                      widget.controller.fetchSPKs(keyword: value);
+                      if (hasAllArea) {
+                        widget.controller.fetchSPKs(keyword: value);
+                      } else {
+                        widget.controller.fetchSPKs(keyword: value, area: userArea);
+                      }
                     },
                     onSubmitted: (value) {
                       // Tidak perlu fetch lagi di sini
                     },
                   ),
                 ),
-                // Filter button
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () async {
-                      final result = await _showLocationPickerDialog(context);
-                      if (result != null && result.isApplied) {
-                        widget.controller.fetchSPKs(area: result.selectedArea);
-                      }
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 8),
-                      child: Icon(Icons.filter_list,
-                          color: FigmaColors.primary, size: 22),
+                // Filter button - only show if user has AllArea access
+                if (hasAllArea)
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () async {
+                        final result = await _showLocationPickerDialog(context);
+                        if (result != null && result.isApplied) {
+                          widget.controller.fetchSPKs(area: result.selectedArea);
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 8),
+                        child: Icon(Icons.filter_list,
+                            color: FigmaColors.primary, size: 22),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -185,7 +245,9 @@ class _DialogContentState extends State<_DialogContent> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Coba gunakan kata kunci atau filter yang berbeda',
+                          hasAllArea 
+                              ? 'Coba gunakan kata kunci atau filter yang berbeda'
+                              : 'Tidak ada SPK yang tersedia di area Anda',
                           style: GoogleFonts.dmSans(
                             fontSize: 14,
                             color: Colors.grey[500],

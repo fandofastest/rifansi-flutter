@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'role_model.dart';
+import 'area_model.dart';
 
 part 'user_model.g.dart';
 
@@ -20,12 +21,16 @@ class User {
   @HiveField(4)
   final String? email;
 
+  @HiveField(5)
+  final Area? area;
+
   User({
     required this.id,
     required this.username,
     required this.fullName,
     required this.role,
     this.email,
+    this.area,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -35,6 +40,7 @@ class User {
       fullName: json['fullName']?.toString() ?? '',
       role: Role.fromJson(json['role'] as Map<String, dynamic>),
       email: json['email']?.toString(),
+      area: json['area'] != null ? Area.fromJson(json['area']) : null,
     );
   }
 
@@ -45,6 +51,7 @@ class User {
       'fullName': fullName,
       'role': role.toJson(),
       'email': email,
+      'area': area?.toJson(),
     };
   }
 }

@@ -25,8 +25,6 @@ class LokasiController extends GetxController {
       id: '',
       name: 'Semua Lokasi',
       location: Location(type: '', coordinates: []),
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
     );
     selectedArea.value = defaultArea;
   }
@@ -100,8 +98,6 @@ class LokasiController extends GetxController {
       id: '',
       name: 'Semua Lokasi',
       location: Location(type: '', coordinates: []),
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
     );
 
     return [defaultArea, ...areas];

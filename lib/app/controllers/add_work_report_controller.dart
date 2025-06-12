@@ -944,6 +944,15 @@ class AddWorkReportController extends GetxController {
   // Tambah entry manpower
   Future<void> addManpowerEntry(ManpowerEntry entry) async {
     try {
+      print('\n=== ADDING MANPOWER ENTRY ===');
+      print('Role: ${entry.personnelRole.roleName}');
+      print('Count: ${entry.personCount} orang');
+      print('Hours: ${entry.normalHoursPerPerson} jam');
+      print('Daily Rate: ${entry.manpowerDailyRate != null ? 'Rp ${entry.manpowerDailyRate}' : '-'}');
+      print('Total Hours: ${entry.totalNormalHours} jam');
+      print('Total Cost: Rp ${entry.totalCost}');
+      print('===========================\n');
+
       // Cek jika sudah ada dengan personnel role yang sama
       final existingIndex = selectedManpower.indexWhere(
           (item) => item.personnelRole.id == entry.personnelRole.id);
@@ -970,20 +979,59 @@ class AddWorkReportController extends GetxController {
       if (existingIndex >= 0) {
         // Update entry yang sudah ada
         selectedManpower[existingIndex] = updatedEntry;
+        print('Updated existing entry at index $existingIndex');
       } else {
         // Tambah entry baru
         selectedManpower.add(updatedEntry);
+        print('Added new entry');
       }
+
+      print('\n=== UPDATED MANPOWER LIST ===');
+      printManpowerList();
+
+      saveTemporaryData();
     } catch (e) {
       print('[AddWorkReport] Error saat menambahkan manpower: $e');
       error.value = 'Gagal mengambil data biaya manpower: $e';
+      rethrow;
     }
   }
 
   // Hapus entry manpower
   void removeManpowerEntry(String personnelRoleId) {
-    selectedManpower
-        .removeWhere((item) => item.personnelRole.id == personnelRoleId);
+    print('\n=== REMOVING MANPOWER ENTRY ===');
+    final index = selectedManpower.indexWhere((item) => item.personnelRole.id == personnelRoleId);
+    if (index >= 0) {
+      print('Removing entry:');
+      print('Role: ${selectedManpower[index].personnelRole.roleName}');
+      print('Count: ${selectedManpower[index].personCount} orang');
+      print('Hours: ${selectedManpower[index].normalHoursPerPerson} jam');
+    }
+    print('===========================\n');
+
+    selectedManpower.removeWhere((item) => item.personnelRole.id == personnelRoleId);
+    saveTemporaryData();
+
+    print('\n=== UPDATED MANPOWER LIST ===');
+    printManpowerList();
+  }
+
+  // Add a method to print current manpower list
+  void printManpowerList() {
+    print('\n=== CURRENT MANPOWER LIST ===');
+    for (var i = 0; i < selectedManpower.length; i++) {
+      final entry = selectedManpower[i];
+      print('''
+Entry #${i + 1}:
+Role: ${entry.personnelRole.roleName}
+Count: ${entry.personCount} orang
+Hours: ${entry.normalHoursPerPerson} jam
+Daily Rate: ${entry.manpowerDailyRate != null ? 'Rp ${entry.manpowerDailyRate}' : '-'}
+Total Hours: ${entry.totalNormalHours} jam
+Total Cost: Rp ${entry.totalCost}
+-------------------''');
+    }
+    print('===========================\n');
   }
 
   // Ambil data peralatan
@@ -1263,6 +1311,7 @@ class AddWorkReportController extends GetxController {
                 roleName: 'Role tidak ditemukan',
                 roleCode: '',
                 description: '',
+                isPersonel: false,
                 createdAt: '',
                 updatedAt: '',
               );

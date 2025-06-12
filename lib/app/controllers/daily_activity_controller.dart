@@ -207,22 +207,44 @@ class DailyActivityController extends GetxController
   void updateActivitiesByTab() {
     if (selectedTabIndex.value == 0) {
       // Tab 0: Server Activities
+      // Urutkan serverActivities dengan yang terbaru di atas
+      serverActivities.sort((a, b) {
+        try {
+          DateTime dateA = _parseActivityDate(a.date);
+          DateTime dateB = _parseActivityDate(b.date);
+          // Urutkan descending (terbaru di atas)
+          return dateB.compareTo(dateA);
+        } catch (e) {
+          return 0;
+        }
+      });
       activities.value = serverActivities;
     } else {
       // Tab 1: Local Activities (draft)
       // Konversi dari DailyActivity ke DailyActivityResponse untuk UI
       final localResponses = localActivities.map((activity) {
         final response = activity.toResponse();
-        // Pastikan ID tetap sama dengan localId untuk memudahkan penghapusan
         return response;
       }).toList();
+
+      // Urutkan local activities juga berdasarkan tanggal terbaru
+      localResponses.sort((a, b) {
+        try {
+          DateTime dateA = _parseActivityDate(a.date);
+          DateTime dateB = _parseActivityDate(b.date);
+          // Urutkan descending (terbaru di atas)
+          return dateB.compareTo(dateA);
+        } catch (e) {
+          return 0;
+        }
+      });
 
       // Debug log untuk membantu troubleshooting
       print(
           '[DailyActivity] Converted ${localResponses.length} local activities to display');
       if (localResponses.isNotEmpty) {
         print(
-            '[DailyActivity] Sample draft data: ID=${localResponses[0].id}, localId=${localActivities[0].localId}, status=${localResponses[0].status}');
+            '[DailyActivity] Sample draft data: ID=${localResponses[0].id}, status=${localResponses[0].status}, date=${localResponses[0].date}');
       }
 
       activities.value = localResponses;

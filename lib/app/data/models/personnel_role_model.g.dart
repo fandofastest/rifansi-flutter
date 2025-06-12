@@ -21,16 +21,17 @@ class PersonnelRoleAdapter extends TypeAdapter<PersonnelRole> {
       roleCode: fields[1] as String,
       roleName: fields[2] as String,
       description: fields[3] as String,
-      salaryComponent: fields[4] as SalaryComponent?,
+      isPersonel: fields[4] as bool,
       createdAt: fields[5] as String,
       updatedAt: fields[6] as String,
+      salaryComponent: fields[7] as SalaryComponent?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PersonnelRole obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -40,11 +41,13 @@ class PersonnelRoleAdapter extends TypeAdapter<PersonnelRole> {
       ..writeByte(3)
       ..write(obj.description)
       ..writeByte(4)
-      ..write(obj.salaryComponent)
+      ..write(obj.isPersonel)
       ..writeByte(5)
       ..write(obj.createdAt)
       ..writeByte(6)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(7)
+      ..write(obj.salaryComponent);
   }
 
   @override
@@ -75,13 +78,23 @@ class SalaryComponentAdapter extends TypeAdapter<SalaryComponent> {
       tunjanganTidakTetap: fields[3] as double,
       transport: fields[4] as double,
       pulsa: fields[5] as double,
+      bpjsKT: fields[6] as double,
+      bpjsJP: fields[7] as double,
+      bpjsKES: fields[8] as double,
+      uangCuti: fields[9] as double,
+      thr: fields[10] as double,
+      santunan: fields[11] as double,
+      hariPerBulan: fields[12] as int,
+      totalGajiBulanan: fields[13] as double,
+      biayaTetapHarian: fields[14] as double,
+      upahLemburHarian: fields[15] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, SalaryComponent obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -93,7 +106,27 @@ class SalaryComponentAdapter extends TypeAdapter<SalaryComponent> {
       ..writeByte(4)
       ..write(obj.transport)
       ..writeByte(5)
-      ..write(obj.pulsa);
+      ..write(obj.pulsa)
+      ..writeByte(6)
+      ..write(obj.bpjsKT)
+      ..writeByte(7)
+      ..write(obj.bpjsJP)
+      ..writeByte(8)
+      ..write(obj.bpjsKES)
+      ..writeByte(9)
+      ..write(obj.uangCuti)
+      ..writeByte(10)
+      ..write(obj.thr)
+      ..writeByte(11)
+      ..write(obj.santunan)
+      ..writeByte(12)
+      ..write(obj.hariPerBulan)
+      ..writeByte(13)
+      ..write(obj.totalGajiBulanan)
+      ..writeByte(14)
+      ..write(obj.biayaTetapHarian)
+      ..writeByte(15)
+      ..write(obj.upahLemburHarian);
   }
 
   @override

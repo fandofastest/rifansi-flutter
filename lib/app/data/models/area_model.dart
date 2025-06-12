@@ -1,28 +1,29 @@
+import 'package:hive/hive.dart';
+
+part 'area_model.g.dart';
+
+@HiveType(typeId: 15)
 class Area {
+  @HiveField(0)
   final String id;
+
+  @HiveField(1)
   final String name;
+
+  @HiveField(2)
   final Location? location;
-  final DateTime createdAt;
-  final DateTime updatedAt;
 
   Area({
     required this.id,
     required this.name,
     this.location,
-    required this.createdAt,
-    required this.updatedAt,
   });
 
   factory Area.fromJson(Map<String, dynamic> json) {
     return Area(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
-      location:
-          json['location'] != null ? Location.fromJson(json['location']) : null,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-          int.tryParse(json['createdAt']?.toString() ?? '0') ?? 0),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(
-          int.tryParse(json['updatedAt']?.toString() ?? '0') ?? 0),
+      location: json['location'] != null ? Location.fromJson(json['location']) : null,
     );
   }
 
@@ -31,15 +32,17 @@ class Area {
       'id': id,
       'name': name,
       'location': location?.toJson(),
-      'createdAt': createdAt.millisecondsSinceEpoch.toString(),
-      'updatedAt': updatedAt.millisecondsSinceEpoch.toString(),
     };
   }
 }
 
+@HiveType(typeId: 16)
 class Location {
+  @HiveField(0)
   final String type;
-  final List<dynamic> coordinates;
+
+  @HiveField(1)
+  final List<double> coordinates;
 
   Location({
     required this.type,
@@ -49,7 +52,7 @@ class Location {
   factory Location.fromJson(Map<String, dynamic> json) {
     return Location(
       type: json['type']?.toString() ?? '',
-      coordinates: json['coordinates'] as List<dynamic>? ?? [],
+      coordinates: (json['coordinates'] as List?)?.map((e) => (e as num).toDouble()).toList() ?? [],
     );
   }
 

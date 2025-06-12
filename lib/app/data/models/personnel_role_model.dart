@@ -17,7 +17,7 @@ class PersonnelRole {
   final String description;
 
   @HiveField(4)
-  final SalaryComponent? salaryComponent;
+  final bool isPersonel;
 
   @HiveField(5)
   final String createdAt;
@@ -25,14 +25,18 @@ class PersonnelRole {
   @HiveField(6)
   final String updatedAt;
 
+  @HiveField(7)
+  final SalaryComponent? salaryComponent;
+
   PersonnelRole({
     required this.id,
     required this.roleCode,
     required this.roleName,
     required this.description,
-    this.salaryComponent,
+    required this.isPersonel,
     required this.createdAt,
     required this.updatedAt,
+    this.salaryComponent,
   });
 
   factory PersonnelRole.fromJson(Map<String, dynamic> json) {
@@ -41,11 +45,12 @@ class PersonnelRole {
       roleCode: json['roleCode'] ?? '',
       roleName: json['roleName'] ?? '',
       description: json['description'] ?? '',
+      isPersonel: json['isPersonel'] ?? false,
+      createdAt: json['createdAt'] ?? '',
+      updatedAt: json['updatedAt'] ?? '',
       salaryComponent: json['salaryComponent'] != null
           ? SalaryComponent.fromJson(json['salaryComponent'])
           : null,
-      createdAt: json['createdAt'] ?? '',
-      updatedAt: json['updatedAt'] ?? '',
     );
   }
 
@@ -55,9 +60,10 @@ class PersonnelRole {
       'roleCode': roleCode,
       'roleName': roleName,
       'description': description,
-      'salaryComponent': salaryComponent?.toJson(),
+      'isPersonel': isPersonel,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'salaryComponent': salaryComponent?.toJson(),
     };
   }
 }
@@ -82,6 +88,36 @@ class SalaryComponent {
   @HiveField(5)
   final double pulsa;
 
+  @HiveField(6)
+  final double bpjsKT;
+
+  @HiveField(7)
+  final double bpjsJP;
+
+  @HiveField(8)
+  final double bpjsKES;
+
+  @HiveField(9)
+  final double uangCuti;
+
+  @HiveField(10)
+  final double thr;
+
+  @HiveField(11)
+  final double santunan;
+
+  @HiveField(12)
+  final int hariPerBulan;
+
+  @HiveField(13)
+  final double totalGajiBulanan;
+
+  @HiveField(14)
+  final double biayaTetapHarian;
+
+  @HiveField(15)
+  final double upahLemburHarian;
+
   SalaryComponent({
     required this.id,
     required this.gajiPokok,
@@ -89,6 +125,16 @@ class SalaryComponent {
     required this.tunjanganTidakTetap,
     required this.transport,
     required this.pulsa,
+    required this.bpjsKT,
+    required this.bpjsJP,
+    required this.bpjsKES,
+    required this.uangCuti,
+    required this.thr,
+    required this.santunan,
+    required this.hariPerBulan,
+    required this.totalGajiBulanan,
+    required this.biayaTetapHarian,
+    required this.upahLemburHarian,
   });
 
   factory SalaryComponent.fromJson(Map<String, dynamic> json) {
@@ -99,6 +145,16 @@ class SalaryComponent {
       tunjanganTidakTetap: _parseDouble(json['tunjanganTidakTetap']),
       transport: _parseDouble(json['transport']),
       pulsa: _parseDouble(json['pulsa']),
+      bpjsKT: _parseDouble(json['bpjsKT']),
+      bpjsJP: _parseDouble(json['bpjsJP']),
+      bpjsKES: _parseDouble(json['bpjsKES']),
+      uangCuti: _parseDouble(json['uangCuti']),
+      thr: _parseDouble(json['thr']),
+      santunan: _parseDouble(json['santunan']),
+      hariPerBulan: _parseInt(json['hariPerBulan']),
+      totalGajiBulanan: _parseDouble(json['totalGajiBulanan']),
+      biayaTetapHarian: _parseDouble(json['biayaTetapHarian']),
+      upahLemburHarian: _parseDouble(json['upahLemburHarian']),
     );
   }
 
@@ -110,6 +166,16 @@ class SalaryComponent {
       'tunjanganTidakTetap': tunjanganTidakTetap,
       'transport': transport,
       'pulsa': pulsa,
+      'bpjsKT': bpjsKT,
+      'bpjsJP': bpjsJP,
+      'bpjsKES': bpjsKES,
+      'uangCuti': uangCuti,
+      'thr': thr,
+      'santunan': santunan,
+      'hariPerBulan': hariPerBulan,
+      'totalGajiBulanan': totalGajiBulanan,
+      'biayaTetapHarian': biayaTetapHarian,
+      'upahLemburHarian': upahLemburHarian,
     };
   }
 
@@ -125,5 +191,19 @@ class SalaryComponent {
       }
     }
     return 0.0;
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (_) {
+        return 0;
+      }
+    }
+    return 0;
   }
 }

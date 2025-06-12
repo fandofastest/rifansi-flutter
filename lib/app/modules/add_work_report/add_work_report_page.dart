@@ -709,17 +709,25 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
     MaterialController materialController,
     OtherCostController otherCostController,
   ) {
-    // Hitung total biaya peralatan
-    final totalEquipmentCost = controller.selectedEquipment.fold(
+    // Hitung total biaya rental peralatan (tanpa bahan bakar)
+    final totalEquipmentRentalCost = controller.selectedEquipment.fold(
       0.0,
       (sum, equipment) {
         final rentalRate = equipment.selectedContract?.rentalRate ?? 0.0;
         final totalRentalCost = equipment.workingHours * rentalRate;
+        return sum + totalRentalCost;
+      },
+    );
+
+    // Hitung total biaya bahan bakar
+    final totalFuelCost = controller.selectedEquipment.fold(
+      0.0,
+      (sum, equipment) {
         final fuelUsed = equipment.fuelIn - equipment.fuelRemaining;
         final fuelPricePerLiter =
             equipment.equipment.currentFuelPrice?.pricePerLiter ?? 0.0;
         final totalFuelCost = fuelUsed * fuelPricePerLiter;
-        return sum + totalRentalCost + totalFuelCost;
+        return sum + totalFuelCost;
       },
     );
 
@@ -743,7 +751,8 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
     );
 
     // Total keseluruhan
-    final totalCost = totalEquipmentCost +
+    final totalCost = totalEquipmentRentalCost +
+        totalFuelCost +
         totalManpowerCost +
         totalMaterialCost +
         totalOtherCost;
@@ -762,13 +771,22 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
         ),
         const SizedBox(height: 16),
 
-        // Biaya Peralatan
+        // Biaya Peralatan (hanya rental)
         _buildCostItem(
           'Peralatan',
-          'Rp ${numberFormat.format(totalEquipmentCost)}',
+          'Rp ${numberFormat.format(totalEquipmentRentalCost)}',
           controller.selectedEquipment.length,
           Colors.blue[700]!,
           Icons.construction,
+        ),
+
+        // Biaya Bahan Bakar
+        _buildCostItem(
+          'Bahan Bakar',
+          'Rp ${numberFormat.format(totalFuelCost)}',
+          controller.selectedEquipment.length,
+          Colors.amber[700]!,
+          Icons.local_gas_station,
         ),
 
         // Biaya Tenaga Kerja

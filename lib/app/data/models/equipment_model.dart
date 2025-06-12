@@ -14,8 +14,18 @@ class FuelPrice {
   factory FuelPrice.fromJson(Map<String, dynamic> json) {
     return FuelPrice(
       id: json['id']?.toString() ?? '',
-      pricePerLiter: (json['pricePerLiter'] as num?)?.toDouble() ?? 0.0,
-      effectiveDate: json['effectiveDate'] as int? ?? 0,
+      pricePerLiter: json['pricePerLiter'] != null
+          ? (json['pricePerLiter'] is int
+              ? (json['pricePerLiter'] as int).toDouble()
+              : json['pricePerLiter'] is double
+                  ? json['pricePerLiter']
+                  : double.tryParse(json['pricePerLiter'].toString()) ?? 0.0)
+          : 0.0,
+      effectiveDate: json['effectiveDate'] != null
+          ? (json['effectiveDate'] is int
+              ? json['effectiveDate']
+              : int.tryParse(json['effectiveDate'].toString()) ?? 0)
+          : 0,
     );
   }
 
@@ -80,7 +90,11 @@ class Equipment {
           ? FuelPrice.fromJson(json['currentFuelPrice'])
           : null,
       fuelType: json['fuelType']?.toString(),
-      year: json['year'] != null ? int.tryParse(json['year'].toString()) : null,
+      year: json['year'] != null
+          ? (json['year'] is int
+              ? json['year']
+              : int.tryParse(json['year'].toString()))
+          : null,
       serviceStatus: json['serviceStatus']?.toString(),
       description: json['description']?.toString(),
       contracts: contractsList,
@@ -127,7 +141,11 @@ class EquipmentContract {
       contractId: json['contractId']?.toString() ?? '',
       equipmentId: json['equipmentId']?.toString() ?? '',
       rentalRate: json['rentalRate'] != null
-          ? (json['rentalRate'] as num).toDouble()
+          ? (json['rentalRate'] is int
+              ? (json['rentalRate'] as int).toDouble()
+              : json['rentalRate'] is double
+                  ? json['rentalRate']
+                  : double.tryParse(json['rentalRate'].toString()))
           : null,
       contract: Contract.fromJson(json['contract'] ?? {}),
     );

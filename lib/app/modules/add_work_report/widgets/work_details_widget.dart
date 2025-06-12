@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../controllers/add_work_report_controller.dart';
 import '../../../theme/app_theme.dart';
 
@@ -11,6 +12,16 @@ class WorkDetailsWidget extends StatelessWidget {
     Key? key,
     required this.controller,
   }) : super(key: key);
+
+  String formatVolume(dynamic volume, String unit) {
+    if (volume == null) return '0 $unit';
+    
+    // Format number with Indonesian locale
+    final formatter = NumberFormat('#,##0.##', 'id_ID');
+    final formattedNumber = formatter.format(volume);
+    
+    return '$formattedNumber $unit';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,8 +138,8 @@ class WorkDetailsWidget extends StatelessWidget {
                 width: 1,
               ),
               columnWidths: const {
-                0: FlexColumnWidth(3),
-                1: FlexColumnWidth(1),
+                0: FlexColumnWidth(2.5),
+                1: FlexColumnWidth(1.5),
               },
               children: [
                 // Header
@@ -146,8 +157,10 @@ class WorkDetailsWidget extends StatelessWidget {
                     .map((item) => TableRow(
                           children: [
                             _buildDataCell(item['name'] ?? ''),
-                            _buildDataCell(
-                                '${item['volume'] ?? 0} ${item['unit'] ?? ''}'),
+                            _buildVolumeCell(
+                              item['volume'],
+                              item['unit'] ?? '',
+                            ),
                           ],
                         ))
                     .toList(),
@@ -161,7 +174,7 @@ class WorkDetailsWidget extends StatelessWidget {
 
   Widget _buildHeaderCell(String text) {
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Text(
         text,
         style: GoogleFonts.dmSans(
@@ -175,13 +188,27 @@ class WorkDetailsWidget extends StatelessWidget {
 
   Widget _buildDataCell(String text) {
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Text(
         text,
         style: GoogleFonts.dmSans(
           fontSize: 14,
           color: Colors.black87,
         ),
+      ),
+    );
+  }
+
+  Widget _buildVolumeCell(dynamic volume, String unit) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Text(
+        formatVolume(volume, unit),
+        style: GoogleFonts.dmSans(
+          fontSize: 12,
+          color: Colors.black87,
+        ),
+        textAlign: TextAlign.right,
       ),
     );
   }

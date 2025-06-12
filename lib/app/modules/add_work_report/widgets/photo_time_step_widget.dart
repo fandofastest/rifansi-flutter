@@ -167,37 +167,44 @@ class PhotoTimeStepWidget extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time,
-                                    color: hasStartPhotos
-                                        ? Colors.green
-                                        : Colors.grey,
-                                    size: 16,
+                              InkWell(
+                                onTap: () => _selectTime(context, true),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey[300]!),
+                                    borderRadius: BorderRadius.circular(8),
+                                    color: Colors.white,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    DateFormat('HH:mm')
-                                        .format(controller.workStartTime.value),
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: hasStartPhotos
-                                          ? Colors.green[800]
-                                          : Colors.black,
-                                    ),
-                                  ),
-                                  if (hasStartPhotos)
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 4),
-                                      child: Icon(
-                                        Icons.check_circle,
-                                        color: Colors.green,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.access_time,
+                                        color: hasStartPhotos ? Colors.green : Colors.grey,
                                         size: 16,
                                       ),
-                                    ),
-                                ],
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        DateFormat('HH:mm').format(controller.workStartTime.value),
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: hasStartPhotos ? Colors.green[800] : Colors.black,
+                                        ),
+                                      ),
+                                      if (hasStartPhotos)
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 4),
+                                          child: Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green,
+                                            size: 16,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
                               ),
                               if (hasStartPhotos)
                                 Padding(
@@ -232,39 +239,46 @@ class PhotoTimeStepWidget extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.access_time,
-                                      color: hasEndPhotos
-                                          ? Colors.green
-                                          : Colors.grey,
-                                      size: 16,
+                                InkWell(
+                                  onTap: () => _selectTime(context, false),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey[300]!),
+                                      borderRadius: BorderRadius.circular(8),
+                                      color: Colors.white,
                                     ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      controller.workEndTime.value != null
-                                          ? DateFormat('HH:mm').format(
-                                              controller.workEndTime.value!)
-                                          : '--:--',
-                                      style: GoogleFonts.dmSans(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: hasEndPhotos
-                                            ? Colors.green[800]
-                                            : Colors.black,
-                                      ),
-                                    ),
-                                    if (hasEndPhotos)
-                                      Padding(
-                                        padding: const EdgeInsets.only(left: 4),
-                                        child: Icon(
-                                          Icons.check_circle,
-                                          color: Colors.green,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.access_time,
+                                          color: hasEndPhotos ? Colors.green : Colors.grey,
                                           size: 16,
                                         ),
-                                      ),
-                                  ],
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          controller.workEndTime.value != null
+                                              ? DateFormat('HH:mm').format(controller.workEndTime.value!)
+                                              : '--:--',
+                                          style: GoogleFonts.dmSans(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: hasEndPhotos ? Colors.green[800] : Colors.black,
+                                          ),
+                                        ),
+                                        if (hasEndPhotos)
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 4),
+                                            child: Icon(
+                                              Icons.check_circle,
+                                              color: Colors.green,
+                                              size: 16,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                                 if (hasEndPhotos)
                                   Padding(
@@ -287,7 +301,7 @@ class PhotoTimeStepWidget extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
-                          'Waktu akan otomatis diisi dari metadata foto yang diupload',
+                          'Waktu dapat diisi manual atau otomatis dari metadata foto',
                           style: GoogleFonts.dmSans(
                             fontSize: 12,
                             color: Colors.grey[600],
@@ -515,6 +529,63 @@ class PhotoTimeStepWidget extends StatelessWidget {
     ).then((date) {
       if (date != null) {
         controller.setReportDate(date);
+      }
+    });
+  }
+
+  void _selectTime(BuildContext context, bool isStartTime) {
+    final initialTime = isStartTime 
+        ? TimeOfDay.fromDateTime(controller.workStartTime.value)
+        : (controller.workEndTime.value != null 
+            ? TimeOfDay.fromDateTime(controller.workEndTime.value!)
+            : TimeOfDay.now());
+
+    showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            timePickerTheme: TimePickerThemeData(
+              backgroundColor: Colors.white,
+              hourMinuteShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: FigmaColors.primary),
+              ),
+              dayPeriodShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: FigmaColors.primary),
+              ),
+              dayPeriodColor: Colors.transparent,
+              dayPeriodTextColor: FigmaColors.primary,
+              dayPeriodBorderSide: BorderSide(color: FigmaColors.primary),
+            ),
+            colorScheme: ColorScheme.light(
+              primary: FigmaColors.primary,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    ).then((time) {
+      if (time != null) {
+        final now = DateTime.now();
+        final selectedDateTime = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          time.hour,
+          time.minute,
+        );
+
+        if (isStartTime) {
+          controller.setWorkStartTime(selectedDateTime);
+        } else {
+          controller.setWorkEndTime(selectedDateTime);
+        }
       }
     });
   }

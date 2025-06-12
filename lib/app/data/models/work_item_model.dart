@@ -7,7 +7,7 @@ class WorkItem {
   final int amount;
   final Rates rates;
   final String? description;
-  final WorkItemDetail workItem;
+  final WorkItemDetail? workItem;
 
   WorkItem({
     required this.workItemId,
@@ -15,7 +15,7 @@ class WorkItem {
     required this.amount,
     required this.rates,
     this.description,
-    required this.workItem,
+    this.workItem,
   });
 
   factory WorkItem.fromJson(Map<String, dynamic> json) {
@@ -25,7 +25,7 @@ class WorkItem {
       amount: json['amount'],
       rates: Rates.fromJson(json['rates']),
       description: json['description'] as String?,
-      workItem: WorkItemDetail.fromJson(json['workItem']),
+      workItem: json['workItem'] != null ? WorkItemDetail.fromJson(json['workItem']) : null,
     );
   }
 
@@ -48,13 +48,7 @@ class WorkItem {
         },
       },
       'description': description,
-      'workItem': {
-        'id': workItem.id,
-        'name': workItem.name,
-        'category': workItem.category.toJson(),
-        'subCategory': workItem.subCategory.toJson(),
-        'unit': workItem.unit.toJson(),
-      },
+      'workItem': workItem?.toJson(),
     };
   }
 }
@@ -104,25 +98,35 @@ class Rate {
 class WorkItemDetail {
   final String id;
   final String name;
-  final Category category;
-  final Category subCategory;
-  final Unit unit;
+  final Category? category;
+  final Category? subCategory;
+  final Unit? unit;
 
   WorkItemDetail({
     required this.id,
     required this.name,
-    required this.category,
-    required this.subCategory,
-    required this.unit,
+    this.category,
+    this.subCategory,
+    this.unit,
   });
 
   factory WorkItemDetail.fromJson(Map<String, dynamic> json) {
     return WorkItemDetail(
-      id: json['id'],
-      name: json['name'],
-      category: Category.fromJson(json['category']),
-      subCategory: Category.fromJson(json['subCategory']),
-      unit: Unit.fromJson(json['unit']),
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      category: json['category'] != null ? Category.fromJson(json['category']) : null,
+      subCategory: json['subCategory'] != null ? Category.fromJson(json['subCategory']) : null,
+      unit: json['unit'] != null ? Unit.fromJson(json['unit']) : null,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'category': category?.toJson(),
+      'subCategory': subCategory?.toJson(),
+      'unit': unit?.toJson(),
+    };
   }
 }
