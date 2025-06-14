@@ -21,6 +21,7 @@ import '../modules/area_report/area_report_page.dart';
 import '../modules/area_report/area_report_binding.dart';
 import '../modules/equipment_approval/equipment_approval_page.dart';
 import '../modules/equipment_approval/equipment_approval_binding.dart';
+import '../modules/company_profile/company_profile_page.dart';
 
 class AppPages {
   static final pages = [
@@ -41,6 +42,7 @@ class AppPages {
     GetPage(
       name: Routes.settings,
       page: () => const SettingsPage(),
+      middlewares: [AuthMiddleware()],
     ),
     GetPage(
       name: Routes.spk,
@@ -83,6 +85,11 @@ class AppPages {
       page: () => const EquipmentApprovalPage(),
       binding: EquipmentApprovalBinding(),
       middlewares: [AuthMiddleware(), SupervisorMiddleware()],
+    ),
+    GetPage(
+      name: Routes.companyProfile,
+      page: () => const CompanyProfilePage(),
+      middlewares: [AuthMiddleware()],
     ),
   ];
 }

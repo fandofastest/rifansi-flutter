@@ -10,4 +10,5 @@ abstract class Routes {
   static const equipmentReport = '/equipment-report';
   static const areaReport = '/area-report';
   static const equipmentApproval = '/equipment-approval';
+  static const companyProfile = '/company-profile';
 }

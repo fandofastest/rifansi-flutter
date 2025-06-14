@@ -280,9 +280,9 @@ class GraphQLService extends GetxService {
         endDate
         budget
         dailyActivities {
-          id
-          date
-          location
+        id
+        date
+        location
           weather
           status
           workStartTime
@@ -1124,7 +1124,7 @@ class GraphQLService extends GetxService {
         id
         reportNumber
         equipment {
-          id
+        id
           equipmentCode
           plateOrSerialNo
           equipmentType
@@ -1171,7 +1171,7 @@ class GraphQLService extends GetxService {
           serviceStatus
         }
         reportedBy {
-          id
+            id
           username
           fullName
           role {
@@ -1184,9 +1184,9 @@ class GraphQLService extends GetxService {
         damageLevel
         reportImages
         location {
-          id
-          name
-        }
+              id
+              name
+            }
         immediateAction
         status
         priority
@@ -1206,11 +1206,11 @@ class GraphQLService extends GetxService {
           equipmentCode
           plateOrSerialNo
           equipmentType
-          description
+              description
           serviceStatus
-        }
+            }
         reportedBy {
-          id
+            id
           fullName
           role {
             roleName
@@ -1223,11 +1223,11 @@ class GraphQLService extends GetxService {
         status
         priority
         location {
-          id
-          name
-        }
+              id
+              name
+            }
         reviewedBy {
-          id
+              id
           fullName
         }
         reviewDate
@@ -1326,35 +1326,35 @@ class GraphQLService extends GetxService {
             coordinates
           }
         }
-        status
+          status
         weather
-        workStartTime
-        workEndTime
+          workStartTime
+          workEndTime
         isApproved
         approvedBy {
-          id
+            id
           fullName
         }
         progressPercentage
         spkDetail {
-          id
+              id
           spkNo
           title
           projectName
         }
         userDetail {
-          id
+              id
           fullName
         }
         activityDetails {
           id
           workItem {
             name
-          }
-          actualQuantity {
-            nr
-            r
-          }
+            }
+            actualQuantity {
+              nr
+              r
+            }
         }
         createdAt
       }
@@ -1387,7 +1387,7 @@ class GraphQLService extends GetxService {
   static const String approveDailyReportMutation = r'''
     mutation ApproveDailyReport($id: ID!, $status: String!, $remarks: String) {
       approveDailyReport(id: $id, status: $status, remarks: $remarks) {
-        id
+                  id
         date
         weather
         status
@@ -1417,8 +1417,8 @@ class GraphQLService extends GetxService {
           fullName
         }
         lastUpdatedAt
-      }
-    }
+              }
+            }
   ''';
 
   static const String reviewEquipmentRepairReportMutation = r'''

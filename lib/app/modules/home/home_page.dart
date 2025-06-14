@@ -405,6 +405,7 @@ class HomePage extends StatelessWidget {
                   _MenuItem(
                     iconAsset: 'assets/images/icon_perusahaan.svg',
                     label: 'Profile Perusahaan',
+                    onTap: () => Get.toNamed(Routes.companyProfile),
                   ),
                   _MenuItem(
                     iconAsset: 'assets/images/icon_profile.svg',
