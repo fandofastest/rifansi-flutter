@@ -127,12 +127,14 @@ class EquipmentContract {
   final String contractId;
   final String equipmentId;
   final double? rentalRate;
+  final double? rentalRatePerDay;
   final Contract contract;
 
   EquipmentContract({
     required this.contractId,
     required this.equipmentId,
     this.rentalRate,
+    this.rentalRatePerDay,
     required this.contract,
   });
 
@@ -147,6 +149,13 @@ class EquipmentContract {
                   ? json['rentalRate']
                   : double.tryParse(json['rentalRate'].toString()))
           : null,
+      rentalRatePerDay: json['rentalRatePerDay'] != null
+          ? (json['rentalRatePerDay'] is int
+              ? (json['rentalRatePerDay'] as int).toDouble()
+              : json['rentalRatePerDay'] is double
+                  ? json['rentalRatePerDay']
+                  : double.tryParse(json['rentalRatePerDay'].toString()))
+          : null,
       contract: Contract.fromJson(json['contract'] ?? {}),
     );
   }
@@ -156,6 +165,7 @@ class EquipmentContract {
       'contractId': contractId,
       'equipmentId': equipmentId,
       'rentalRate': rentalRate,
+      'rentalRatePerDay': rentalRatePerDay,
       'contract': contract.toJson(),
     };
   }

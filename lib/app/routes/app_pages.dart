@@ -14,6 +14,8 @@ import '../modules/work_report/work_report_page.dart';
 import '../modules/work_report/work_report_binding.dart';
 import '../modules/add_work_report/add_work_report_page.dart';
 import '../modules/add_work_report/add_work_report_binding.dart';
+import '../modules/equipment_report/equipment_report_page.dart';
+import '../modules/equipment_report/equipment_report_binding.dart';
 
 class AppPages {
   static final pages = [
@@ -57,6 +59,12 @@ class AppPages {
       name: Routes.addWorkReport,
       page: () => const AddWorkReportPage(),
       binding: AddWorkReportBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: Routes.equipmentReport,
+      page: () => const EquipmentReportPage(),
+      binding: EquipmentReportBinding(),
       middlewares: [AuthMiddleware()],
     ),
   ];

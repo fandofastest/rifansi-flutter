@@ -46,80 +46,30 @@ class PhotoTimeStepWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Obx(() {
-          final hasPhotos = controller.startPhotos.isNotEmpty ||
-              controller.endPhotos.isNotEmpty;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (hasPhotos)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue[200]!),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.info_outline,
-                              color: Colors.blue[700], size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Informasi waktu dari metadata foto',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 14,
-                                color: Colors.blue[700],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
+        GestureDetector(
+          onTap: () => _selectDate(context),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.black12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Obx(() => Text(
+                      DateFormat('dd MMMM yyyy', 'id_ID')
+                          .format(controller.reportDate.value),
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Tanggal: ${DateFormat('dd MMMM yyyy', 'id_ID').format(controller.reportDate.value)}',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (!hasPhotos)
-                GestureDetector(
-                  onTap: () => _selectDate(context),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.black12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Obx(() => Text(
-                              DateFormat('dd MMMM yyyy', 'id_ID')
-                                  .format(controller.reportDate.value),
-                              style: GoogleFonts.dmSans(
-                                fontSize: 14,
-                              ),
-                            )),
-                        const Icon(Icons.calendar_today,
-                            size: 20, color: Colors.black54),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-          );
-        }),
+                    )),
+                const Icon(Icons.calendar_today,
+                    size: 20, color: Colors.black54),
+              ],
+            ),
+          ),
+        ),
 
         const SizedBox(height: 16),
 

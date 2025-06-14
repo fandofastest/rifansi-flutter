@@ -2,9 +2,9 @@
   <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <application
-        android:label="rifansi"
+        android:label="Rifansi SuperApps"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@drawable/logo_light">
         <activity
             android:name=".MainActivity"
             android:exported="true"

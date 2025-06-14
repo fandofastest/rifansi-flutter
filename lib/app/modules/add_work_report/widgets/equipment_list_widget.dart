@@ -306,8 +306,8 @@ class EquipmentListWidget extends StatelessWidget {
                 const SizedBox(height: 8),
                 // Rincian biaya per peralatan
                 ...controller.selectedEquipment.map((entry) {
-                  final rentalRate = entry.selectedContract?.rentalRate ?? 0.0;
-                  final totalRentalCost = entry.workingHours * rentalRate;
+                  // Gunakan tarif harian (rentalRatePerDay) bukan per jam
+                  final rentalRatePerDay = entry.selectedContract?.rentalRatePerDay ?? 0.0;
 
                   // Hitung biaya BBM
                   final fuelUsed = entry.fuelIn - entry.fuelRemaining;
@@ -316,7 +316,7 @@ class EquipmentListWidget extends StatelessWidget {
                   final totalFuelCost = fuelUsed * fuelPricePerLiter;
 
                   // Total biaya peralatan
-                  final totalCost = totalRentalCost + totalFuelCost;
+                  final totalCost = rentalRatePerDay + totalFuelCost;
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -345,7 +345,7 @@ class EquipmentListWidget extends StatelessWidget {
                         const SizedBox(height: 2),
                         // Rincian sewa
                         Text(
-                          '${entry.workingHours} jam × Rp ${NumberFormat("#,##0", "id_ID").format(rentalRate)}/jam = Rp ${NumberFormat("#,##0", "id_ID").format(totalRentalCost)}',
+                          'Sewa harian: Rp ${NumberFormat("#,##0", "id_ID").format(rentalRatePerDay)} (${entry.workingHours} jam)',
                           style: GoogleFonts.dmSans(
                             fontSize: 12,
                             color: Colors.grey[600],
@@ -377,8 +377,8 @@ class EquipmentListWidget extends StatelessWidget {
                     ),
                     Text(
                       'Rp ${NumberFormat("#,##0", "id_ID").format(controller.selectedEquipment.fold(0.0, (sum, entry) {
-                        final rentalCost = entry.workingHours *
-                            (entry.selectedContract?.rentalRate ?? 0.0);
+                        // Gunakan tarif harian (rentalRatePerDay) bukan per jam
+                        final rentalCost = entry.selectedContract?.rentalRatePerDay ?? 0.0;
                         final fuelCost = (entry.fuelIn - entry.fuelRemaining) *
                             (entry.equipment.currentFuelPrice?.pricePerLiter ??
                                 0.0);

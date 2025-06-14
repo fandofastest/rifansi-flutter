@@ -529,10 +529,9 @@ class WorkProgressForm extends StatelessWidget {
                             _buildCostItem(
                               'Peralatan',
                               'Rp ${numberFormat.format(reportController.selectedEquipment.fold(0.0, (sum, entry) {
-                                final rentalRate =
-                                    entry.selectedContract?.rentalRate ?? 0.0;
-                                final totalRentalCost =
-                                    entry.workingHours * rentalRate;
+                                // Gunakan tarif harian (rentalRatePerDay) bukan per jam
+                                final rentalRatePerDay =
+                                    entry.selectedContract?.rentalRatePerDay ?? 0.0;
                                 final fuelUsed =
                                     entry.fuelIn - entry.fuelRemaining;
                                 final fuelPricePerLiter = entry.equipment
@@ -540,7 +539,7 @@ class WorkProgressForm extends StatelessWidget {
                                     0.0;
                                 final totalFuelCost =
                                     fuelUsed * fuelPricePerLiter;
-                                return sum + totalRentalCost + totalFuelCost;
+                                return sum + rentalRatePerDay + totalFuelCost;
                               }))}',
                               reportController.selectedEquipment.length,
                               Colors.blue[700]!,
@@ -549,10 +548,9 @@ class WorkProgressForm extends StatelessWidget {
                             // Breakdown biaya sewa & BBM per alat
                             ...reportController.selectedEquipment
                                 .expand((entry) {
-                              final rentalRate =
-                                  entry.selectedContract?.rentalRate ?? 0.0;
-                              final totalRentalCost =
-                                  entry.workingHours * rentalRate;
+                              // Gunakan tarif harian (rentalRatePerDay) bukan per jam
+                              final rentalRatePerDay =
+                                  entry.selectedContract?.rentalRatePerDay ?? 0.0;
                               final fuelUsed =
                                   entry.fuelIn - entry.fuelRemaining;
                               final fuelPricePerLiter = entry.equipment
@@ -562,8 +560,8 @@ class WorkProgressForm extends StatelessWidget {
                                   fuelUsed * fuelPricePerLiter;
                               return [
                                 _buildInfoRow(
-                                  '  ${entry.equipment.equipmentCode} (Sewa)',
-                                  'Rp ${numberFormat.format(totalRentalCost)}',
+                                  '  ${entry.equipment.equipmentCode} (Sewa/hari)',
+                                  'Rp ${numberFormat.format(rentalRatePerDay)}',
                                 ),
                                 _buildInfoRow(
                                   '  ${entry.equipment.equipmentCode} (BBM)',
@@ -774,13 +772,13 @@ class WorkProgressForm extends StatelessWidget {
     final equipmentCost = reportController.selectedEquipment.fold(
       0.0,
       (sum, entry) {
-        final rentalRate = entry.selectedContract?.rentalRate ?? 0.0;
-        final totalRentalCost = entry.workingHours * rentalRate;
+        // Gunakan tarif harian (rentalRatePerDay) bukan per jam
+        final rentalRatePerDay = entry.selectedContract?.rentalRatePerDay ?? 0.0;
         final fuelUsed = entry.fuelIn - entry.fuelRemaining;
         final fuelPricePerLiter =
             entry.equipment.currentFuelPrice?.pricePerLiter ?? 0.0;
         final totalFuelCost = fuelUsed * fuelPricePerLiter;
-        return sum + totalRentalCost + totalFuelCost;
+        return sum + rentalRatePerDay + totalFuelCost;
       },
     );
 
@@ -1022,26 +1020,64 @@ class WorkProgressForm extends StatelessWidget {
                         final entry = filtered[idx];
                         final progress = entry.value;
                         final index = entry.key;
+                        
+                        // Tentukan jenis BOQ yang aktif
+                        final bool isN = progress.boqVolumeR > 0;
+                        final bool isNR = progress.boqVolumeNR > 0;
+                        
                         return Card(
-                          margin: const EdgeInsets.only(bottom: 16),
+                          margin: const EdgeInsets.only(bottom: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
+                          child: ExpansionTile(
+                            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            title: Text(
+                              progress.workItemName,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                const SizedBox(height: 4),
                                 Text(
-                                  progress.workItemName,
+                                  'Volume BOQ: ${numberFormat.format(isN ? progress.boqVolumeR : progress.boqVolumeNR)} ${progress.unit}',
                                   style: GoogleFonts.dmSans(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: Colors.black54,
                                   ),
                                 ),
-                                _buildProgressInputs(progress, index),
+                                Text(
+                                  'Harga: Rp ${numberFormat.format(isN ? progress.rateR : progress.rateNR)}/${progress.unit}',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    color: Colors.black54,
+                                  ),
+                                ),
                               ],
                             ),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: FigmaColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Rp ${numberFormat.format(progress.totalProgressValue)}',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: FigmaColors.primary,
+                                ),
+                              ),
+                            ),
+                            children: [
+                              _buildProgressInputs(progress, index),
+                            ],
                           ),
                         );
                       },

@@ -713,9 +713,9 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
     final totalEquipmentRentalCost = controller.selectedEquipment.fold(
       0.0,
       (sum, equipment) {
-        final rentalRate = equipment.selectedContract?.rentalRate ?? 0.0;
-        final totalRentalCost = equipment.workingHours * rentalRate;
-        return sum + totalRentalCost;
+        // Gunakan tarif harian (rentalRatePerDay) bukan per jam
+        final rentalRatePerDay = equipment.selectedContract?.rentalRatePerDay ?? 0.0;
+        return sum + rentalRatePerDay;
       },
     );
 
