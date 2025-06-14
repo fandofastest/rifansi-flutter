@@ -7,4 +7,5 @@ abstract class Routes {
   static const spkDetails = '/spk/details';
   static const workReport = '/work-report';
   static const addWorkReport = '/work-report/add';
+  static const equipmentReport = '/equipment-report';
 }

@@ -229,7 +229,8 @@ class HomePage extends StatelessWidget {
                   )),
                   _MenuItem(
                     iconAsset: 'assets/images/icon_absen_home.svg',
-                    label: 'Absen',
+                    label: 'Laporan Alat',
+                    onTap: () => Get.toNamed(Routes.equipmentReport),
                   ),
                   _MenuItem(
                     iconAsset: 'assets/images/icon_perusahaan.svg',

@@ -331,30 +331,35 @@ class AddWorkReportController extends GetxController {
         if (uploadedPhoto != null) {
           uploadedPhotos.add(uploadedPhoto);
 
-          // Update waktu foto
+          // Update waktu foto - hanya ambil komponen waktu, tanggal tetap menggunakan reportDate
           if (photoTime != null) {
-            if (firstPhotoTime == null || photoTime.isBefore(firstPhotoTime)) {
-              firstPhotoTime = photoTime;
+            // Gabungkan tanggal dari reportDate dengan waktu dari foto
+            final photoTimeWithReportDate = DateTime(
+              reportDate.value.year,
+              reportDate.value.month,
+              reportDate.value.day,
+              photoTime.hour,
+              photoTime.minute,
+              photoTime.second,
+            );
+
+            if (firstPhotoTime == null || photoTimeWithReportDate.isBefore(firstPhotoTime)) {
+              firstPhotoTime = photoTimeWithReportDate;
             }
-            if (lastPhotoTime == null || photoTime.isAfter(lastPhotoTime)) {
-              lastPhotoTime = photoTime;
+            if (lastPhotoTime == null || photoTimeWithReportDate.isAfter(lastPhotoTime)) {
+              lastPhotoTime = photoTimeWithReportDate;
             }
           }
         }
       }
 
-      // Update waktu berdasarkan jenis foto (start/end)
+      // Update waktu berdasarkan jenis foto (start/end) - hanya waktu, bukan tanggal
       if (startPhotos.isEmpty && firstPhotoTime != null) {
-        // Ini foto awal
-        workStartTime.value = firstPhotoTime!;
-        reportDate.value = DateTime(
-          firstPhotoTime!.year,
-          firstPhotoTime!.month,
-          firstPhotoTime!.day,
-        );
+        // Ini foto awal - set waktu mulai dengan tanggal dari reportDate
+        workStartTime.value = firstPhotoTime;
       } else if (endPhotos.isEmpty && lastPhotoTime != null) {
-        // Ini foto akhir
-        workEndTime.value = lastPhotoTime!;
+        // Ini foto akhir - set waktu selesai dengan tanggal dari reportDate
+        workEndTime.value = lastPhotoTime;
       }
 
       return uploadedPhotos;
@@ -383,18 +388,23 @@ class AddWorkReportController extends GetxController {
       final WorkPhoto? uploadedPhoto = await uploadPhoto(file);
 
       if (uploadedPhoto != null && photoTime != null) {
-        // Update waktu berdasarkan jenis foto (start/end)
+        // Gabungkan tanggal dari reportDate dengan waktu dari foto
+        final photoTimeWithReportDate = DateTime(
+          reportDate.value.year,
+          reportDate.value.month,
+          reportDate.value.day,
+          photoTime.hour,
+          photoTime.minute,
+          photoTime.second,
+        );
+
+        // Update waktu berdasarkan jenis foto (start/end) - hanya waktu, bukan tanggal
         if (startPhotos.isEmpty) {
           // Ini foto awal
-          workStartTime.value = photoTime;
-          reportDate.value = DateTime(
-            photoTime.year,
-            photoTime.month,
-            photoTime.day,
-          );
+          workStartTime.value = photoTimeWithReportDate;
         } else if (endPhotos.isEmpty) {
           // Ini foto akhir
-          workEndTime.value = photoTime;
+          workEndTime.value = photoTimeWithReportDate;
         }
       }
 
@@ -557,11 +567,29 @@ class AddWorkReportController extends GetxController {
   }
 
   void setWorkStartTime(DateTime time) {
-    workStartTime.value = time;
+    // Combine the selected time with the report date
+    final selectedDate = reportDate.value;
+    workStartTime.value = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      time.hour,
+      time.minute,
+      time.second,
+    );
   }
 
   void setWorkEndTime(DateTime time) {
-    workEndTime.value = time;
+    // Combine the selected time with the report date
+    final selectedDate = reportDate.value;
+    workEndTime.value = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      time.hour,
+      time.minute,
+      time.second,
+    );
   }
 
   bool validateStep(int step) {
@@ -734,10 +762,8 @@ class AddWorkReportController extends GetxController {
           transition: Transition.rightToLeft,
         );
 
-        if (result == true) {
-          // Progress sudah diisi, submit report
-          await submitWorkReport();
-        }
+        // Submit sudah ditangani di WorkProgressForm
+        // Tidak perlu submit lagi di sini untuk menghindari double submit
       } else {
         // Simpan data sementara di setiap perpindahan step (kecuali step terakhir)
         await saveTemporaryData();
@@ -824,7 +850,8 @@ class AddWorkReportController extends GetxController {
                   "fuelIn": e.fuelIn ?? 0.0,
                   "fuelRemaining": e.fuelRemaining ?? 0.0,
                   "workingHour": e.workingHours ?? 0.0,
-                  "hourlyRate": e.selectedContract?.rentalRate ?? 0.0,
+                  "hourlyRate": 0.0,
+                  "rentalRatePerDay": e.selectedContract?.rentalRatePerDay ?? 0.0,
                   "isBrokenReported": e.isBrokenReported ?? false,
                   "remarks": e.remarks ?? '',
                 })
@@ -1154,7 +1181,7 @@ Total Cost: Rp ${entry.totalCost}
                   workingHour: e.workingHours,
                   isBrokenReported: e.isBrokenReported,
                   remarks: e.remarks ?? '',
-                  hourlyRate: e.selectedContract?.rentalRate ?? 0.0,
+                  hourlyRate: e.selectedContract?.rentalRatePerDay ?? 0.0,
                 ))
             .toList(),
         manpowerLogs: selectedManpower

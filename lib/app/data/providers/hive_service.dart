@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/daily_activity_input.dart';
+import '../models/area_model.dart';
 
 class HiveService extends GetxService {
   static const String DAILY_ACTIVITIES_BOX = 'daily_activities';
@@ -22,6 +23,9 @@ class HiveService extends GetxService {
       Hive.registerAdapter(ManpowerLogAdapter());
       Hive.registerAdapter(MaterialUsageLogAdapter());
       Hive.registerAdapter(OtherCostAdapter());
+      Hive.registerAdapter(SPKDetailsAdapter());
+      Hive.registerAdapter(LocationAdapter());
+      Hive.registerAdapter(AreaAdapter());
 
       // Buka box
       _dailyActivitiesBox =

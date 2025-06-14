@@ -190,7 +190,7 @@ class WorkProgressController extends GetxController {
                 "fuelIn": e.fuelIn ?? 0.0,
                 "fuelRemaining": e.fuelRemaining ?? 0.0,
                 "workingHour": e.workingHours ?? 0.0,
-                "hourlyRate": e.selectedContract?.rentalRate ?? 0.0,
+                "hourlyRate": e.selectedContract?.rentalRatePerDay ?? 0.0,
                 "isBrokenReported": e.isBrokenReported ?? false,
                 "remarks": e.remarks ?? '',
               })

@@ -14,7 +14,8 @@ import '../models/spk_detail_with_progress_response.dart' as spk_progress;
 
 class GraphQLService extends GetxService {
   late GraphQLClient client;
-  final String baseUrl = 'https://localhost3000.fando.id/graphql';
+  final String baseUrl = 'https://berifansi.fando.id/graphql';
+  // final String baseUrl = 'https://laptop3000.fando.id/graphql';
 
   Future<GraphQLService> init() async {
     final HttpLink httpLink = HttpLink(baseUrl);
@@ -452,7 +453,7 @@ class GraphQLService extends GetxService {
 
   static const String getAllEquipmentsQuery = r'''
     query GetEquipments {
-      equipments {
+      equipments(status: ACTIVE) {
         id
         equipmentCode
         plateOrSerialNo
@@ -471,6 +472,7 @@ class GraphQLService extends GetxService {
           contractId
           equipmentId
           rentalRate
+          rentalRatePerDay
           contract {
             id
             contractNo
@@ -619,8 +621,8 @@ class GraphQLService extends GetxService {
           equipmentId
           fuelIn
           fuelRemaining
-          hourlyRate
           workingHour
+          hourlyRate
           isBrokenReported
           remarks
         }
@@ -629,11 +631,6 @@ class GraphQLService extends GetxService {
           role
           personCount
           hourlyRate
-          personnelRole {
-            id
-            roleName
-            description
-          }
         }
         materialUsageLogs {
           id
@@ -646,6 +643,7 @@ class GraphQLService extends GetxService {
           id
           costType
           amount
+          remarks
         }
       }
     }
@@ -1133,6 +1131,116 @@ class GraphQLService extends GetxService {
     } catch (e) {
       print('[GraphQL] Error in fetchSPKDetailsWithProgress: $e');
       throw Exception('Gagal mengambil detail SPK dengan progress: $e');
+    }
+  }
+
+  static const String createEquipmentRepairReportMutation = r'''
+    mutation CreateRepairReport($input: CreateEquipmentRepairReportInput!) {
+      createEquipmentRepairReport(input: $input) {
+        id
+        reportNumber
+        equipment {
+          equipmentCode
+          equipmentType
+        }
+        status
+        damageLevel
+        reportDate
+      }
+    }
+  ''';
+
+  Future<Map<String, dynamic>> createEquipmentRepairReport(
+      Map<String, dynamic> input) async {
+    try {
+      print('[GraphQL] Creating equipment repair report');
+      print('[GraphQL] Input: ${json.encode(input)}');
+
+      final variables = {'input': input};
+      final result = await mutate(createEquipmentRepairReportMutation,
+          variables: variables);
+
+      if (result.hasException) {
+        print(
+            '[GraphQL] Error creating equipment repair report: ${result.exception}');
+        throw Exception(result.exception.toString());
+      }
+
+      final data = result.data?['createEquipmentRepairReport'];
+      if (data == null) {
+        throw Exception('No data returned from server');
+      }
+
+      print(
+          '[GraphQL] Equipment repair report created successfully with ID: ${data['id']}');
+      return data;
+    } catch (e) {
+      print('[GraphQL] Error in createEquipmentRepairReport: $e');
+      throw Exception('Gagal membuat laporan kerusakan alat: $e');
+    }
+  }
+
+  static const String getMyEquipmentRepairReportsQuery = r'''
+    query GetMyReports {
+      myEquipmentRepairReports {
+        id
+        reportNumber
+        reportDate
+        problemDescription
+        damageLevel
+        status
+        priority
+        location {
+          id
+          name
+          location {
+            type
+            coordinates
+          }
+        }
+        equipment {
+          equipmentCode
+          equipmentType
+          plateOrSerialNo
+        }
+        reviewedBy {
+          fullName
+        }
+        reviewDate
+        reviewNotes
+        assignedTechnician
+        estimatedCost
+        actualCost
+        createdAt
+        updatedAt
+      }
+    }
+  ''';
+
+  Future<List<Map<String, dynamic>>> fetchEquipmentRepairReports({
+    String? equipmentId,
+    String? status,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      print('[GraphQL] Fetching my equipment repair reports');
+
+      final result = await query(getMyEquipmentRepairReportsQuery);
+
+      if (result.hasException) {
+        print(
+            '[GraphQL] Error fetching my equipment repair reports: ${result.exception}');
+        throw Exception(result.exception.toString());
+      }
+
+      final List reports = result.data?['myEquipmentRepairReports'] ?? [];
+      print('[GraphQL] Fetched ${reports.length} my equipment repair reports');
+
+      return reports.cast<Map<String, dynamic>>();
+    } catch (e) {
+      print('[GraphQL] Error in fetchEquipmentRepairReports: $e');
+      throw Exception('Gagal mengambil data laporan kerusakan alat: $e');
     }
   }
 }
