@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/spk_controller.dart';
 import '../../controllers/daily_activity_controller.dart';
+import '../../controllers/equipment_controller.dart';
 import '../../routes/app_routes.dart';
 
 class HomePage extends StatelessWidget {
@@ -16,15 +17,19 @@ class HomePage extends StatelessWidget {
     final theme = Theme.of(context);
     final AuthController authController = Get.find<AuthController>();
     final SpkController spkController = Get.put(SpkController());
-    final DailyActivityController activityController = Get.put(DailyActivityController());
+    final DailyActivityController activityController =
+        Get.put(DailyActivityController());
+    final EquipmentController equipmentController =
+        Get.put(EquipmentController());
     final user = authController.currentUser.value;
-    
-    // Load SPK count and activity count when page loads
+
+    // Load SPK count, activity count, and equipment data when page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       spkController.fetchSPKs();
-      activityController.fetchActivities();
+      activityController.fetchServerActivities();
+      equipmentController.fetchEquipments();
     });
-    
+
     return Scaffold(
       backgroundColor: FigmaColors.background,
       body: SingleChildScrollView(
@@ -32,7 +37,7 @@ class HomePage extends StatelessWidget {
           children: [
             // HEADER
             Container(
-              height: 150,
+              height: 160,
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               decoration: BoxDecoration(
@@ -45,7 +50,9 @@ class HomePage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(height: 20,),
+                  SizedBox(
+                    height: 20,
+                  ),
                   Row(
                     children: [
                       // Profile Icon
@@ -65,7 +72,9 @@ class HomePage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              user != null ? 'Selamat Datang, ${user.fullName}' : 'Selamat Datang',
+                              user != null
+                                  ? 'Selamat Datang, ${user.fullName}'
+                                  : 'Selamat Datang',
                               style: GoogleFonts.dmSans(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
@@ -123,7 +132,8 @@ class HomePage extends StatelessWidget {
                               ),
                               actions: [
                                 TextButton(
-                                  onPressed: () => Navigator.of(context).pop(false),
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(false),
                                   child: Text(
                                     'Batal',
                                     style: GoogleFonts.dmSans(
@@ -132,7 +142,8 @@ class HomePage extends StatelessWidget {
                                   ),
                                 ),
                                 TextButton(
-                                  onPressed: () => Navigator.of(context).pop(true),
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(true),
                                   child: Text(
                                     'Logout',
                                     style: GoogleFonts.dmSans(
@@ -144,7 +155,7 @@ class HomePage extends StatelessWidget {
                               ],
                             ),
                           );
-                          
+
                           if (shouldLogout == true) {
                             await authController.logout();
                             Get.offAllNamed(Routes.login);
@@ -166,40 +177,139 @@ class HomePage extends StatelessWidget {
             // INFORMASI HARI INI
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [FigmaColors.primary, FigmaColors.error],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white, width: 3),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Informasi Hari ini',
-                    style: GoogleFonts.dmSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      Obx(() => _InfoStat(
-                        title: 'SPK Aktif', 
-                        value: '${spkController.spks.length}',
-                      )),
-                      Obx(() => _InfoStat(
-                        title: 'Laporan Kerja', 
-                        value: '${activityController.activities.length}',
-                      )),
-                      const _InfoStat(title: 'Progress', value: '65%'),
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Informasi Hari ini',
+                        style: GoogleFonts.dmSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Vertical layout for info stats
+                  Column(
+                    children: [
+                      Obx(() => _InfoStatVertical(
+                            icon: Icons.assignment,
+                            title: 'SPK Aktif',
+                            value: '${spkController.spks.length}',
+                            subtitle: 'Surat Perintah Kerja',
+                          )),
+                      const SizedBox(height: 12),
+                      // Only show "Laporan Kerja" count if user is not supervisor
+                      if (user?.role.roleName.toLowerCase() !=
+                          'supervisor') ...[
+                        Obx(() => _InfoStatVertical(
+                              icon: Icons.work,
+                              title: 'Total Laporan',
+                              value: '${activityController.totalReportsCount}',
+                              subtitle: 'Semua laporan kerja',
+                            )),
+                        const SizedBox(height: 12),
+                        Obx(() => _InfoStatVertical(
+                              icon: Icons.check_circle,
+                              title: 'Laporan Disetujui',
+                              value:
+                                  '${activityController.approvedReportsCount}',
+                              subtitle: 'Laporan yang diterima',
+                            )),
+                        const SizedBox(height: 12),
+                        Obx(() => _InfoStatVertical(
+                              icon: Icons.cancel,
+                              title: 'Laporan Ditolak',
+                              value:
+                                  '${activityController.rejectedReportsCount}',
+                              subtitle: 'Laporan yang ditolak',
+                            )),
+                        const SizedBox(height: 12),
+                        Obx(() => _InfoStatVertical(
+                              icon: Icons.build_circle,
+                              title: 'Alat yang Rusak',
+                              value:
+                                  '${equipmentController.damagedEquipmentCount}',
+                              subtitle: 'Peralatan bermasalah',
+                            )),
+                        const SizedBox(height: 12),
+                        Obx(() => _InfoStatVertical(
+                              icon: Icons.build,
+                              title: 'Alat Siap Pakai',
+                              value:
+                                  '${equipmentController.readyEquipmentCount}',
+                              subtitle: 'Peralatan siap operasi',
+                            )),
+                      ],
+                      // Show approval statistics if user is supervisor
+                      if (user?.role.roleName.toLowerCase() ==
+                          'supervisor') ...[
+                        Obx(() => _InfoStatVertical(
+                              icon: Icons.work,
+                              title: 'Total Laporan',
+                              value: '${activityController.totalReportsCount}',
+                              subtitle: 'Semua laporan area',
+                            )),
+                        const SizedBox(height: 12),
+                        Obx(() => _InfoStatVertical(
+                              icon: Icons.pending_actions,
+                              title: 'Pending Approval',
+                              value:
+                                  '${activityController.pendingReportsCount}',
+                              subtitle: 'Menunggu persetujuan',
+                            )),
+                        const SizedBox(height: 12),
+                        Obx(() => _InfoStatVertical(
+                              icon: Icons.check_circle,
+                              title: 'Laporan Disetujui',
+                              value:
+                                  '${activityController.approvedReportsCount}',
+                              subtitle: 'Disetujui hari ini',
+                            )),
+                        const SizedBox(height: 12),
+                        Obx(() => _InfoStatVertical(
+                              icon: Icons.cancel,
+                              title: 'Laporan Ditolak',
+                              value:
+                                  '${activityController.rejectedReportsCount}',
+                              subtitle: 'Ditolak hari ini',
+                            )),
+                        const SizedBox(height: 12),
+                        Obx(() => _InfoStatVertical(
+                              icon: Icons.build,
+                              title: 'Alat Siap Pakai',
+                              value:
+                                  '${equipmentController.readyEquipmentCount}',
+                              subtitle: 'Peralatan siap operasi',
+                            )),
+                      ],
                     ],
                   ),
                 ],
@@ -218,20 +328,41 @@ class HomePage extends StatelessWidget {
                 childAspectRatio: 0.8,
                 children: [
                   Obx(() => _MenuItem(
-                    iconAsset: 'assets/images/icon_spk_home.svg',
-                    label: 'Daftar SPK \n(${spkController.spks.length} SPK)',
-                    onTap: () => Get.toNamed(Routes.spk),
-                  )),
-                  Obx(() => _MenuItem(
-                    iconAsset: 'assets/images/icon_kerja_home.svg',
-                    label: 'Laporan \nPekerjaan\n(${activityController.activities.length} laporan)',
-                    onTap: () => Get.toNamed(Routes.workReport),
-                  )),
-                  _MenuItem(
-                    iconAsset: 'assets/images/icon_absen_home.svg',
-                    label: 'Laporan Alat',
-                    onTap: () => Get.toNamed(Routes.equipmentReport),
-                  ),
+                        iconAsset: 'assets/images/icon_spk_home.svg',
+                        label:
+                            'Daftar SPK \n(${spkController.spks.length} SPK)',
+                        onTap: () => Get.toNamed(Routes.spk),
+                      )),
+                  // Only show "Laporan Pekerjaan" if user is not supervisor
+                  if (user?.role.roleName.toLowerCase() != 'supervisor')
+                    Obx(() => _MenuItem(
+                          iconAsset: 'assets/images/icon_kerja_home.svg',
+                          label:
+                              'Laporan \nPekerjaan\n(${activityController.activities.length} laporan)',
+                          onTap: () => Get.toNamed(Routes.workReport),
+                        )),
+                  // Only show "Laporan Alat" if user is not supervisor
+                  if (user?.role.roleName.toLowerCase() != 'supervisor')
+                    _MenuItem(
+                      iconAsset: 'assets/images/icon_absen_home.svg',
+                      label: 'Laporan Alat',
+                      onTap: () => Get.toNamed(Routes.equipmentReport),
+                    ),
+
+                  // Only show "Approval Laporan" if user is supervisor
+                  if (user?.role.roleName.toLowerCase() == 'supervisor')
+                    _MenuItem(
+                      iconAsset: 'assets/images/icon_kerja_home.svg',
+                      label: 'Approval\nLaporan',
+                      onTap: () => Get.toNamed(Routes.areaReport),
+                    ),
+                  // Only show "Approval Alat" if user is supervisor
+                  if (user?.role.roleName.toLowerCase() == 'supervisor')
+                    _MenuItem(
+                      iconAsset: 'assets/images/icon_absen_home.svg',
+                      label: 'Approval\nAlat',
+                      onTap: () => Get.toNamed(Routes.equipmentApproval),
+                    ),
                   _MenuItem(
                     iconAsset: 'assets/images/icon_perusahaan.svg',
                     label: 'Profile Perusahaan',
@@ -295,6 +426,62 @@ class _InfoStat extends StatelessWidget {
   }
 }
 
+class _InfoStatVertical extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  final String subtitle;
+  const _InfoStatVertical({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.subtitle,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: Colors.white,
+          size: 20,
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.dmSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: GoogleFonts.dmSans(
+                color: Colors.white.withOpacity(0.75),
+                fontWeight: FontWeight.w400,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: GoogleFonts.dmSans(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _MenuItem extends StatelessWidget {
   final String iconAsset;
   final String label;
@@ -329,4 +516,4 @@ class _MenuItem extends StatelessWidget {
       ),
     );
   }
-} 
+}

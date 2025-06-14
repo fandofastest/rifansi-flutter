@@ -22,6 +22,99 @@ class WorkProgressForm extends StatelessWidget {
   final RxBool isSubmitting = false.obs;
   final RxString workProgressSearchQuery = ''.obs;
 
+  // Menghitung progress harian berdasarkan input hari ini
+  double _calculateDailyProgressPercentage() {
+    if (controller.workProgresses.isEmpty) return 0.0;
+
+    double totalActualVolume = 0.0;
+    double totalTargetVolume = 0.0;
+
+    for (var progress in controller.workProgresses) {
+      // Hitung volume aktual hari ini (yang diinput user)
+      double actualVolume = 0.0;
+      double targetVolume = 0.0;
+
+      if (progress.boqVolumeR > 0 && progress.boqVolumeNR > 0) {
+        // Jika ada kedua jenis volume, ambil yang aktif (yang lebih besar)
+        if (progress.boqVolumeR >= progress.boqVolumeNR) {
+          actualVolume = progress.progressVolumeR;
+          targetVolume = progress.dailyTargetR;
+        } else {
+          actualVolume = progress.progressVolumeNR;
+          targetVolume = progress.dailyTargetNR;
+        }
+      } else if (progress.boqVolumeR > 0) {
+        actualVolume = progress.progressVolumeR;
+        targetVolume = progress.dailyTargetR;
+      } else if (progress.boqVolumeNR > 0) {
+        actualVolume = progress.progressVolumeNR;
+        targetVolume = progress.dailyTargetNR;
+      }
+
+      totalActualVolume += actualVolume;
+      totalTargetVolume += targetVolume;
+    }
+
+    // Progress = (Total Actual Volume / Total Target Volume) * 100
+    return totalTargetVolume > 0
+        ? (totalActualVolume / totalTargetVolume) * 100
+        : 0.0;
+  }
+
+  // Menghitung total progress kumulatif s/d hari ini
+  double _calculateCumulativeProgressPercentage() {
+    final spkDetail =
+        Get.find<AddWorkReportController>().spkDetailsWithProgress.value;
+    final dailyActivities = spkDetail?.dailyActivities ?? [];
+    final workItems =
+        dailyActivities.isNotEmpty ? dailyActivities.first.workItems : [];
+
+    if (workItems.isEmpty || controller.workProgresses.isEmpty) return 0.0;
+
+    double totalCumulativeVolume = 0.0;
+    double totalBoqVolume = 0.0;
+
+    for (int i = 0;
+        i < controller.workProgresses.length && i < workItems.length;
+        i++) {
+      final progress = controller.workProgresses[i];
+      final workItem = workItems[i];
+
+      // Tentukan volume yang aktif dan hitung progress kumulatif
+      double cumulativeVolume = 0.0;
+      double boqVolume = 0.0;
+
+      if (progress.boqVolumeR > 0 && progress.boqVolumeNR > 0) {
+        // Jika ada kedua jenis volume, ambil yang aktif (yang lebih besar)
+        if (progress.boqVolumeR >= progress.boqVolumeNR) {
+          cumulativeVolume =
+              workItem.progressAchieved.r + progress.progressVolumeR;
+          boqVolume = progress.boqVolumeR;
+        } else {
+          cumulativeVolume =
+              workItem.progressAchieved.nr + progress.progressVolumeNR;
+          boqVolume = progress.boqVolumeNR;
+        }
+      } else if (progress.boqVolumeR > 0) {
+        cumulativeVolume =
+            workItem.progressAchieved.r + progress.progressVolumeR;
+        boqVolume = progress.boqVolumeR;
+      } else if (progress.boqVolumeNR > 0) {
+        cumulativeVolume =
+            workItem.progressAchieved.nr + progress.progressVolumeNR;
+        boqVolume = progress.boqVolumeNR;
+      }
+
+      totalCumulativeVolume += cumulativeVolume;
+      totalBoqVolume += boqVolume;
+    }
+
+    // Progress = (Total Cumulative Volume / Total BOQ Volume) * 100
+    return totalBoqVolume > 0
+        ? (totalCumulativeVolume / totalBoqVolume) * 100
+        : 0.0;
+  }
+
   Widget _buildProgressInputs(WorkProgress progress, int index) {
     final spkDetail =
         Get.find<AddWorkReportController>().spkDetailsWithProgress.value;
@@ -485,11 +578,11 @@ class WorkProgressForm extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             _buildInfoRow('Progress Hari Ini',
-                                '${controller.totalProgressPercentage.toStringAsFixed(2)}%'),
+                                '${_calculateDailyProgressPercentage().toStringAsFixed(2)}%'),
                             _buildInfoRow('Nilai Progress Hari Ini',
                                 'Rp ${numberFormat.format(controller.totalValue.value)}'),
                             _buildInfoRow('Total Progress s/d Hari Ini',
-                                '${(controller.totalProgressPercentage * 1.5).toStringAsFixed(2)}%'),
+                                '${_calculateCumulativeProgressPercentage().toStringAsFixed(2)}%'),
                           ],
                         ),
                       ),
@@ -531,7 +624,8 @@ class WorkProgressForm extends StatelessWidget {
                               'Rp ${numberFormat.format(reportController.selectedEquipment.fold(0.0, (sum, entry) {
                                 // Gunakan tarif harian (rentalRatePerDay) bukan per jam
                                 final rentalRatePerDay =
-                                    entry.selectedContract?.rentalRatePerDay ?? 0.0;
+                                    entry.selectedContract?.rentalRatePerDay ??
+                                        0.0;
                                 final fuelUsed =
                                     entry.fuelIn - entry.fuelRemaining;
                                 final fuelPricePerLiter = entry.equipment
@@ -550,7 +644,8 @@ class WorkProgressForm extends StatelessWidget {
                                 .expand((entry) {
                               // Gunakan tarif harian (rentalRatePerDay) bukan per jam
                               final rentalRatePerDay =
-                                  entry.selectedContract?.rentalRatePerDay ?? 0.0;
+                                  entry.selectedContract?.rentalRatePerDay ??
+                                      0.0;
                               final fuelUsed =
                                   entry.fuelIn - entry.fuelRemaining;
                               final fuelPricePerLiter = entry.equipment
@@ -699,6 +794,7 @@ class WorkProgressForm extends StatelessWidget {
                     // Submit Button
                     ElevatedButton(
                       onPressed: () async {
+                        // Validasi foto akhir kerja
                         final reportController =
                             Get.find<AddWorkReportController>();
                         if (reportController.endPhotos.isEmpty) {
@@ -712,6 +808,36 @@ class WorkProgressForm extends StatelessWidget {
                           );
                           return;
                         }
+
+                        // Enhanced validation and debugging
+                        print('[WorkProgressForm] === SUBMIT VALIDATION ===');
+                        print(
+                            'reportController.selectedSpk.value: ${reportController.selectedSpk.value}');
+                        print(
+                            'reportController.selectedSpk.value?.id: ${reportController.selectedSpk.value?.id}');
+                        print(
+                            'reportController.selectedSpk.value?.spkNo: ${reportController.selectedSpk.value?.spkNo}');
+                        print(
+                            'reportController.spkList.length: ${reportController.spkList.length}');
+
+                        // Use the validation method
+                        if (!reportController.validateControllerState()) {
+                          print(
+                              '[WorkProgressForm] ERROR: Controller state validation failed!');
+                          Get.snackbar(
+                            'Error',
+                            'Data tidak lengkap. Silakan kembali dan pastikan SPK sudah dipilih.',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Colors.red[100],
+                            colorText: Colors.red[900],
+                            duration: const Duration(seconds: 3),
+                          );
+                          return;
+                        }
+
+                        print(
+                            '[WorkProgressForm] Controller state validation passed, proceeding with submit');
+
                         isSubmitting.value = true;
                         final success =
                             await reportController.submitWorkReport();
@@ -732,7 +858,7 @@ class WorkProgressForm extends StatelessWidget {
                         } else {
                           Get.snackbar(
                             'Error',
-                            'Gagal menyimpan laporan: \\${reportController.error.value}',
+                            'Gagal menyimpan laporan: ${reportController.error.value}',
                             snackPosition: SnackPosition.BOTTOM,
                             backgroundColor: Colors.red[100],
                             colorText: Colors.red[900],
@@ -773,7 +899,8 @@ class WorkProgressForm extends StatelessWidget {
       0.0,
       (sum, entry) {
         // Gunakan tarif harian (rentalRatePerDay) bukan per jam
-        final rentalRatePerDay = entry.selectedContract?.rentalRatePerDay ?? 0.0;
+        final rentalRatePerDay =
+            entry.selectedContract?.rentalRatePerDay ?? 0.0;
         final fuelUsed = entry.fuelIn - entry.fuelRemaining;
         final fuelPricePerLiter =
             entry.equipment.currentFuelPrice?.pricePerLiter ?? 0.0;
@@ -1020,19 +1147,21 @@ class WorkProgressForm extends StatelessWidget {
                         final entry = filtered[idx];
                         final progress = entry.value;
                         final index = entry.key;
-                        
+
                         // Tentukan jenis BOQ yang aktif
                         final bool isN = progress.boqVolumeR > 0;
                         final bool isNR = progress.boqVolumeNR > 0;
-                        
+
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: ExpansionTile(
-                            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            tilePadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            childrenPadding:
+                                const EdgeInsets.fromLTRB(16, 0, 16, 16),
                             title: Text(
                               progress.workItemName,
                               style: GoogleFonts.dmSans(
@@ -1061,7 +1190,8 @@ class WorkProgressForm extends StatelessWidget {
                               ],
                             ),
                             trailing: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: FigmaColors.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),

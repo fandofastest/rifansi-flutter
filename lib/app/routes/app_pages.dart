@@ -5,6 +5,7 @@ import '../modules/home/home_page.dart';
 import 'app_routes.dart';
 import '../modules/home/home_binding.dart';
 import 'auth_middleware.dart';
+import 'supervisor_middleware.dart';
 import '../modules/settings/settings_page.dart';
 import '../modules/spk/spk_page.dart';
 import '../modules/spk/spk_binding.dart';
@@ -16,6 +17,10 @@ import '../modules/add_work_report/add_work_report_page.dart';
 import '../modules/add_work_report/add_work_report_binding.dart';
 import '../modules/equipment_report/equipment_report_page.dart';
 import '../modules/equipment_report/equipment_report_binding.dart';
+import '../modules/area_report/area_report_page.dart';
+import '../modules/area_report/area_report_binding.dart';
+import '../modules/equipment_approval/equipment_approval_page.dart';
+import '../modules/equipment_approval/equipment_approval_binding.dart';
 
 class AppPages {
   static final pages = [
@@ -66,6 +71,18 @@ class AppPages {
       page: () => const EquipmentReportPage(),
       binding: EquipmentReportBinding(),
       middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: Routes.areaReport,
+      page: () => const AreaReportPage(),
+      binding: AreaReportBinding(),
+      middlewares: [AuthMiddleware(), SupervisorMiddleware()],
+    ),
+    GetPage(
+      name: Routes.equipmentApproval,
+      page: () => const EquipmentApprovalPage(),
+      binding: EquipmentApprovalBinding(),
+      middlewares: [AuthMiddleware(), SupervisorMiddleware()],
     ),
   ];
 }

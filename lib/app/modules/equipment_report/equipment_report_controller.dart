@@ -18,9 +18,10 @@ class EquipmentReportController extends GetxController {
   // Image upload related
   final isUploadingPhoto = false.obs;
   final uploadProgress = 0.0.obs;
-  
+
   // Upload configuration
-  final String uploadToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MmE5NzUzOTRlNGQ3ZWJkMDc1YjM2NyIsImlhdCI6MTc0NzYyMTgyMywiZXhwIjoxNzc4NzI1ODIzfQ.teq_-tgZBuaQQ5h3DxcY5xHmZIIEA6NA8omq2NLnGq8';
+  final String uploadToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MmE5NzUzOTRlNGQ3ZWJkMDc1YjM2NyIsImlhdCI6MTc0NzYyMTgyMywiZXhwIjoxNzc4NzI1ODIzfQ.teq_-tgZBuaQQ5h3DxcY5xHmZIIEA6NA8omq2NLnGq8';
   final String uploadUrl = 'https://cloudfiles.fando.id/api/files/upload';
 
   @override
@@ -40,22 +41,40 @@ class EquipmentReportController extends GetxController {
   Future<void> fetchEquipments() async {
     try {
       final graphQLService = Get.find<GraphQLService>();
-      final fetchedEquipments = await graphQLService.fetchEquipments();
+
+      // Add timeout to prevent hanging
+      final fetchedEquipments = await graphQLService
+          .fetchEquipments()
+          .timeout(const Duration(seconds: 30), onTimeout: () {
+        throw TimeoutException('Timeout saat mengambil data equipment',
+            const Duration(seconds: 30));
+      });
+
       equipmentList.value = fetchedEquipments;
       print('[EquipmentReport] Fetched ${equipmentList.length} equipments');
     } catch (e) {
       print('[EquipmentReport] Error fetching equipments: $e');
+      // Don't show snackbar during initialization, just log the error
     }
   }
 
   Future<void> fetchAreas() async {
     try {
       final graphQLService = Get.find<GraphQLService>();
-      final fetchedAreas = await graphQLService.getAllAreas();
+
+      // Add timeout to prevent hanging
+      final fetchedAreas = await graphQLService
+          .getAllAreas()
+          .timeout(const Duration(seconds: 30), onTimeout: () {
+        throw TimeoutException(
+            'Timeout saat mengambil data area', const Duration(seconds: 30));
+      });
+
       areaList.value = fetchedAreas;
       print('[EquipmentReport] Fetched ${areaList.length} areas');
     } catch (e) {
       print('[EquipmentReport] Error fetching areas: $e');
+      // Don't show snackbar during initialization, just log the error
     }
   }
 
@@ -65,11 +84,18 @@ class EquipmentReportController extends GetxController {
       error.value = '';
 
       final graphQLService = Get.find<GraphQLService>();
-      final fetchedReports = await graphQLService.fetchEquipmentRepairReports();
-      
+
+      // Add timeout to prevent hanging
+      final fetchedReports = await graphQLService
+          .fetchEquipmentRepairReports()
+          .timeout(const Duration(seconds: 30), onTimeout: () {
+        throw TimeoutException(
+            'Timeout saat mengambil data laporan', const Duration(seconds: 30));
+      });
+
       reports.value = fetchedReports;
       print('[EquipmentReport] Fetched ${reports.length} equipment reports');
-      
+
       // Debug logging to check data structure
       if (reports.isNotEmpty) {
         print('[EquipmentReport] Sample report data:');
@@ -78,7 +104,7 @@ class EquipmentReportController extends GetxController {
         print('- Location: ${sampleReport['location']}');
         print('- Problem: ${sampleReport['problemDescription']}');
         print('- Status: ${sampleReport['status']}');
-        
+
         // Specifically check location structure
         if (sampleReport['location'] != null) {
           print('- Location Name: ${sampleReport['location']['name']}');
@@ -90,15 +116,17 @@ class EquipmentReportController extends GetxController {
     } catch (e) {
       print('[EquipmentReport] Error fetching reports: $e');
       error.value = e.toString();
-      
-      // Show error to user
-      Get.snackbar(
-        'Error',
-        'Gagal mengambil data laporan: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.error.withOpacity(0.1),
-        colorText: Get.theme.colorScheme.error,
-      );
+
+      // Show error to user only if it's not a timeout during initialization
+      if (!e.toString().contains('Timeout')) {
+        Get.snackbar(
+          'Error',
+          'Gagal mengambil data laporan: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.error.withOpacity(0.1),
+          colorText: Get.theme.colorScheme.error,
+        );
+      }
     } finally {
       isLoading.value = false;
     }
@@ -139,21 +167,25 @@ class EquipmentReportController extends GetxController {
 
         // Add headers
         request.headers.set('Authorization', 'Bearer $uploadToken');
-        request.headers.set('Content-Type', 'multipart/form-data; boundary=$boundary');
+        request.headers
+            .set('Content-Type', 'multipart/form-data; boundary=$boundary');
 
         // Prepare body parts
         final parts = <List<int>>[];
 
         // Add field isPublic
         parts.add(utf8.encode('--$boundary\r\n'));
-        parts.add(utf8.encode('Content-Disposition: form-data; name="isPublic"\r\n\r\n'));
+        parts.add(utf8
+            .encode('Content-Disposition: form-data; name="isPublic"\r\n\r\n'));
         parts.add(utf8.encode('true\r\n'));
 
         // Add file
         final filename = file.path.split('/').last;
         parts.add(utf8.encode('--$boundary\r\n'));
-        parts.add(utf8.encode('Content-Disposition: form-data; name="file"; filename="$filename"\r\n'));
-        parts.add(utf8.encode('Content-Type: application/octet-stream\r\n\r\n'));
+        parts.add(utf8.encode(
+            'Content-Disposition: form-data; name="file"; filename="$filename"\r\n'));
+        parts
+            .add(utf8.encode('Content-Type: application/octet-stream\r\n\r\n'));
         parts.add(bytes);
         parts.add(utf8.encode('\r\n'));
 
@@ -199,7 +231,8 @@ class EquipmentReportController extends GetxController {
               uploadedAt: DateTime.now(),
             );
 
-            print('[PhotoUpload] Successfully uploaded photo: ${workPhoto.accessUrl}');
+            print(
+                '[PhotoUpload] Successfully uploaded photo: ${workPhoto.accessUrl}');
 
             if (!completer.isCompleted) {
               completer.complete(workPhoto);
@@ -212,7 +245,8 @@ class EquipmentReportController extends GetxController {
           }
         } else {
           if (!completer.isCompleted) {
-            error.value = 'Upload failed with status: ${httpResponse.statusCode}, $responseBody';
+            error.value =
+                'Upload failed with status: ${httpResponse.statusCode}, $responseBody';
             completer.complete(null);
           }
         }
@@ -239,7 +273,8 @@ class EquipmentReportController extends GetxController {
     }
   }
 
-  Future<List<WorkPhoto>> pickAndUploadMultiplePhotos(ImageSource source) async {
+  Future<List<WorkPhoto>> pickAndUploadMultiplePhotos(
+      ImageSource source) async {
     try {
       // Pick photos from gallery or camera
       final ImagePicker picker = ImagePicker();
@@ -275,13 +310,14 @@ class EquipmentReportController extends GetxController {
       error.value = '';
 
       final graphQLService = Get.find<GraphQLService>();
-      final result = await graphQLService.createEquipmentRepairReport(reportData);
-      
+      final result =
+          await graphQLService.createEquipmentRepairReport(reportData);
+
       print('[EquipmentReport] Created report: ${result['id']}');
-      
+
       // Refresh reports list
       await fetchReports();
-      
+
       // Show success message
       Get.snackbar(
         'Sukses',
@@ -293,7 +329,7 @@ class EquipmentReportController extends GetxController {
     } catch (e) {
       print('[EquipmentReport] Error creating report: $e');
       error.value = e.toString();
-      
+
       // Show error to user
       Get.snackbar(
         'Error',
@@ -347,4 +383,4 @@ class WorkPhoto {
       uploadedAt: DateTime.fromMillisecondsSinceEpoch(json['uploadedAt']),
     );
   }
-} 
+}

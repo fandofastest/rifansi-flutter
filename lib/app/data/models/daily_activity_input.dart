@@ -299,15 +299,22 @@ class DailyActivity {
       spkResponse = SPKResponse(
         id: spkId,
         spkNo: '',
+        wapNo: '',
         title: 'SPK Draft',
         projectName: '',
+        contractor: '',
+        budget: 0.0,
+        startDate: '',
+        endDate: '',
+        workDescription: '',
+        date: '',
       );
     }
 
     return DailyActivityResponse(
       id: this.id.isEmpty ? this.localId : this.id,
       date: this.date,
-      location: this.areaId,
+      location: this.spkDetails?.location?.name ?? this.areaId,
       weather: this.weather,
       status: this.status,
       workStartTime: this.workStartTime,
@@ -396,6 +403,7 @@ class DailyActivity {
       }).toList(),
       spkDetail: spkResponse,
       userDetail: dummyUser,
+      isApproved: false,
     );
   }
 
@@ -675,8 +683,15 @@ class EnhancedSPKResponse extends SPKResponse {
   }) : super(
           id: id,
           spkNo: spkNo,
+          wapNo: '',
           title: title,
           projectName: projectName,
+          contractor: '',
+          budget: 0.0,
+          startDate: '',
+          endDate: '',
+          workDescription: '',
+          date: '',
         );
 
   @override

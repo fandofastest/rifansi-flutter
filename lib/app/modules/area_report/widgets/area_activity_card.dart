@@ -1,112 +1,354 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../../data/models/daily_activity_response.dart';
-import '../../../theme/app_theme.dart';
-import 'package:intl/intl.dart';
 import 'package:get/get.dart';
-import '../../../controllers/daily_activity_controller.dart';
-import '../../../routes/app_routes.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../theme/app_theme.dart';
+import '../../../data/models/daily_activity_response.dart';
+import '../../work_report/widgets/daily_activity_card.dart';
 
-class DailyActivityCard extends StatelessWidget {
+class AreaActivityCard extends StatelessWidget {
   final DailyActivityResponse activity;
-  final VoidCallback? onTap;
+  final VoidCallback? onApprove;
+  final VoidCallback? onReject;
+  final bool showActions;
 
-  const DailyActivityCard({
+  const AreaActivityCard({
     Key? key,
     required this.activity,
-    this.onTap,
+    this.onApprove,
+    this.onReject,
+    this.showActions = true,
   }) : super(key: key);
 
-  bool isReportFromToday() {
-    try {
-      DateTime reportDate;
-      try {
-        // Coba parse sebagai epoch milliseconds
-        final epochMs = int.parse(activity.date);
-        reportDate = DateTime.fromMillisecondsSinceEpoch(epochMs);
-      } catch (_) {
-        // Coba parse sebagai ISO date string
-        reportDate = DateTime.parse(activity.date);
-      }
-
-      final now = DateTime.now();
-      return reportDate.year == now.year &&
-          reportDate.month == now.month &&
-          reportDate.day == now.day;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  String getFormattedDate() {
-    try {
-      // Format: "1697328000000" -> epoch miliseconds
-      final epochMs = int.parse(activity.date);
-      final dateTime = DateTime.fromMillisecondsSinceEpoch(epochMs);
-      return DateFormat('dd MMMM yyyy', 'id_ID').format(dateTime);
-    } catch (_) {
-      try {
-        // Fallback if it's direct date string
-        return DateFormat('dd MMMM yyyy', 'id_ID')
-            .format(DateTime.parse(activity.date));
-      } catch (e) {
-        return activity.date;
-      }
-    }
-  }
-
-  String getFormattedTime(String? time) {
-    if (time == null || time.isEmpty) return "--:--";
-    try {
-      // Coba parse sebagai ISO format
-      final dateTime = DateTime.parse(time);
-      return DateFormat('HH:mm').format(dateTime);
-    } catch (e) {
-      print('Error parsing time: $time, Error: $e');
-      return "--:--";
-    }
-  }
-
-  String getFormattedProgressPercentage() {
-    // Bulatkan ke bawah dan format ke 2 angka desimal
-    final percentage = (activity.progressPercentage * 100).floor() / 100;
-    return '${percentage.toStringAsFixed(2)}%';
-  }
-
-  // Fungsi untuk mendapatkan warna dan shade untuk status
-  (Color, Color) getStatusColors(String status) {
-    switch (status.toLowerCase()) {
-      case 'draft':
-        return (Colors.orange, Colors.orange[800] ?? Colors.orange);
-      case 'menunggu progress':
-        return (Colors.blue, Colors.blue[800] ?? Colors.blue);
-      case 'selesai':
-      case 'disetujui':
-        return (Colors.green, Colors.green[800] ?? Colors.green);
-      default:
-        return (Colors.grey, Colors.grey[800] ?? Colors.grey);
-    }
-  }
-
-  // Fungsi untuk mendapatkan label status
-  Widget buildStatusLabel(String status) {
-    final (baseColor, textColor) = getStatusColors(status);
+  @override
+  Widget build(BuildContext context) {
+    final status = activity.status.toLowerCase();
+    final isRejected = status.contains('rejected');
+    final isApproved = status.contains('approved');
+    final isSubmitted = status.contains('submitted');
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: baseColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isRejected
+              ? Colors.red.shade300
+              : isApproved
+                  ? Colors.green.shade300
+                  : isSubmitted
+                      ? Colors.orange.shade300
+                      : Colors.grey.shade200,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Text(
-        status.toUpperCase(),
-        style: GoogleFonts.dmSans(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: textColor,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header dengan status dan info utama
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon status
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isRejected
+                        ? Colors.red.shade100
+                        : isApproved
+                            ? Colors.green.shade100
+                            : Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isRejected
+                        ? Icons.cancel_outlined
+                        : isApproved
+                            ? Icons.check_circle_outlined
+                            : Icons.pending_actions,
+                    color: isRejected
+                        ? Colors.red.shade600
+                        : isApproved
+                            ? Colors.green.shade600
+                            : Colors.orange.shade600,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Info utama
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        activity.spkDetail?.title ?? 'Laporan Kerja',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: FigmaColors.hitam,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'SPK: ${activity.spkDetail?.spkNo ?? activity.id}',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          color: FigmaColors.abu,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Status badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isRejected
+                              ? Colors.red.shade50
+                              : isApproved
+                                  ? Colors.green.shade50
+                                  : Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isRejected
+                                ? Colors.red.shade200
+                                : isApproved
+                                    ? Colors.green.shade200
+                                    : Colors.orange.shade200,
+                          ),
+                        ),
+                        child: Text(
+                          isRejected
+                              ? 'Ditolak'
+                              : isApproved
+                                  ? 'Disetujui'
+                                  : 'Menunggu Approval',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isRejected
+                                ? Colors.red.shade700
+                                : isApproved
+                                    ? Colors.green.shade700
+                                    : Colors.orange.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Tombol detail
+                GestureDetector(
+                  onTap: () => _showDetailDialog(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: FigmaColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.info_outline,
+                      color: FigmaColors.primary,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // Info detail dalam card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: FigmaColors.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  _buildInfoRow(
+                    Icons.person_outline,
+                    'Dilaporkan oleh',
+                    activity.userDetail.fullName,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInfoRow(
+                    Icons.calendar_today_outlined,
+                    'Tanggal',
+                    _formatDate(activity.date),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInfoRow(
+                    Icons.location_on_outlined,
+                    'Lokasi',
+                    activity.location.isNotEmpty ? activity.location : 'N/A',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInfoRow(
+                    Icons.trending_up_outlined,
+                    'Progress',
+                    '${activity.progressPercentage.toStringAsFixed(1)}%',
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Tombol aksi - hanya tampil untuk status "Submitted"
+            if (showActions &&
+                activity.status.toLowerCase().contains('submitted')) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onReject,
+                      icon: const Icon(Icons.close, size: 18),
+                      label: Text(
+                        'Tolak',
+                        style: GoogleFonts.dmSans(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red.shade600,
+                        side: BorderSide(color: Colors.red.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: onApprove,
+                      icon: const Icon(Icons.check, size: 18),
+                      label: Text(
+                        'Setujui',
+                        style: GoogleFonts.dmSans(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade600,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ] else if (isRejected && activity.rejectionReason != null) ...[
+              // Tampilkan alasan penolakan jika ada
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.red.shade600,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Alasan penolakan: ${activity.rejectionReason}',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          color: Colors.red.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: FigmaColors.abu,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '$label:',
+          style: GoogleFonts.dmSans(
+            fontSize: 12,
+            color: FigmaColors.abu,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: GoogleFonts.dmSans(
+              fontSize: 12,
+              color: FigmaColors.hitam,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final timestamp = int.parse(dateString);
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des'
+      ];
+      return '${dateTime.day} ${months[dateTime.month - 1]} ${dateTime.year}';
+    } catch (_) {
+      return dateString;
+    }
   }
 
   void _showDetailDialog(BuildContext context) {
@@ -155,65 +397,6 @@ class DailyActivityCard extends StatelessWidget {
       print(
           '[COST DEBUG] Sample other cost: ${sample.description}, type: ${sample.costType}, amount: ${sample.amount}');
     }
-
-    // Detailed logging for ALL equipment logs
-    print('[COST DEBUG] === ALL EQUIPMENT LOGS ===');
-    for (int i = 0; i < activity.equipmentLogs.length; i++) {
-      final log = activity.equipmentLogs[i];
-      print('[COST DEBUG] Equipment $i:');
-      print('[COST DEBUG] - ID: ${log.id}');
-      print('[COST DEBUG] - Equipment: ${log.equipment}');
-      print('[COST DEBUG] - Equipment Code: ${log.equipment?.equipmentCode}');
-      print('[COST DEBUG] - Working Hour: ${log.workingHour}');
-      print('[COST DEBUG] - Hourly Rate: ${log.hourlyRate}');
-      print('[COST DEBUG] - Fuel In: ${log.fuelIn}');
-      print('[COST DEBUG] - Fuel Remaining: ${log.fuelRemaining}');
-      print('[COST DEBUG] - Is Broken: ${log.isBrokenReported}');
-      print('[COST DEBUG] - Remarks: ${log.remarks}');
-    }
-
-    // Detailed logging for ALL manpower logs
-    print('[COST DEBUG] === ALL MANPOWER LOGS ===');
-    for (int i = 0; i < activity.manpowerLogs.length; i++) {
-      final log = activity.manpowerLogs[i];
-      print('[COST DEBUG] Manpower $i:');
-      print('[COST DEBUG] - ID: ${log.id}');
-      print('[COST DEBUG] - Personnel Role: ${log.personnelRole}');
-      print('[COST DEBUG] - Role Name: ${log.personnelRole?.roleName}');
-      print('[COST DEBUG] - Person Count: ${log.personCount}');
-      print(
-          '[COST DEBUG] - Normal Hours Per Person: ${log.normalHoursPerPerson}');
-      print('[COST DEBUG] - Normal Hourly Rate: ${log.normalHourlyRate}');
-      print('[COST DEBUG] - Overtime Hourly Rate: ${log.overtimeHourlyRate}');
-    }
-
-    // Detailed logging for ALL material logs
-    print('[COST DEBUG] === ALL MATERIAL LOGS ===');
-    for (int i = 0; i < activity.materialUsageLogs.length; i++) {
-      final log = activity.materialUsageLogs[i];
-      print('[COST DEBUG] Material $i:');
-      print('[COST DEBUG] - ID: ${log.id}');
-      print('[COST DEBUG] - Material: ${log.material}');
-      print('[COST DEBUG] - Material Name: ${log.material?.name}');
-      print('[COST DEBUG] - Quantity: ${log.quantity}');
-      print('[COST DEBUG] - Unit Rate: ${log.unitRate}');
-      print('[COST DEBUG] - Remarks: ${log.remarks}');
-    }
-
-    // Detailed logging for ALL other costs
-    print('[COST DEBUG] === ALL OTHER COSTS ===');
-    for (int i = 0; i < activity.otherCosts.length; i++) {
-      final cost = activity.otherCosts[i];
-      print('[COST DEBUG] Other Cost $i:');
-      print('[COST DEBUG] - ID: ${cost.id}');
-      print('[COST DEBUG] - Cost Type: ${cost.costType}');
-      print('[COST DEBUG] - Description: ${cost.description}');
-      print('[COST DEBUG] - Amount: ${cost.amount}');
-      print('[COST DEBUG] - Receipt Number: ${cost.receiptNumber}');
-      print('[COST DEBUG] - Remarks: ${cost.remarks}');
-    }
-
-    print('[COST DEBUG] === END RAW DATA ===');
 
     Get.dialog(
       Dialog(
@@ -371,24 +554,19 @@ class DailyActivityCard extends StatelessWidget {
                         'Informasi Laporan',
                         [
                           _buildDetailRow('Status', activity.status),
-                          _buildDetailRow('Tanggal', getFormattedDate()),
+                          _buildDetailRow(
+                              'Tanggal', _formatDate(activity.date)),
                           _buildDetailRow(
                               'Lokasi',
-                              activity.location ??
-                                  activity.spkDetail?.location?.name ??
-                                  activity.areaId ??
-                                  'N/A'),
-                          _buildDetailRow(
-                              'Cuaca',
-                              activity.weather.isNotEmpty
-                                  ? activity.weather
-                                  : 'Tidak dicatat'),
+                              activity.location.isNotEmpty
+                                  ? activity.location
+                                  : 'N/A'),
                           _buildDetailRow('Waktu Mulai',
-                              getFormattedTime(activity.workStartTime)),
+                              _formatTime(activity.workStartTime)),
                           _buildDetailRow('Waktu Selesai',
-                              getFormattedTime(activity.workEndTime)),
+                              _formatTime(activity.workEndTime)),
                           _buildDetailRow('Progress Harian',
-                              getFormattedProgressPercentage()),
+                              '${activity.progressPercentage.toStringAsFixed(2)}%'),
                         ],
                       ),
 
@@ -904,6 +1082,72 @@ class DailyActivityCard extends StatelessWidget {
     );
   }
 
+  // Helper methods untuk dialog detail
+  String _formatTime(String? time) {
+    if (time == null || time.isEmpty) return "--:--";
+    try {
+      final dateTime = DateTime.parse(time);
+      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return "--:--";
+    }
+  }
+
+  String _formatCurrency(double amount) {
+    if (amount >= 1000000000) {
+      return '${(amount / 1000000000).toStringAsFixed(1)}M';
+    } else if (amount >= 1000000) {
+      return '${(amount / 1000000).toStringAsFixed(1)}jt';
+    } else if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(0)}rb';
+    } else {
+      return amount.toStringAsFixed(0);
+    }
+  }
+
+  double _calculateEquipmentTotal() {
+    double total = 0.0;
+    for (final log in activity.equipmentLogs) {
+      final fuelCost = log.fuelIn * log.fuelPrice;
+      final cost = fuelCost + log.rentalRatePerDay;
+      total += cost;
+    }
+    return total;
+  }
+
+  double _calculateManpowerTotal() {
+    double total = 0.0;
+    for (final log in activity.manpowerLogs) {
+      final cost = log.normalHourlyRate * log.personCount * log.workingHours;
+      total += cost;
+    }
+    return total;
+  }
+
+  double _calculateMaterialTotal() {
+    double total = 0.0;
+    for (final log in activity.materialUsageLogs) {
+      final cost = log.quantity * log.unitRate;
+      total += cost;
+    }
+    return total;
+  }
+
+  double _calculateOtherCostsTotal() {
+    double total = 0.0;
+    for (final cost in activity.otherCosts) {
+      total += cost.amount;
+    }
+    return total;
+  }
+
+  double _calculateGrandTotal() {
+    return _calculateEquipmentTotal() +
+        _calculateManpowerTotal() +
+        _calculateMaterialTotal() +
+        _calculateOtherCostsTotal();
+  }
+
   Widget _buildDetailSection(String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -912,21 +1156,20 @@ class DailyActivityCard extends StatelessWidget {
           title,
           style: GoogleFonts.dmSans(
             fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: FigmaColors.primary,
+            fontWeight: FontWeight.w700,
+            color: FigmaColors.hitam,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(8),
+            color: FigmaColors.background,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey.shade200),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: children,
           ),
         ),
@@ -947,7 +1190,7 @@ class DailyActivityCard extends StatelessWidget {
               style: GoogleFonts.dmSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.black54,
+                color: FigmaColors.abu,
               ),
             ),
           ),
@@ -956,639 +1199,11 @@ class DailyActivityCard extends StatelessWidget {
               value,
               style: GoogleFonts.dmSans(
                 fontSize: 14,
-                color: Colors.black87,
+                color: FigmaColors.hitam,
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // Helper methods for cost calculations
-  String _formatCurrency(double amount) {
-    if (amount >= 1000000000) {
-      return '${(amount / 1000000000).toStringAsFixed(1)}M';
-    } else if (amount >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(1)}jt';
-    } else if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(0)}rb';
-    } else {
-      return amount.toStringAsFixed(0);
-    }
-  }
-
-  double _calculateEquipmentTotal() {
-    print('[COST DEBUG] === EQUIPMENT CALCULATION ===');
-    print(
-        '[COST DEBUG] Equipment logs count: ${activity.equipmentLogs.length}');
-
-    double total = 0.0;
-    for (int i = 0; i < activity.equipmentLogs.length; i++) {
-      final log = activity.equipmentLogs[i];
-
-      // Calculate fuel cost: fuelIn * fuelPrice
-      final fuelCost = log.fuelIn * log.fuelPrice;
-
-      // Total equipment cost: fuel cost + rental rate per day
-      final cost = fuelCost + log.rentalRatePerDay;
-
-      print(
-          '[COST DEBUG] Equipment $i: ${log.equipment?.equipmentCode ?? "Unknown"}');
-      print('[COST DEBUG] - Fuel In: ${log.fuelIn}L');
-      print('[COST DEBUG] - Fuel Price: Rp ${log.fuelPrice}/L');
-      print('[COST DEBUG] - Fuel Cost: Rp $fuelCost');
-      print('[COST DEBUG] - Rental Rate Per Day: Rp ${log.rentalRatePerDay}');
-      print('[COST DEBUG] - Total Cost: Rp $cost');
-      total += cost;
-    }
-
-    print('[COST DEBUG] Equipment total: $total');
-    print('[COST DEBUG] === END EQUIPMENT ===');
-    return total;
-  }
-
-  double _calculateManpowerTotal() {
-    print('[COST DEBUG] === MANPOWER CALCULATION ===');
-    print('[COST DEBUG] Manpower logs count: ${activity.manpowerLogs.length}');
-
-    double total = 0.0;
-    for (int i = 0; i < activity.manpowerLogs.length; i++) {
-      final log = activity.manpowerLogs[i];
-
-      // From the GraphQL response, we have:
-      // - hourlyRate: 42540.125 (mapped to normalHourlyRate)
-      // - personCount: 1
-      // - workingHours: 8
-      // So the calculation should be: hourlyRate * personCount * workingHours
-      final cost = log.normalHourlyRate * log.personCount * log.workingHours;
-
-      print(
-          '[COST DEBUG] Manpower $i: ${log.personnelRole?.roleName ?? "Unknown"}');
-      print('[COST DEBUG] - Person count: ${log.personCount}');
-      print('[COST DEBUG] - Hourly rate: ${log.normalHourlyRate}');
-      print('[COST DEBUG] - Working hours: ${log.workingHours}');
-      print('[COST DEBUG] - Cost: $cost');
-      total += cost;
-    }
-
-    print('[COST DEBUG] Manpower total: $total');
-    print('[COST DEBUG] === END MANPOWER ===');
-    return total;
-  }
-
-  double _calculateMaterialTotal() {
-    print('[COST DEBUG] === MATERIAL CALCULATION ===');
-    print(
-        '[COST DEBUG] Material logs count: ${activity.materialUsageLogs.length}');
-
-    double total = 0.0;
-    for (int i = 0; i < activity.materialUsageLogs.length; i++) {
-      final log = activity.materialUsageLogs[i];
-      final cost = log.quantity * log.unitRate;
-      print('[COST DEBUG] Material $i: ${log.material?.name ?? "Unknown"}');
-      print('[COST DEBUG] - Quantity: ${log.quantity}');
-      print('[COST DEBUG] - Unit rate: ${log.unitRate}');
-      print('[COST DEBUG] - Cost: $cost');
-      total += cost;
-    }
-
-    print('[COST DEBUG] Material total: $total');
-    print('[COST DEBUG] === END MATERIAL ===');
-    return total;
-  }
-
-  double _calculateOtherCostsTotal() {
-    print('[COST DEBUG] === OTHER COSTS CALCULATION ===');
-    print('[COST DEBUG] Other costs count: ${activity.otherCosts.length}');
-
-    double total = 0.0;
-    for (int i = 0; i < activity.otherCosts.length; i++) {
-      final cost = activity.otherCosts[i];
-      print('[COST DEBUG] Other cost $i: ${cost.description}');
-      print('[COST DEBUG] - Cost type: ${cost.costType}');
-      print('[COST DEBUG] - Amount: ${cost.amount}');
-      total += cost.amount;
-    }
-
-    print('[COST DEBUG] Other costs total: $total');
-    print('[COST DEBUG] === END OTHER COSTS ===');
-    return total;
-  }
-
-  double _calculateGrandTotal() {
-    final equipmentTotal = _calculateEquipmentTotal();
-    final manpowerTotal = _calculateManpowerTotal();
-    final materialTotal = _calculateMaterialTotal();
-    final otherCostsTotal = _calculateOtherCostsTotal();
-    final grandTotal =
-        equipmentTotal + manpowerTotal + materialTotal + otherCostsTotal;
-
-    print('[COST DEBUG] === GRAND TOTAL CALCULATION ===');
-    print('[COST DEBUG] Equipment total: $equipmentTotal');
-    print('[COST DEBUG] Manpower total: $manpowerTotal');
-    print('[COST DEBUG] Material total: $materialTotal');
-    print('[COST DEBUG] Other costs total: $otherCostsTotal');
-    print('[COST DEBUG] GRAND TOTAL: $grandTotal');
-    print('[COST DEBUG] === END GRAND TOTAL ===');
-
-    return grandTotal;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Debug output untuk memeriksa nilai lokasi lebih detail
-    print("\n============= INFO AKTIVITAS ${activity.id} =============");
-    print("1. SPK Detail: ${activity.spkDetail}");
-    if (activity.spkDetail != null) {
-      print("2. SPK Detail Location Object: ${activity.spkDetail!.location}");
-      if (activity.spkDetail!.location != null) {
-        print("3. SPK Location Name: ${activity.spkDetail!.location!.name}");
-        print("4. SPK Location ID: ${activity.spkDetail!.location!.id}");
-      } else {
-        print("3. SPK Location Object is NULL");
-      }
-    } else {
-      print("2. SPK Detail is NULL");
-    }
-    print("5. Activity Location String: '${activity.location}'");
-    print("6. Activity Area ID: '${activity.areaId}'");
-    print("7. Activity Status: '${activity.status}'");
-    print("=============================================\n");
-
-    // Ambil lokasi dari activity
-    final String locationText = activity.location ??
-        activity.spkDetail?.location?.name ??
-        activity.areaId ??
-        'N/A';
-
-    // Cek status laporan
-    final bool isDraft = activity.status.toLowerCase().contains('draft');
-    final bool isWaitingProgress =
-        activity.status.toLowerCase().contains('menunggu progress');
-    final bool isApproved =
-        activity.status.toLowerCase().contains('disetujui') ||
-            activity.status.toLowerCase().contains('approved');
-
-    return GestureDetector(
-      onTap: () {
-        if (isDraft || isWaitingProgress) {
-          // Tampilkan dialog konfirmasi untuk draft dan menunggu progress
-          Get.dialog(
-            Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isDraft ? Icons.edit_document : Icons.pending_actions,
-                      color: isDraft ? Colors.orange : Colors.blue,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      isDraft ? 'Lanjutkan Pengisian' : 'Lanjutkan Progress',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      isDraft
-                          ? 'Apakah Anda ingin melanjutkan pengisian laporan kerja ini?'
-                          : 'Apakah Anda ingin melanjutkan pengisian progress pekerjaan?',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        TextButton(
-                          onPressed: () => Get.back(),
-                          child: Text(
-                            'Batal',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Get.back(); // Tutup dialog
-                            // Navigasi ke halaman add work report dengan data yang sudah ada
-                            Get.toNamed(
-                              Routes.addWorkReport,
-                              arguments: {
-                                'spkId': activity.spkId,
-                                'isDraft': true,
-                                'draftId': activity.id,
-                              },
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isDraft ? Colors.orange : Colors.blue,
-                            foregroundColor: Colors.white,
-                          ),
-                          child: Text(
-                            'Lanjutkan',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        } else {
-          // Untuk non-draft, langsung panggil callback
-          if (onTap != null) {
-            onTap!();
-          }
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: isApproved
-              ? Colors.green.shade50
-              : isDraft
-                  ? Colors.orange.shade50
-                  : activity.status.toLowerCase().contains('rejected')
-                      ? Colors.red.shade50
-                      : Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: isDraft
-              ? Border.all(color: Colors.orange, width: 2)
-              : isApproved
-                  ? Border.all(color: Colors.green, width: 2)
-                  : activity.status.toLowerCase().contains('rejected')
-                      ? Border.all(color: Colors.red, width: 2)
-                      : isWaitingProgress
-                          ? Border.all(color: Colors.blue, width: 2)
-                          : isReportFromToday()
-                              ? Border.all(color: Colors.green, width: 2)
-                              : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 60,
-              height: 120,
-              decoration: BoxDecoration(
-                color: isDraft
-                    ? Colors.orange
-                    : isWaitingProgress
-                        ? Colors.blue
-                        : const Color(0xFFFF6B00),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  bottomLeft: Radius.circular(8),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: isDraft || isWaitingProgress
-                    ? Icon(
-                        isDraft ? Icons.edit_document : Icons.pending_actions,
-                        color: Colors.white,
-                        size: 36,
-                      )
-                    : Image.asset(
-                        'assets/images/thumbnail_work.png',
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                          Icons.build,
-                          color: Colors.white,
-                          size: 36,
-                        ),
-                      ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Row untuk tag status
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Indicator hari ini (jika laporan dibuat hari ini)
-                        if (isReportFromToday() &&
-                            !isDraft &&
-                            !isWaitingProgress &&
-                            !isApproved)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade100,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Hari Ini',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green.shade800,
-                              ),
-                            ),
-                          ),
-
-                        // Status badge
-                        buildStatusLabel(activity.status),
-
-                        // Tombol detail
-                        GestureDetector(
-                          onTap: () => _showDetailDialog(context),
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: FigmaColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Icon(
-                              Icons.info_outline,
-                              color: FigmaColors.primary,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-
-                        // Tombol hapus hanya untuk draft
-                        if (isDraft)
-                          GestureDetector(
-                            onTap: () {
-                              // Tampilkan dialog konfirmasi hapus
-                              Get.dialog(
-                                Dialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.delete_forever,
-                                          color: Colors.red,
-                                          size: 48,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Hapus Draft?',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Apakah Anda yakin ingin menghapus draft laporan ini? Tindakan ini tidak dapat dibatalkan.',
-                                          textAlign: TextAlign.center,
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            TextButton(
-                                              onPressed: () => Get.back(),
-                                              child: Text(
-                                                'Batal',
-                                                style: GoogleFonts.dmSans(
-                                                  fontSize: 16,
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                            ),
-                                            ElevatedButton(
-                                              onPressed: () {
-                                                // Log ID saat penghapusan untuk debugging
-                                                print(
-                                                    '[DELETE] Menghapus draft ID: ${activity.id}');
-
-                                                // Lakukan penghapusan draft
-                                                final controller = Get.find<
-                                                    DailyActivityController>();
-                                                controller.deleteDraftActivity(
-                                                    activity.id);
-                                                Get.back(); // Tutup dialog
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                                foregroundColor: Colors.white,
-                                              ),
-                                              child: Text(
-                                                'Hapus',
-                                                style: GoogleFonts.dmSans(
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Icon(
-                                Icons.delete_outline,
-                                color: Colors.red.shade700,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // SPK Title and ID
-                    if (activity.spkDetail != null &&
-                        activity.spkDetail!.title.isNotEmpty) ...[
-                      Text(
-                        activity.spkDetail!.title,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: FigmaColors.hitam,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'No. SPK: ${activity.spkDetail!.spkNo.isNotEmpty ? activity.spkDetail!.spkNo : 'Draft'}',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 12,
-                          color: FigmaColors.abu,
-                        ),
-                      ),
-                    ] else ...[
-                      Text(
-                        isDraft
-                            ? 'Draft Laporan'
-                            : 'Work Report ID: ${activity.id}',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: FigmaColors.hitam,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'SPK ID: ${activity.spkId}',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 12,
-                          color: FigmaColors.abu,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.pie_chart,
-                          color: FigmaColors.primary,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Progress Harian: ${getFormattedProgressPercentage()}',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: FigmaColors.hitam,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    // Status row
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          color: FigmaColors.primary,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Status: ${activity.status}',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            color: FigmaColors.hitam,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          color: FigmaColors.primary,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            'Lokasi: $locationText',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 12,
-                              color: FigmaColors.hitam,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          color: FigmaColors.primary,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Tanggal: ${getFormattedDate()}',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            color: FigmaColors.hitam,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          color: FigmaColors.primary,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Waktu Mulai: ${getFormattedTime(activity.workStartTime)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Waktu Selesai: ${getFormattedTime(activity.workEndTime)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

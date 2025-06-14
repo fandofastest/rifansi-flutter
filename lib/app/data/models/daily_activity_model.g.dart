@@ -8,7 +8,7 @@ part of 'daily_activity_model.dart';
 
 class DailyActivityAdapter extends TypeAdapter<DailyActivity> {
   @override
-  final int typeId = 1;
+  final int typeId = 25;
 
   @override
   DailyActivity read(BinaryReader reader) {
@@ -449,13 +449,16 @@ class EquipmentLogAdapter extends TypeAdapter<EquipmentLog> {
       isBrokenReported: fields[4] as bool,
       remarks: fields[5] as String,
       equipment: fields[6] as Equipment?,
+      hourlyRate: fields[7] as double,
+      rentalRatePerDay: fields[8] as double,
+      fuelPrice: fields[9] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, EquipmentLog obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -469,7 +472,13 @@ class EquipmentLogAdapter extends TypeAdapter<EquipmentLog> {
       ..writeByte(5)
       ..write(obj.remarks)
       ..writeByte(6)
-      ..write(obj.equipment);
+      ..write(obj.equipment)
+      ..writeByte(7)
+      ..write(obj.hourlyRate)
+      ..writeByte(8)
+      ..write(obj.rentalRatePerDay)
+      ..writeByte(9)
+      ..write(obj.fuelPrice);
   }
 
   @override

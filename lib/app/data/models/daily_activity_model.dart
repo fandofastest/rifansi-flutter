@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 
 part 'daily_activity_model.g.dart';
 
-@HiveType(typeId: 1)
+@HiveType(typeId: 25)
 class DailyActivity {
   @HiveField(0)
   final String id;
@@ -680,6 +680,12 @@ class EquipmentLog {
   final String remarks;
   @HiveField(6)
   final Equipment? equipment;
+  @HiveField(7)
+  final double hourlyRate;
+  @HiveField(8)
+  final double rentalRatePerDay;
+  @HiveField(9)
+  final double fuelPrice;
 
   EquipmentLog({
     required this.id,
@@ -689,6 +695,9 @@ class EquipmentLog {
     required this.isBrokenReported,
     required this.remarks,
     this.equipment,
+    this.hourlyRate = 0.0,
+    this.rentalRatePerDay = 0.0,
+    this.fuelPrice = 0.0,
   });
 
   factory EquipmentLog.fromJson(Map<String, dynamic> json) {
@@ -720,6 +729,27 @@ class EquipmentLog {
       equipment: json['equipment'] != null
           ? Equipment.fromJson(json['equipment'])
           : null,
+      hourlyRate: json['hourlyRate'] != null
+          ? json['hourlyRate'] is int
+              ? (json['hourlyRate'] as int).toDouble()
+              : json['hourlyRate'] is double
+                  ? json['hourlyRate']
+                  : 0.0
+          : 0.0,
+      rentalRatePerDay: json['rentalRatePerDay'] != null
+          ? json['rentalRatePerDay'] is int
+              ? (json['rentalRatePerDay'] as int).toDouble()
+              : json['rentalRatePerDay'] is double
+                  ? json['rentalRatePerDay']
+                  : 0.0
+          : 0.0,
+      fuelPrice: json['fuelPrice'] != null
+          ? json['fuelPrice'] is int
+              ? (json['fuelPrice'] as int).toDouble()
+              : json['fuelPrice'] is double
+                  ? json['fuelPrice']
+                  : 0.0
+          : 0.0,
     );
   }
 }

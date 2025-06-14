@@ -16,14 +16,14 @@ class SpkPage extends GetView<SpkController> {
   Widget build(BuildContext context) {
     final lokasiController = Get.find<LokasiController>();
     final authController = Get.find<AuthController>();
-    
+
     // Reset and initialize page every time it's built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializePage(authController, lokasiController);
     });
-    
+
     return Scaffold(
-      backgroundColor: FigmaColors.background,
+      backgroundColor: AppTheme.background,
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
@@ -34,7 +34,7 @@ class SpkPage extends GetView<SpkController> {
             child: Text(
               'Error: ${controller.error.value}',
               style: GoogleFonts.dmSans(
-                color: FigmaColors.error,
+                color: AppTheme.error,
                 fontSize: 16,
               ),
             ),
@@ -54,7 +54,8 @@ class SpkPage extends GetView<SpkController> {
     );
   }
 
-  void _initializePage(AuthController authController, LokasiController lokasiController) async {
+  void _initializePage(
+      AuthController authController, LokasiController lokasiController) async {
     // Prevent multiple simultaneous calls
     if (controller.isLoading.value) {
       print('[SPK Page] Already loading, skipping initialization');
@@ -64,28 +65,30 @@ class SpkPage extends GetView<SpkController> {
     // Reset controller state first
     controller.spks.clear();
     controller.error.value = '';
-    
+
     // Wait a bit to ensure user data is loaded
     await Future.delayed(const Duration(milliseconds: 100));
-    
+
     // Get fresh user data
     await authController.fetchCurrentUser();
-    
+
     // Debug user area information
     final user = authController.currentUser.value;
     final userArea = user?.area;
-    
+
     print('[SPK Page] =================================');
     print('[SPK Page] User: ${user?.fullName}');
     print('[SPK Page] User Area: ${userArea?.name}');
     print('[SPK Page] User Area ID: ${userArea?.id}');
     print('[SPK Page] =================================');
-    
+
     // Fetch SPKs - controller will automatically handle area filtering
     await controller.fetchSPKs();
-    
+
     // Set location controller based on user area
-    if (userArea != null && userArea.id.isNotEmpty && userArea.name.toLowerCase() != 'allarea') {
+    if (userArea != null &&
+        userArea.id.isNotEmpty &&
+        userArea.name.toLowerCase() != 'allarea') {
       lokasiController.selectArea(userArea);
     } else {
       // Reset location controller to default
@@ -95,11 +98,13 @@ class SpkPage extends GetView<SpkController> {
         location: Location(type: '', coordinates: []),
       );
     }
-    
-    print('[SPK Page] Initialization complete. SPKs loaded: ${controller.spks.length}');
+
+    print(
+        '[SPK Page] Initialization complete. SPKs loaded: ${controller.spks.length}');
   }
 
-  Widget _buildHeader(BuildContext context, LokasiController lokasiController, AuthController authController) {
+  Widget _buildHeader(BuildContext context, LokasiController lokasiController,
+      AuthController authController) {
     final userArea = authController.currentUser.value?.area;
     final hasSpecificArea = userArea != null && userArea.id.isNotEmpty;
 
@@ -108,7 +113,7 @@ class SpkPage extends GetView<SpkController> {
       padding: const EdgeInsets.only(top: 48, bottom: 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [FigmaColors.primary, FigmaColors.error],
+          colors: [AppTheme.primary, AppTheme.error],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -175,14 +180,14 @@ class SpkPage extends GetView<SpkController> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.filter_alt,
-                                color: FigmaColors.primary, size: 20),
+                            Icon(Icons.filter_alt,
+                                color: AppTheme.primary, size: 20),
                             const SizedBox(width: 6),
                             Text(
                               lokasiController.selectedArea.value?.name ??
                                   'Pilih Lokasi',
                               style: GoogleFonts.dmSans(
-                                color: FigmaColors.primary,
+                                color: AppTheme.primary,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
@@ -204,36 +209,41 @@ class SpkPage extends GetView<SpkController> {
 
   void _showPilihLokasiDialog(
       BuildContext context, LokasiController lokasiController) async {
-    
     print('[Dialog Lokasi] =================================');
     print('[Dialog Lokasi] Opening location picker dialog');
-    print('[Dialog Lokasi] Current areas count: ${lokasiController.areas.length}');
-    print('[Dialog Lokasi] Current areas: ${lokasiController.areas.map((a) => a.name).toList()}');
-    print('[Dialog Lokasi] Has loaded areas: ${lokasiController.hasLoadedAreas.value}');
+    print(
+        '[Dialog Lokasi] Current areas count: ${lokasiController.areas.length}');
+    print(
+        '[Dialog Lokasi] Current areas: ${lokasiController.areas.map((a) => a.name).toList()}');
+    print(
+        '[Dialog Lokasi] Has loaded areas: ${lokasiController.hasLoadedAreas.value}');
     print('[Dialog Lokasi] Is loading: ${lokasiController.isLoading.value}');
     print('[Dialog Lokasi] Error: ${lokasiController.error.value}');
-    
+
     // Force fetch areas
     print('[Dialog Lokasi] Force fetching areas...');
     final success = await lokasiController.fetchAreas();
     print('[Dialog Lokasi] Fetch result: $success');
-    print('[Dialog Lokasi] After fetch - areas count: ${lokasiController.areas.length}');
-    print('[Dialog Lokasi] After fetch - areas: ${lokasiController.areas.map((a) => a.name).toList()}');
+    print(
+        '[Dialog Lokasi] After fetch - areas count: ${lokasiController.areas.length}');
+    print(
+        '[Dialog Lokasi] After fetch - areas: ${lokasiController.areas.map((a) => a.name).toList()}');
     print('[Dialog Lokasi] =================================');
-    
+
     // Use only actual areas, no default "Semua Lokasi"
     List<Area> areaList = [...lokasiController.areas];
     Area? tempSelected = lokasiController.selectedArea.value;
-    
-    print('[Dialog Lokasi] Area list for dialog: ${areaList.map((a) => a.name).toList()}');
+
+    print(
+        '[Dialog Lokasi] Area list for dialog: ${areaList.map((a) => a.name).toList()}');
     print('[Dialog Lokasi] Current selected: ${tempSelected?.name}');
-    
+
     // If current selection is "Semua Lokasi", reset to first actual area
     if (tempSelected?.id == '' || tempSelected?.name == 'Semua Lokasi') {
       tempSelected = areaList.isNotEmpty ? areaList.first : null;
       print('[Dialog Lokasi] Reset selection to: ${tempSelected?.name}');
     }
-    
+
     await showDialog(
       context: context,
       builder: (ctx) {
@@ -242,9 +252,11 @@ class SpkPage extends GetView<SpkController> {
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             child: Obx(() {
-              print('[Dialog Lokasi] Building dialog - areas count: ${lokasiController.areas.length}');
-              print('[Dialog Lokasi] Building dialog - is loading: ${lokasiController.isLoading.value}');
-              
+              print(
+                  '[Dialog Lokasi] Building dialog - areas count: ${lokasiController.areas.length}');
+              print(
+                  '[Dialog Lokasi] Building dialog - is loading: ${lokasiController.isLoading.value}');
+
               if (lokasiController.areas.isEmpty &&
                   !lokasiController.isLoading.value) {
                 print('[Dialog Lokasi] Area list kosong!');
@@ -256,7 +268,7 @@ class SpkPage extends GetView<SpkController> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     decoration: BoxDecoration(
-                      color: FigmaColors.primary,
+                      color: AppTheme.primary,
                       borderRadius:
                           const BorderRadius.vertical(top: Radius.circular(24)),
                     ),
@@ -315,7 +327,8 @@ class SpkPage extends GetView<SpkController> {
                         itemCount: areaList.length,
                         itemBuilder: (context, index) {
                           final area = areaList[index];
-                          print('[Dialog Lokasi] Rendering area: ${area.name} (${area.id})');
+                          print(
+                              '[Dialog Lokasi] Rendering area: ${area.name} (${area.id})');
                           return RadioListTile<Area>(
                             value: area,
                             groupValue: tempSelected,
@@ -325,7 +338,7 @@ class SpkPage extends GetView<SpkController> {
                             },
                             title: Text(area.name,
                                 style: GoogleFonts.dmSans(fontSize: 18)),
-                            activeColor: FigmaColors.primary,
+                            activeColor: AppTheme.primary,
                           );
                         },
                       ),
@@ -336,7 +349,7 @@ class SpkPage extends GetView<SpkController> {
                         width: double.infinity,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: FigmaColors.primary,
+                            backgroundColor: AppTheme.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(24)),
@@ -344,9 +357,11 @@ class SpkPage extends GetView<SpkController> {
                           ),
                           onPressed: () {
                             if (tempSelected != null) {
-                              print('[Dialog Lokasi] Applying selection: ${tempSelected!.name}');
+                              print(
+                                  '[Dialog Lokasi] Applying selection: ${tempSelected!.name}');
                               lokasiController.selectArea(tempSelected!);
-                              Get.find<SpkController>().fetchSPKs(area: tempSelected);
+                              Get.find<SpkController>()
+                                  .fetchSPKs(area: tempSelected);
                             }
                             Navigator.pop(context);
                           },
@@ -366,7 +381,8 @@ class SpkPage extends GetView<SpkController> {
     );
   }
 
-  Widget _buildSearchBar(LokasiController lokasiController, AuthController authController) {
+  Widget _buildSearchBar(
+      LokasiController lokasiController, AuthController authController) {
     final TextEditingController searchController = TextEditingController();
     return Padding(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 20),
@@ -408,7 +424,7 @@ class SpkPage extends GetView<SpkController> {
                 decoration: InputDecoration(
                   hintText: 'Cari SPK ...',
                   hintStyle: GoogleFonts.dmSans(
-                    color: FigmaColors.hitam.withOpacity(0.5),
+                    color: AppTheme.textPrimary.withOpacity(0.5),
                     fontSize: 14,
                   ),
                   border: InputBorder.none,
@@ -442,8 +458,8 @@ class SpkPage extends GetView<SpkController> {
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 width: 32,
                 height: 32,
-                decoration: const BoxDecoration(
-                  color: FigmaColors.primary,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.search, color: Colors.white, size: 20),
@@ -464,7 +480,7 @@ class SpkPage extends GetView<SpkController> {
           Text(
             'Daftar SPK',
             style: GoogleFonts.dmSans(
-              color: FigmaColors.hitam,
+              color: AppTheme.textPrimary,
               fontWeight: FontWeight.w700,
               fontSize: 18,
             ),
@@ -477,7 +493,7 @@ class SpkPage extends GetView<SpkController> {
                 child: Text(
                   'Data SPK tidak ditemukan',
                   style: GoogleFonts.dmSans(
-                    color: FigmaColors.abu,
+                    color: AppTheme.textSecondary,
                     fontSize: 16,
                   ),
                 ),

@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/daily_activity_input.dart';
 import '../models/area_model.dart';
+import '../models/location_model.dart' as location_model;
 
 class HiveService extends GetxService {
   static const String DAILY_ACTIVITIES_BOX = 'daily_activities';
@@ -26,6 +27,7 @@ class HiveService extends GetxService {
       Hive.registerAdapter(SPKDetailsAdapter());
       Hive.registerAdapter(LocationAdapter());
       Hive.registerAdapter(AreaAdapter());
+      Hive.registerAdapter(location_model.LocationAdapter());
 
       // Buka box
       _dailyActivitiesBox =
@@ -42,12 +44,23 @@ class HiveService extends GetxService {
 
   // ====== DAILY ACTIVITY METHODS ======
 
-  // Simpan DailyActivity
+  // Simpan DailyActivity dengan localId sebagai key
   Future<void> saveDailyActivity(DailyActivity activity) async {
     try {
       await _dailyActivitiesBox.put(activity.localId, activity);
       print(
           '[HiveService] DailyActivity saved with local ID: ${activity.localId}');
+      print(
+          '[HiveService] Saved activity details: spkId=${activity.spkId}, status=${activity.status}, isSynced=${activity.isSynced}');
+
+      // Verify the save by reading it back
+      final saved = _dailyActivitiesBox.get(activity.localId);
+      if (saved != null) {
+        print(
+            '[HiveService] Verification: Activity successfully saved and can be retrieved');
+      } else {
+        print('[HiveService] WARNING: Activity was not saved properly!');
+      }
     } catch (e) {
       print('[HiveService] Error saving DailyActivity: $e');
       rethrow;
@@ -78,7 +91,18 @@ class HiveService extends GetxService {
   // Ambil semua DailyActivity
   Future<List<DailyActivity>> getAllDailyActivities() async {
     try {
-      return _dailyActivitiesBox.values.toList();
+      final activities = _dailyActivitiesBox.values.toList();
+      print(
+          '[HiveService] Retrieved ${activities.length} activities from Hive');
+
+      // Debug: Print summary of each activity
+      for (int i = 0; i < activities.length; i++) {
+        final activity = activities[i];
+        print(
+            '[HiveService] Activity $i: localId=${activity.localId}, spkId=${activity.spkId}, isSynced=${activity.isSynced}, status=${activity.status}');
+      }
+
+      return activities;
     } catch (e) {
       print('[HiveService] Error getting all DailyActivities: $e');
       return [];

@@ -147,6 +147,14 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
         ),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save_outlined),
+            onPressed: () {
+              controller.saveTemporaryData();
+            },
+          ),
+        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.spkList.isEmpty) {
@@ -714,7 +722,8 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
       0.0,
       (sum, equipment) {
         // Gunakan tarif harian (rentalRatePerDay) bukan per jam
-        final rentalRatePerDay = equipment.selectedContract?.rentalRatePerDay ?? 0.0;
+        final rentalRatePerDay =
+            equipment.selectedContract?.rentalRatePerDay ?? 0.0;
         return sum + rentalRatePerDay;
       },
     );

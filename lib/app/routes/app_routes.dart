@@ -8,4 +8,6 @@ abstract class Routes {
   static const workReport = '/work-report';
   static const addWorkReport = '/work-report/add';
   static const equipmentReport = '/equipment-report';
+  static const areaReport = '/area-report';
+  static const equipmentApproval = '/equipment-approval';
 }

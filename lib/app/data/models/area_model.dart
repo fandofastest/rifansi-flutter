@@ -23,7 +23,8 @@ class Area {
     return Area(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
-      location: json['location'] != null ? Location.fromJson(json['location']) : null,
+      location:
+          json['location'] != null ? Location.fromJson(json['location']) : null,
     );
   }
 
@@ -52,7 +53,10 @@ class Location {
   factory Location.fromJson(Map<String, dynamic> json) {
     return Location(
       type: json['type']?.toString() ?? '',
-      coordinates: (json['coordinates'] as List?)?.map((e) => (e as num).toDouble()).toList() ?? [],
+      coordinates: (json['coordinates'] as List?)
+              ?.map((e) => (e as num).toDouble())
+              .toList() ??
+          [],
     );
   }
 

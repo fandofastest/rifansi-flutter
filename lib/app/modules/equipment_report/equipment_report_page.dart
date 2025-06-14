@@ -52,17 +52,18 @@ class EquipmentReportPage extends GetView<EquipmentReportController> {
                   ElevatedButton.icon(
                     onPressed: () {
                       // Show Add Repair Report Dialog
-                      if (controller.equipmentList.isEmpty || controller.areaList.isEmpty) {
+                      if (controller.equipmentList.isEmpty ||
+                          controller.areaList.isEmpty) {
                         Get.snackbar(
                           'Info',
-                          'Sedang memuat data alat dan lokasi...',
+                          'Tidak ada data alat dan lokasi',
                           snackPosition: SnackPosition.BOTTOM,
                           backgroundColor: Colors.orange[100],
                           colorText: Colors.orange[900],
                         );
                         return;
                       }
-                      
+
                       showDialog(
                         context: context,
                         builder: (context) => AddRepairReportDialog(
@@ -130,6 +131,11 @@ class EquipmentReportPage extends GetView<EquipmentReportController> {
   }
 
   Widget _buildReportCard(Map<String, dynamic> report) {
+    final equipment = report['equipment'];
+    final equipmentCode = equipment?['equipmentCode'] ?? 'Unknown Equipment';
+    final equipmentType = equipment?['equipmentType'] ?? 'Unknown Type';
+    final plateOrSerialNo = equipment?['plateOrSerialNo'];
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
@@ -148,22 +154,22 @@ class EquipmentReportPage extends GetView<EquipmentReportController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        report['equipment']?['equipmentCode'] ?? 'Unknown',
+                        equipmentCode,
                         style: GoogleFonts.dmSans(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        report['equipment']?['equipmentType'] ?? 'Unknown Type',
+                        equipmentType,
                         style: GoogleFonts.dmSans(
                           fontSize: 12,
                           color: Colors.grey[600],
                         ),
                       ),
-                      if (report['equipment']?['plateOrSerialNo'] != null)
+                      if (plateOrSerialNo != null)
                         Text(
-                          report['equipment']['plateOrSerialNo'],
+                          plateOrSerialNo,
                           style: GoogleFonts.dmSans(
                             fontSize: 12,
                             color: Colors.grey[500],
@@ -177,9 +183,11 @@ class EquipmentReportPage extends GetView<EquipmentReportController> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(report['status']).withOpacity(0.1),
+                        color:
+                            _getStatusColor(report['status']).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -194,9 +202,11 @@ class EquipmentReportPage extends GetView<EquipmentReportController> {
                     if (report['priority'] != null) ...[
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: _getPriorityColor(report['priority']).withOpacity(0.1),
+                          color: _getPriorityColor(report['priority'])
+                              .withOpacity(0.1),
                           borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text(
@@ -214,7 +224,7 @@ class EquipmentReportPage extends GetView<EquipmentReportController> {
               ],
             ),
             const SizedBox(height: 12),
-            
+
             // Problem description
             Text(
               'Masalah:',
@@ -231,7 +241,7 @@ class EquipmentReportPage extends GetView<EquipmentReportController> {
                 fontSize: 14,
               ),
             ),
-            
+
             // Location - Always show for debugging
             const SizedBox(height: 8),
             Row(
@@ -244,12 +254,15 @@ class EquipmentReportPage extends GetView<EquipmentReportController> {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    report['location'] != null 
-                        ? (report['location']['name'] ?? 'Location name not available')
+                    report['location'] != null
+                        ? (report['location']['name'] ??
+                            'Location name not available')
                         : 'No location data',
                     style: GoogleFonts.dmSans(
                       fontSize: 12,
-                      color: report['location'] != null ? Colors.grey[600] : Colors.red[400],
+                      color: report['location'] != null
+                          ? Colors.grey[600]
+                          : Colors.red[400],
                     ),
                   ),
                 ),
@@ -335,7 +348,8 @@ class EquipmentReportPage extends GetView<EquipmentReportController> {
             ],
 
             // Cost Information
-            if (report['estimatedCost'] != null || report['actualCost'] != null) ...[
+            if (report['estimatedCost'] != null ||
+                report['actualCost'] != null) ...[
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(8),
@@ -398,9 +412,9 @@ class EquipmentReportPage extends GetView<EquipmentReportController> {
                 ),
               ),
             ],
-            
+
             const SizedBox(height: 12),
-            
+
             // Footer with damage level and report number
             Row(
               children: [
@@ -491,4 +505,4 @@ class EquipmentReportPage extends GetView<EquipmentReportController> {
         return Colors.grey;
     }
   }
-} 
+}

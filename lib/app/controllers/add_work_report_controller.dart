@@ -23,6 +23,16 @@ import 'package:intl/intl.dart';
 import '../data/models/spk_details.dart';
 import 'package:exif/exif.dart';
 import '../data/models/spk_detail_with_progress_response.dart';
+import 'package:rifansi/app/controllers/daily_activity_controller.dart';
+import 'package:collection/collection.dart';
+import 'package:rifansi/app/data/models/daily_activity_model.dart'
+    as daily_activity_model;
+import 'package:rifansi/app/data/models/other_cost_model.dart';
+import 'package:rifansi/app/data/providers/storage_service.dart';
+import 'package:rifansi/app/controllers/material_controller.dart';
+import 'package:rifansi/app/controllers/other_cost_controller.dart';
+import 'package:rifansi/app/controllers/daily_activity_controller.dart';
+import 'package:collection/collection.dart';
 
 class AddWorkReportController extends GetxController {
   final currentStep = 0.obs;
@@ -84,10 +94,45 @@ class AddWorkReportController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _hiveService = Get.find<HiveService>();
-    fetchSPKs();
-    fetchPersonnelRoles();
-    fetchEquipments();
+    print('[AddWorkReport] Controller initialized');
+
+    // Initialize data
+    _initializeData();
+  }
+
+  // Method untuk inisialisasi data
+  Future<void> _initializeData() async {
+    try {
+      print('[AddWorkReport] Starting data initialization');
+
+      // Initialize HiveService
+      _hiveService = Get.find<HiveService>();
+
+      // Fetch SPKs first to ensure list is available
+      await fetchSPKs();
+      print('[AddWorkReport] SPK list loaded: ${spkList.length} items');
+
+      // Fetch other required data
+      await Future.wait([
+        fetchPersonnelRoles(),
+        fetchEquipments(),
+      ]);
+
+      print('[AddWorkReport] Data initialization completed');
+    } catch (e) {
+      print('[AddWorkReport] Error during initialization: $e');
+      error.value = 'Gagal memuat data: $e';
+    }
+  }
+
+  // Method untuk memastikan SPK terpilih
+  void ensureSpkSelected() {
+    if (selectedSpk.value == null && spkList.isNotEmpty) {
+      print(
+          '[AddWorkReport] No SPK selected, auto-selecting first available SPK');
+      selectedSpk.value = spkList.first;
+      print('[AddWorkReport] Auto-selected SPK: ${selectedSpk.value?.spkNo}');
+    }
   }
 
   Future<bool> fetchSPKs({area_model.Area? area, String? keyword}) async {
@@ -343,10 +388,12 @@ class AddWorkReportController extends GetxController {
               photoTime.second,
             );
 
-            if (firstPhotoTime == null || photoTimeWithReportDate.isBefore(firstPhotoTime)) {
+            if (firstPhotoTime == null ||
+                photoTimeWithReportDate.isBefore(firstPhotoTime)) {
               firstPhotoTime = photoTimeWithReportDate;
             }
-            if (lastPhotoTime == null || photoTimeWithReportDate.isAfter(lastPhotoTime)) {
+            if (lastPhotoTime == null ||
+                photoTimeWithReportDate.isAfter(lastPhotoTime)) {
               lastPhotoTime = photoTimeWithReportDate;
             }
           }
@@ -696,51 +743,51 @@ class AddWorkReportController extends GetxController {
         }
         final latestActivity =
             spkDetailsWithProgress.value!.dailyActivities.first;
-        final workItems = latestActivity.workItems.map((item) {
-          return {
-            'workItemId': item.id,
-            'workItem': {
-              'id': item.id,
-              'name': item.name,
-              'unit': {'name': item.unit.name},
-            },
-            'boqVolume': {
-              'nr': item.boqVolume.nr,
-              'r': item.boqVolume.r,
-            },
-            'rates': {
-              'nr': {
-                'rate': item.rates.nr.rate,
-                'description': item.rates.nr.description,
-              },
-              'r': {
-                'rate': item.rates.r.rate,
-                'description': item.rates.r.description,
-              },
-            },
-            'progressAchieved': {
-              'nr': item.progressAchieved.nr,
-              'r': item.progressAchieved.r,
-            },
-            'actualQuantity': {
-              'nr': item.actualQuantity.nr,
-              'r': item.actualQuantity.r,
-            },
-            'dailyProgress': {
-              'nr': item.dailyProgress.nr,
-              'r': item.dailyProgress.r,
-            },
-            'dailyCost': {
-              'nr': item.dailyCost.nr,
-              'r': item.dailyCost.r,
-            },
-            'description': item.description,
-            'spk': {
-              'startDate': selectedSpk.value?.startDate,
-              'endDate': selectedSpk.value?.endDate,
-            },
-          };
-        }).toList();
+        final workItems = latestActivity.workItems
+            .map((item) => {
+                  'workItemId': item.id,
+                  'workItem': {
+                    'id': item.id,
+                    'name': item.name,
+                    'unit': {'name': item.unit.name},
+                  },
+                  'boqVolume': {
+                    'nr': item.boqVolume.nr,
+                    'r': item.boqVolume.r,
+                  },
+                  'rates': {
+                    'nr': {
+                      'rate': item.rates.nr.rate,
+                      'description': item.rates.nr.description,
+                    },
+                    'r': {
+                      'rate': item.rates.r.rate,
+                      'description': item.rates.r.description,
+                    },
+                  },
+                  'progressAchieved': {
+                    'nr': item.progressAchieved.nr,
+                    'r': item.progressAchieved.r,
+                  },
+                  'actualQuantity': {
+                    'nr': item.actualQuantity.nr,
+                    'r': item.actualQuantity.r,
+                  },
+                  'dailyProgress': {
+                    'nr': item.dailyProgress.nr,
+                    'r': item.dailyProgress.r,
+                  },
+                  'dailyCost': {
+                    'nr': item.dailyCost.nr,
+                    'r': item.dailyCost.r,
+                  },
+                  'description': item.description,
+                  'spk': {
+                    'startDate': selectedSpk.value?.startDate,
+                    'endDate': selectedSpk.value?.endDate,
+                  },
+                })
+            .toList();
 
         print('DEBUG: workItems untuk progress: ${workItems.length} item');
         if (workItems.isEmpty) {
@@ -756,6 +803,38 @@ class AddWorkReportController extends GetxController {
         }
 
         workProgressController.initializeFromWorkItems(workItems);
+
+        // Add validation before navigating to WorkProgressForm
+        print('[AddWorkReport] === BEFORE WORK PROGRESS FORM ===');
+        print('selectedSpk.value: ${selectedSpk.value}');
+        print('selectedSpk.value?.id: ${selectedSpk.value?.id}');
+        print('selectedSpk.value?.spkNo: ${selectedSpk.value?.spkNo}');
+        print('spkList.length: ${spkList.length}');
+
+        if (selectedSpk.value == null) {
+          print(
+              '[AddWorkReport] ERROR: selectedSpk is null before WorkProgressForm!');
+
+          // Try to recover
+          ensureSpkSelected();
+
+          if (selectedSpk.value == null) {
+            error.value =
+                'SPK tidak terpilih. Silakan pilih SPK terlebih dahulu.';
+            showSnackbar(
+              'Error',
+              'SPK tidak terpilih. Silakan pilih SPK terlebih dahulu.',
+              isError: true,
+            );
+            return;
+          } else {
+            print(
+                '[AddWorkReport] Recovery successful before WorkProgressForm: ${selectedSpk.value?.spkNo}');
+          }
+        }
+
+        print(
+            '[AddWorkReport] SPK validation passed, opening WorkProgressForm');
 
         final result = await Get.to<bool>(
           () => WorkProgressForm(controller: workProgressController),
@@ -790,7 +869,35 @@ class AddWorkReportController extends GetxController {
       isLoading.value = true;
       error.value = '';
 
-      // Validasi SPK
+      // Enhanced SPK validation with debugging
+      print('[AddWorkReport] === SUBMIT VALIDATION ===');
+      print('selectedSpk.value: ${selectedSpk.value}');
+      print('selectedSpk.value?.id: ${selectedSpk.value?.id}');
+      print('selectedSpk.value?.spkNo: ${selectedSpk.value?.spkNo}');
+      print('spkList.length: ${spkList.length}');
+
+      if (selectedSpk.value == null) {
+        print('[AddWorkReport] ERROR: selectedSpk is null!');
+
+        // Try to recover by ensuring SPK is selected
+        ensureSpkSelected();
+
+        // If still null after recovery attempt, check if there are SPKs available
+        if (selectedSpk.value == null) {
+          if (spkList.isEmpty) {
+            print('[AddWorkReport] No SPK available in spkList for recovery');
+            throw Exception(
+                'Tidak ada SPK tersedia. Silakan refresh halaman dan coba lagi.');
+          } else {
+            print('[AddWorkReport] SPK list available but selection failed');
+            throw Exception(
+                'SPK belum dipilih. Silakan pilih SPK terlebih dahulu.');
+          }
+        } else {
+          print(
+              '[AddWorkReport] Recovery successful: selectedSpk now = ${selectedSpk.value?.spkNo}');
+        }
+      }
 
       final workProgressController = Get.find<WorkProgressController>();
       final materialController = Get.find<MaterialController>();
@@ -816,14 +923,12 @@ class AddWorkReportController extends GetxController {
       print('spkDetailsWithProgress: $spkDetailsWithProgress');
       print('workItems: $workItems');
       print('===============================================');
-      if (selectedSpk.value == null) {
-        throw Exception('SPK belum dipilih');
-      }
 
-      final input = {
-        "spkId": selectedSpk.value?.id ?? '',
+      // Create fresh input data to avoid any cached references
+      final freshInput = <String, dynamic>{
+        "spkId": selectedSpk.value!.id,
         "date": reportDate.value.toIso8601String().split('T')[0],
-        "areaId": selectedSpk.value?.location?.id ?? '',
+        "areaId": selectedSpk.value!.location?.id ?? '',
         "workStartTime": workStartTime.value.toUtc().toIso8601String(),
         "workEndTime": workEndTime.value?.toUtc().toIso8601String() ?? '',
         "closingRemarks": remarks.value,
@@ -831,9 +936,9 @@ class AddWorkReportController extends GetxController {
         "finishImages": endPhotos.map((p) => p.accessUrl).toList(),
         "activityDetails": Get.find<WorkProgressController>()
             .workProgresses
-            .map((p) => {
+            .map((p) => <String, dynamic>{
                   "workItemId": p.workItemId,
-                  "actualQuantity": {
+                  "actualQuantity": <String, dynamic>{
                     "nr": p.progressVolumeNR ?? 0.0,
                     "r": p.progressVolumeR ?? 0.0,
                   },
@@ -845,26 +950,25 @@ class AddWorkReportController extends GetxController {
                 })
             .toList(),
         "equipmentLogs": selectedEquipment
-            .map((e) => {
+            .map((e) => <String, dynamic>{
                   "equipmentId": e.equipment.id,
-                  "fuelIn": e.fuelIn ?? 0.0,
-                  "fuelRemaining": e.fuelRemaining ?? 0.0,
-                  "workingHour": e.workingHours ?? 0.0,
-                  "hourlyRate": 0.0,
-                  "rentalRatePerDay": e.selectedContract?.rentalRatePerDay ?? 0.0,
-                  "isBrokenReported": e.isBrokenReported ?? false,
+                  "fuelIn": e.fuelIn,
+                  "fuelRemaining": e.fuelRemaining,
+                  "workingHour": e.workingHours,
+                  "isBrokenReported": e.isBrokenReported,
                   "remarks": e.remarks ?? '',
+                  "hourlyRate": e.selectedContract?.rentalRatePerDay ?? 0.0,
                 })
             .toList(),
         "manpowerLogs": selectedManpower
-            .map((m) => {
+            .map((m) => <String, dynamic>{
                   "role": m.personnelRole.id,
                   "personCount": m.personCount ?? 0,
                   "hourlyRate": m.normalHourlyRate ?? 0.0,
                 })
             .toList(),
         "materialUsageLogs": materialController.selectedMaterials
-            .map((m) => {
+            .map((m) => <String, dynamic>{
                   "materialId": m.material.id,
                   "quantity": m.quantity ?? 0.0,
                   "unitRate": m.material.unitRate ?? 0.0,
@@ -872,22 +976,71 @@ class AddWorkReportController extends GetxController {
                 })
             .toList(),
         "otherCosts": otherCostController.otherCosts
-            .map((cost) => {
+            .map((cost) => <String, dynamic>{
                   "costType": cost.costType,
                   "amount": cost.amount,
-                  "remarks": cost.remarks ?? '',
+                  "description": cost.description,
+                  "receiptNumber": cost.receiptNumber,
+                  "remarks": cost.remarks,
                 })
             .toList(),
       };
-      final previewData = {"input": input};
-      final encoder = JsonEncoder.withIndent('  ');
+
+      final input = freshInput;
+
       print('=== DATA YANG DIKIRIM KE SERVER ===');
-      print(encoder.convert(previewData));
+      print('SPK ID: ${input["spkId"]}');
+      print(
+          'Equipment Logs: ${(input["equipmentLogs"] as List?)?.length ?? 0} items');
+      print(
+          'Manpower Logs: ${(input["manpowerLogs"] as List?)?.length ?? 0} items');
+      print(
+          'Material Usage Logs: ${(input["materialUsageLogs"] as List?)?.length ?? 0} items');
+      print(
+          'Other Costs: ${(input["otherCosts"] as List?)?.length ?? 0} items');
+
+      // Debug each section to find the problematic object
+      try {
+        print('Testing equipment logs encoding...');
+        print('Equipment logs data: ${input["equipmentLogs"]}');
+        final equipmentJson = jsonEncode(input["equipmentLogs"]);
+        print('Equipment logs OK');
+      } catch (e) {
+        print('ERROR in equipment logs: $e');
+      }
+
+      try {
+        print('Testing manpower logs encoding...');
+        print('Manpower logs data: ${input["manpowerLogs"]}');
+        final manpowerJson = jsonEncode(input["manpowerLogs"]);
+        print('Manpower logs OK');
+      } catch (e) {
+        print('ERROR in manpower logs: $e');
+      }
+
+      try {
+        print('Testing material logs encoding...');
+        print('Material logs data: ${input["materialUsageLogs"]}');
+        final materialJson = jsonEncode(input["materialUsageLogs"]);
+        print('Material logs OK');
+      } catch (e) {
+        print('ERROR in material logs: $e');
+      }
+
+      try {
+        print('Testing other costs encoding...');
+        print('Other costs data: ${input["otherCosts"]}');
+        final otherCostsJson = jsonEncode(input["otherCosts"]);
+        print('Other costs OK');
+      } catch (e) {
+        print('ERROR in other costs: $e');
+      }
+
       print('=== END DATA KIRIM ===');
 
       //Kirim data ke server menggunakan GraphQL service
       final service = Get.find<GraphQLService>();
-      final result = await service.submitDailyReport({'input': input});
+      final result = await service.submitDailyReport(input);
 
       if (result != null) {
         print('[AddWorkReport] Berhasil mengirim laporan: ${result['id']}');
@@ -944,7 +1097,8 @@ class AddWorkReportController extends GetxController {
   void previousStep() {
     if (currentStep.value > 0) {
       currentStep.value--;
-      saveTemporaryData(); // Simpan data setiap kali pindah langkah
+      // Don't save temporary data during submit process to avoid conflicts
+      // saveTemporaryData();
     }
   }
 
@@ -954,8 +1108,16 @@ class AddWorkReportController extends GetxController {
       isLoadingPersonnel.value = true;
       error.value = '';
 
+      print('[AddWorkReport] Mengambil data jabatan personel...');
+
+      // Add timeout to prevent hanging
       final service = Get.find<GraphQLService>();
-      final roles = await service.fetchPersonnelRoles();
+      final roles = await service
+          .fetchPersonnelRoles()
+          .timeout(const Duration(seconds: 30), onTimeout: () {
+        throw TimeoutException('Timeout saat mengambil data jabatan personel',
+            const Duration(seconds: 30));
+      });
 
       personnelRoles.value = roles;
       print(
@@ -963,6 +1125,9 @@ class AddWorkReportController extends GetxController {
     } catch (e) {
       print('[AddWorkReport] Error mengambil jabatan personel: $e');
       error.value = 'Gagal mengambil data jabatan personel: $e';
+
+      // Don't show snackbar here as it might be called during initialization
+      // Just log the error and continue
     } finally {
       isLoadingPersonnel.value = false;
     }
@@ -975,7 +1140,8 @@ class AddWorkReportController extends GetxController {
       print('Role: ${entry.personnelRole.roleName}');
       print('Count: ${entry.personCount} orang');
       print('Hours: ${entry.normalHoursPerPerson} jam');
-      print('Daily Rate: ${entry.manpowerDailyRate != null ? 'Rp ${entry.manpowerDailyRate}' : '-'}');
+      print(
+          'Daily Rate: ${entry.manpowerDailyRate != null ? 'Rp ${entry.manpowerDailyRate}' : '-'}');
       print('Total Hours: ${entry.totalNormalHours} jam');
       print('Total Cost: Rp ${entry.totalCost}');
       print('===========================\n');
@@ -1027,7 +1193,8 @@ class AddWorkReportController extends GetxController {
   // Hapus entry manpower
   void removeManpowerEntry(String personnelRoleId) {
     print('\n=== REMOVING MANPOWER ENTRY ===');
-    final index = selectedManpower.indexWhere((item) => item.personnelRole.id == personnelRoleId);
+    final index = selectedManpower
+        .indexWhere((item) => item.personnelRole.id == personnelRoleId);
     if (index >= 0) {
       print('Removing entry:');
       print('Role: ${selectedManpower[index].personnelRole.roleName}');
@@ -1036,7 +1203,8 @@ class AddWorkReportController extends GetxController {
     }
     print('===========================\n');
 
-    selectedManpower.removeWhere((item) => item.personnelRole.id == personnelRoleId);
+    selectedManpower
+        .removeWhere((item) => item.personnelRole.id == personnelRoleId);
     saveTemporaryData();
 
     print('\n=== UPDATED MANPOWER LIST ===');
@@ -1067,8 +1235,16 @@ Total Cost: Rp ${entry.totalCost}
       isLoadingEquipment.value = true;
       error.value = '';
 
-      final service = Get.find<GraphQLService>();
-      final equipments = await service.fetchEquipments();
+      print('[AddWorkReport] Mengambil data peralatan...');
+
+      // Add timeout to prevent hanging
+      final graphQLService = Get.find<GraphQLService>();
+      final equipments = await graphQLService
+          .fetchEquipments()
+          .timeout(const Duration(seconds: 30), onTimeout: () {
+        throw TimeoutException('Timeout saat mengambil data peralatan',
+            const Duration(seconds: 30));
+      });
 
       equipmentList.assignAll(equipments);
       print(
@@ -1076,6 +1252,9 @@ Total Cost: Rp ${entry.totalCost}
     } catch (e) {
       print('[AddWorkReport] Error mengambil data peralatan: $e');
       error.value = 'Gagal mengambil data peralatan: $e';
+
+      // Don't show snackbar here as it might be called during initialization
+      // Just log the error and continue
     } finally {
       isLoadingEquipment.value = false;
     }
@@ -1115,30 +1294,20 @@ Total Cost: Rp ${entry.totalCost}
     return hasManpower && hasEquipment;
   }
 
-  // Fungsi untuk menentukan status aktivitas berdasarkan pengisian biaya
+  // Method untuk mendapatkan status activity berdasarkan pengisian
   String getActivityStatus() {
-    // Cek apakah semua biaya wajib sudah terisi
-    bool isAllMandatoryCostFilled = true;
-
-    // Cek biaya tenaga kerja
-    if (selectedManpower.isEmpty) {
-      isAllMandatoryCostFilled = false;
+    // Jika ada foto finish dan remarks, maka status COMPLETED
+    if (endPhotos.isNotEmpty && remarks.value.isNotEmpty) {
+      return 'COMPLETED';
     }
-
-    // Cek biaya peralatan
-    if (selectedEquipment.isEmpty) {
-      isAllMandatoryCostFilled = false;
+    // Jika ada foto start, maka status IN_PROGRESS
+    else if (startPhotos.isNotEmpty) {
+      return 'IN_PROGRESS';
     }
-
-    // Cek biaya material
-    final materialController = Get.find<MaterialController>();
-    if (materialController.selectedMaterials.isEmpty) {
-      isAllMandatoryCostFilled = false;
+    // Jika tidak ada foto sama sekali, maka status DRAFT
+    else {
+      return 'DRAFT';
     }
-
-    // Jika semua biaya wajib terisi, status menjadi "Menunggu Progress"
-    // Jika belum, status tetap "Draft"
-    return isAllMandatoryCostFilled ? 'Menunggu Progress' : 'Draft';
   }
 
   // Method untuk menyimpan data sementara ke local storage
@@ -1156,17 +1325,22 @@ Total Cost: Rp ${entry.totalCost}
       // Tentukan status berdasarkan pengisian
       final activityStatus = getActivityStatus();
 
+      // Debug: Check other costs before saving
+      final otherCostController = Get.find<OtherCostController>();
+
       // Buat objek DailyActivity dari data sementara menggunakan model dari activity_input
       final dailyActivity = activity_input.DailyActivity(
         id: '', // ID akan di-generate oleh Hive
         spkId: spkId,
         spkDetails: spkDetails,
-        date: reportDate.value.toIso8601String(),
+        date: reportDate.value.millisecondsSinceEpoch
+            .toString(), // Simpan sebagai timestamp
         areaId: selectedSpk.value?.location?.id ?? '',
         weather: weather.value,
         status: activityStatus, // Gunakan status yang sesuai
-        workStartTime: workStartTime.value.toIso8601String(),
-        workEndTime: workEndTime.value?.toIso8601String() ?? '',
+        workStartTime: workStartTime.value.millisecondsSinceEpoch
+            .toString(), // Simpan sebagai timestamp
+        workEndTime: workEndTime.value?.millisecondsSinceEpoch.toString() ?? '',
         startImages: startPhotos.map((p) => p.accessUrl).toList(),
         finishImages: endPhotos.map((p) => p.accessUrl).toList(),
         closingRemarks: remarks.value,
@@ -1181,7 +1355,8 @@ Total Cost: Rp ${entry.totalCost}
                   workingHour: e.workingHours,
                   isBrokenReported: e.isBrokenReported,
                   remarks: e.remarks ?? '',
-                  hourlyRate: e.selectedContract?.rentalRatePerDay ?? 0.0,
+                  hourlyRate: e.selectedContract?.rentalRatePerDay ??
+                      0.0, // Simpan rentalRatePerDay sebagai hourlyRate
                 ))
             .toList(),
         manpowerLogs: selectedManpower
@@ -1202,8 +1377,7 @@ Total Cost: Rp ${entry.totalCost}
                   remarks: m.remarks ?? '',
                 ))
             .toList(),
-        otherCosts: Get.find<OtherCostController>()
-            .otherCosts
+        otherCosts: otherCostController.otherCosts
             .map((cost) => activity_input.OtherCost(
                   id: cost.id,
                   costType: cost.costType,
@@ -1221,8 +1395,18 @@ Total Cost: Rp ${entry.totalCost}
 
       // Simpan ke HiveService yang menggunakan model DailyActivity dari activity_input
       await _hiveService.saveDailyActivity(dailyActivity);
+
       print(
           '[AddWorkReport] Data sementara berhasil disimpan untuk SPK: $spkId dengan status: $activityStatus');
+
+      // Refresh data lokal di DailyActivityController jika ada
+      try {
+        final dailyActivityController = Get.find<DailyActivityController>();
+        await dailyActivityController.fetchLocalActivities();
+        print('[AddWorkReport] Local activities refreshed after saving draft');
+      } catch (e) {
+        print('[AddWorkReport] Could not refresh local activities: $e');
+      }
     } catch (e) {
       print('[AddWorkReport] Error menyimpan data sementara: $e');
     }
@@ -1292,7 +1476,21 @@ Total Cost: Rp ${entry.totalCost}
       currentStep.value = 1;
 
       // Atur form data
-      reportDate.value = DateTime.parse(dailyActivity.date);
+      try {
+        // Parse date dari timestamp atau ISO string
+        if (dailyActivity.date.contains('-')) {
+          // ISO string format
+          reportDate.value = DateTime.parse(dailyActivity.date);
+        } else {
+          // Timestamp format
+          reportDate.value = DateTime.fromMillisecondsSinceEpoch(
+              int.parse(dailyActivity.date));
+        }
+      } catch (e) {
+        print('[AddWorkReport] Error parsing date: $e, using current date');
+        reportDate.value = DateTime.now();
+      }
+
       location.value = dailyActivity.spkDetails?.location?.name ?? '';
       workStartTime.value =
           safeParseDate(dailyActivity.workStartTime) ?? DateTime.now();
@@ -1370,7 +1568,7 @@ Total Cost: Rp ${entry.totalCost}
             (equipment) => equipment.id == log.equipmentId,
             orElse: () {
               print(
-                  '[AddWorkReport] Equipment tidak ditemukan untuk ID: \\${log.equipmentId}');
+                  '[AddWorkReport] Equipment tidak ditemukan untuk ID: ${log.equipmentId}');
               return equipment_model.Equipment(
                 id: '',
                 equipmentCode: 'Peralatan tidak ditemukan',
@@ -1384,18 +1582,35 @@ Total Cost: Rp ${entry.totalCost}
             },
           );
 
-          // Cari contract yang rentalRate-nya sama dengan log.hourlyRate
+          // Debug: Print equipment contracts
+          print(
+              '[AddWorkReport] Equipment ${equipment.equipmentCode} memiliki ${equipment.contracts.length} kontrak');
+          for (var contract in equipment.contracts) {
+            print(
+                '[AddWorkReport] - Contract: ${contract.contractId}, rentalRatePerDay: ${contract.rentalRatePerDay}, rentalRate: ${contract.rentalRate}');
+          }
+          print('[AddWorkReport] Saved hourlyRate: ${log.hourlyRate}');
+
+          // Cari contract yang rentalRatePerDay-nya sama dengan log.hourlyRate (yang sebenarnya adalah rentalRatePerDay)
           equipment_model.EquipmentContract? selectedContract;
           if (equipment.contracts.isNotEmpty) {
             selectedContract = equipment.contracts.firstWhereOrNull(
+              (c) => c.rentalRatePerDay == log.hourlyRate,
+            );
+
+            // Jika tidak ditemukan berdasarkan rentalRatePerDay, coba cari berdasarkan rentalRate
+            selectedContract ??= equipment.contracts.firstWhereOrNull(
               (c) => c.rentalRate == log.hourlyRate,
             );
           }
-          // Jika tidak ada contract yang cocok, buat dummy contract
+
+          // Jika tidak ada contract yang cocok, buat dummy contract dengan nilai yang tersimpan
           selectedContract ??= equipment_model.EquipmentContract(
             contractId: 'draft',
             equipmentId: equipment.id,
             rentalRate: log.hourlyRate,
+            rentalRatePerDay:
+                log.hourlyRate, // Set both fields dengan nilai yang sama
             contract: equipment_model.Contract(
               id: '',
               contractNo: '',
@@ -1408,7 +1623,7 @@ Total Cost: Rp ${entry.totalCost}
 
           if (equipment.id.isNotEmpty) {
             print(
-                '[AddWorkReport] Menambahkan equipment entry untuk: \\${equipment.equipmentCode} (hourlyRate: \\${log.hourlyRate})');
+                '[AddWorkReport] Menambahkan equipment entry untuk: ${equipment.equipmentCode} (saved hourlyRate: ${log.hourlyRate}, selected contract rentalRatePerDay: ${selectedContract.rentalRatePerDay})');
             selectedEquipment.add(EquipmentEntry(
               equipment: equipment,
               workingHours: log.workingHour,
@@ -1465,15 +1680,22 @@ Total Cost: Rp ${entry.totalCost}
       otherCostController.otherCosts.clear();
       for (var cost in dailyActivity.otherCosts) {
         try {
-          print('[AddWorkReport] Menambahkan other cost: ${cost.description}');
-          otherCostController.addOtherCost(OtherCost(
+          print(
+              '[AddWorkReport] Memuat other cost: ${cost.description} - Rp ${cost.amount}');
+
+          // Gunakan model OtherCost dari daily_activity_model.dart yang digunakan oleh OtherCostController
+          final otherCostModel = daily_activity_model.OtherCost(
             id: cost.id,
             costType: cost.costType,
             amount: cost.amount,
             description: cost.description,
             receiptNumber: cost.receiptNumber,
             remarks: cost.remarks,
-          ));
+          );
+
+          otherCostController.addOtherCost(otherCostModel);
+          print(
+              '[AddWorkReport] Berhasil menambahkan other cost: ${cost.costType}');
         } catch (e) {
           print('[AddWorkReport] Error saat memuat other cost: $e');
         }
@@ -1549,12 +1771,11 @@ Total Cost: Rp ${entry.totalCost}
 
       final spk = selectedSpk.value!;
       final now = DateTime.now();
-      final today = DateFormat('yyyy-MM-dd').format(now);
 
       final existingActivity = await _hiveService.getDailyActivity(spk.id);
       if (existingActivity != null) {
         // Hapus aktivitas sebelumnya jika ada
-        await _hiveService.deleteDailyActivity(existingActivity.id);
+        await _hiveService.deleteDailyActivity(existingActivity.localId);
       }
 
       // Buat SPKDetails untuk menyimpan detail lengkap SPK
@@ -1564,12 +1785,13 @@ Total Cost: Rp ${entry.totalCost}
         id: '', // ID akan di-generate oleh Hive
         spkId: spk.id,
         spkDetails: spkDetails,
-        date: today,
+        date: now.millisecondsSinceEpoch.toString(), // Gunakan timestamp
         areaId: spk.location?.id ?? '',
         weather: 'Cerah',
-        status: 'Draft',
-        workStartTime: '08:00',
-        workEndTime: '17:00',
+        status: 'Menunggu Progress',
+        workStartTime:
+            now.millisecondsSinceEpoch.toString(), // Gunakan timestamp
+        workEndTime: '',
         startImages: [],
         finishImages: [],
         closingRemarks: '',
@@ -1586,6 +1808,7 @@ Total Cost: Rp ${entry.totalCost}
       );
 
       await _hiveService.saveDailyActivity(dailyActivity);
+      print('[AddWorkReport] Temporary activity created for SPK: ${spk.id}');
     } catch (e) {
       print('Error saving temporary activity: $e');
     }
@@ -1647,6 +1870,28 @@ Total Cost: Rp ${entry.totalCost}
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // Method untuk memvalidasi state controller
+  bool validateControllerState() {
+    print('[AddWorkReport] === VALIDATING CONTROLLER STATE ===');
+    print('selectedSpk.value: ${selectedSpk.value}');
+    print('selectedSpk.value?.id: ${selectedSpk.value?.id}');
+    print('selectedSpk.value?.spkNo: ${selectedSpk.value?.spkNo}');
+    print('spkList.length: ${spkList.length}');
+    print('currentStep.value: ${currentStep.value}');
+    print('startPhotos.length: ${startPhotos.length}');
+    print('endPhotos.length: ${endPhotos.length}');
+    print('selectedManpower.length: ${selectedManpower.length}');
+    print('selectedEquipment.length: ${selectedEquipment.length}');
+
+    if (selectedSpk.value == null) {
+      print('[AddWorkReport] ERROR: selectedSpk is null!');
+      return false;
+    }
+
+    print('[AddWorkReport] Controller state validation passed');
+    return true;
   }
 }
 

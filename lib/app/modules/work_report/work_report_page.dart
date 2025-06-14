@@ -21,7 +21,7 @@ class WorkReportPage extends StatelessWidget {
 
     // Refresh data saat masuk halaman
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.fetchActivities();
+      controller.fetchServerActivities();
     });
 
     return Scaffold(
@@ -37,6 +37,8 @@ class WorkReportPage extends StatelessWidget {
       body: Column(
         children: [
           _buildHeader(context, controller, lokasiController),
+          // Status Laporan - dipindahkan ke atas tab
+          _buildCompactStatusCard(controller),
           // Tab Bar
           Container(
             decoration: BoxDecoration(
@@ -77,9 +79,9 @@ class WorkReportPage extends StatelessWidget {
                     controller: controller.tabController,
                     children: [
                       // Tab 1: Laporan Terkirim (Server)
-                      _buildActivitiesListWithStatus(controller),
+                      _buildActivitiesListOnly(controller),
                       // Tab 2: Draft & Lokal (Local)
-                      _buildActivitiesListWithStatus(controller),
+                      _buildActivitiesListOnly(controller),
                     ],
                   )
                 : const SizedBox(),
@@ -110,7 +112,13 @@ class WorkReportPage extends StatelessWidget {
             children: [
               IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Get.offAllNamed('/home'),
+                onPressed: () {
+                  if (Navigator.canPop(context)) {
+                    Get.back();
+                  } else {
+                    Get.offAllNamed('/home');
+                  }
+                },
               ),
               Expanded(
                 child: Column(
@@ -129,8 +137,10 @@ class WorkReportPage extends StatelessWidget {
                     Obx(() {
                       final authController = Get.find<AuthController>();
                       final userArea = authController.currentUser.value?.area;
-                      
-                      if (userArea != null && userArea.id.isNotEmpty && userArea.name.toLowerCase() != 'allarea') {
+
+                      if (userArea != null &&
+                          userArea.id.isNotEmpty &&
+                          userArea.name.toLowerCase() != 'allarea') {
                         return Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Row(
@@ -163,41 +173,48 @@ class WorkReportPage extends StatelessWidget {
               Obx(() {
                 final authController = Get.find<AuthController>();
                 final userArea = authController.currentUser.value?.area;
-                final hasAllArea = userArea == null || userArea.id.isEmpty || userArea.name.toLowerCase() == 'allarea';
-                
-                if (hasAllArea) {
-                  return GestureDetector(
-                    onTap: () {
-                      _showPilihLokasiDialog(context, controller, lokasiController);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      margin: const EdgeInsets.only(right: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.filter_alt,
-                              color: FigmaColors.primary, size: 20),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Pilih Lokasi',
-                            style: GoogleFonts.dmSans(
-                              color: FigmaColors.primary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
+                final hasAllArea = userArea == null ||
+                    userArea.id.isEmpty ||
+                    userArea.name.toLowerCase() == 'allarea';
+
+                return Row(
+                  children: [
+                    if (hasAllArea)
+                      GestureDetector(
+                        onTap: () {
+                          _showPilihLokasiDialog(
+                              context, controller, lokasiController);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          margin: const EdgeInsets.only(right: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                } else {
-                  // Spacer to maintain layout balance
-                  return const SizedBox(width: 60);
-                }
+                          child: Row(
+                            children: [
+                              const Icon(Icons.filter_alt,
+                                  color: FigmaColors.primary, size: 20),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Pilih Lokasi',
+                                style: GoogleFonts.dmSans(
+                                  color: FigmaColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      // Spacer to maintain layout balance
+                      const SizedBox(width: 60),
+                  ],
+                );
               }),
             ],
           ),
@@ -232,7 +249,7 @@ class WorkReportPage extends StatelessWidget {
               child: TextField(
                 controller: searchController,
                 onSubmitted: (value) {
-                  controller.fetchActivities(keyword: value);
+                  controller.fetchServerActivities(keyword: value);
                 },
                 decoration: InputDecoration(
                   hintText: 'Cari laporan kerja',
@@ -252,7 +269,8 @@ class WorkReportPage extends StatelessWidget {
             ),
             GestureDetector(
               onTap: () {
-                controller.fetchActivities(keyword: searchController.text);
+                controller.fetchServerActivities(
+                    keyword: searchController.text);
               },
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -417,10 +435,12 @@ class WorkReportPage extends StatelessWidget {
                               // Refresh data dengan filter lokasi
                               if (tempSelected.id.isEmpty) {
                                 // Semua Lokasi - ambil ulang data tanpa filter
-                                activityController.fetchActivities();
+                                activityController.fetchServerActivities();
                               } else {
                                 // Filter berdasarkan lokasi setelah mengambil data
-                                activityController.fetchActivities().then((_) {
+                                activityController
+                                    .fetchServerActivities()
+                                    .then((_) {
                                   // Filter berdasarkan lokasi yang dipilih
                                   final filteredServerActivities =
                                       activityController.serverActivities
@@ -540,7 +560,7 @@ class WorkReportPage extends StatelessWidget {
               if (controller.selectedTabIndex.value == 0) ...[
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => controller.fetchActivities(),
+                  onPressed: () => controller.fetchServerActivities(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: FigmaColors.primary,
                     foregroundColor: Colors.white,
@@ -555,7 +575,7 @@ class WorkReportPage extends StatelessWidget {
 
       return RefreshIndicator(
         onRefresh: () async {
-          await controller.fetchActivities();
+          await controller.fetchServerActivities();
         },
         child: ListView.builder(
           padding: const EdgeInsets.all(16),
@@ -588,7 +608,7 @@ class WorkReportPage extends StatelessWidget {
     return Obx(() {
       // Hitung status dari server activities
       final serverActivities = controller.serverActivities;
-      
+
       int approvedCount = 0;
       int rejectedCount = 0;
       int submittedCount = 0;
@@ -600,7 +620,8 @@ class WorkReportPage extends StatelessWidget {
           approvedCount++;
         } else if (status.contains('ditolak') || status.contains('rejected')) {
           rejectedCount++;
-        } else if (status.contains('submitted') || status.contains('terkirim')) {
+        } else if (status.contains('submitted') ||
+            status.contains('terkirim')) {
           submittedCount++;
         }
       }
@@ -784,7 +805,7 @@ class WorkReportPage extends StatelessWidget {
               if (controller.selectedTabIndex.value == 0) ...[
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => controller.fetchActivities(),
+                  onPressed: () => controller.fetchServerActivities(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: FigmaColors.primary,
                     foregroundColor: Colors.white,
@@ -799,7 +820,7 @@ class WorkReportPage extends StatelessWidget {
 
       return RefreshIndicator(
         onRefresh: () async {
-          await controller.fetchActivities();
+          await controller.fetchServerActivities();
         },
         child: CustomScrollView(
           slivers: [
@@ -811,13 +832,34 @@ class WorkReportPage extends StatelessWidget {
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final DailyActivityResponse activity = controller.activities[index];
+                  // Sort activities by updatedAt (newest first)
+                  final sortedActivities =
+                      List<DailyActivityResponse>.from(controller.activities);
+                  sortedActivities.sort((a, b) {
+                    try {
+                      DateTime dateA = _parseActivityDate(a.updatedAt);
+                      DateTime dateB = _parseActivityDate(b.updatedAt);
+                      return dateB.compareTo(dateA); // Newest first
+                    } catch (e) {
+                      // Fallback to date if updatedAt parsing fails
+                      try {
+                        DateTime dateA = _parseActivityDate(a.date);
+                        DateTime dateB = _parseActivityDate(b.date);
+                        return dateB.compareTo(dateA);
+                      } catch (e2) {
+                        return 0;
+                      }
+                    }
+                  });
+
+                  final DailyActivityResponse activity =
+                      sortedActivities[index];
 
                   return Padding(
                     padding: EdgeInsets.only(
                       left: 16,
                       right: 16,
-                      bottom: index == controller.activities.length - 1 ? 16 : 0,
+                      bottom: index == sortedActivities.length - 1 ? 16 : 0,
                     ),
                     child: DailyActivityCard(
                       activity: activity,
@@ -836,5 +878,273 @@ class WorkReportPage extends StatelessWidget {
         ),
       );
     });
+  }
+
+  Widget _buildCompactStatusCard(DailyActivityController controller) {
+    return Obx(() {
+      // Hitung status dari server activities
+      final serverActivities = controller.serverActivities;
+
+      int approvedCount = 0;
+      int rejectedCount = 0;
+      int submittedCount = 0;
+      int draftCount = controller.localActivities.length;
+
+      for (var activity in serverActivities) {
+        final status = activity.status.toLowerCase();
+        if (status.contains('disetujui') || status.contains('approved')) {
+          approvedCount++;
+        } else if (status.contains('ditolak') || status.contains('rejected')) {
+          rejectedCount++;
+        } else if (status.contains('submitted') ||
+            status.contains('terkirim')) {
+          submittedCount++;
+        }
+      }
+
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [FigmaColors.primary, FigmaColors.error],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Status Laporan',
+              style: GoogleFonts.dmSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildCompactStatusItem(
+                    icon: Icons.check_circle,
+                    label: 'Disetujui',
+                    count: approvedCount,
+                    color: Colors.green.shade300,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _buildCompactStatusItem(
+                    icon: Icons.cancel,
+                    label: 'Ditolak',
+                    count: rejectedCount,
+                    color: Colors.red.shade300,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _buildCompactStatusItem(
+                    icon: Icons.send,
+                    label: 'Terkirim',
+                    count: submittedCount,
+                    color: Colors.blue.shade300,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _buildCompactStatusItem(
+                    icon: Icons.edit_note,
+                    label: 'Draft',
+                    count: draftCount,
+                    color: Colors.orange.shade300,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildCompactStatusItem({
+    required IconData icon,
+    required String label,
+    required int count,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 16,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            count.toString(),
+            style: GoogleFonts.dmSans(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.dmSans(
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w500,
+              fontSize: 9,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivitiesListOnly(DailyActivityController controller) {
+    return Obx(() {
+      if (controller.isLoading.value) {
+        return const Center(
+          child: CircularProgressIndicator(
+            color: FigmaColors.primary,
+          ),
+        );
+      }
+
+      if (controller.activities.isEmpty) {
+        String message = controller.selectedTabIndex.value == 0
+            ? 'Tidak ada laporan terkirim yang ditemukan'
+            : 'Tidak ada laporan draft yang tersimpan';
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              const SizedBox(height: 32),
+              Icon(
+                controller.selectedTabIndex.value == 0
+                    ? Icons.cloud_off_outlined
+                    : Icons.edit_note_outlined,
+                color: FigmaColors.abu,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                style: GoogleFonts.dmSans(
+                  color: FigmaColors.abu,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (controller.error.value.isNotEmpty &&
+                  controller.selectedTabIndex.value == 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0, left: 24, right: 24),
+                  child: Text(
+                    'Error: ${controller.error.value}',
+                    style: GoogleFonts.dmSans(
+                      color: FigmaColors.error,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              if (controller.selectedTabIndex.value == 0) ...[
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => controller.fetchServerActivities(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: FigmaColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Muat Ulang'),
+                ),
+              ],
+            ],
+          ),
+        );
+      }
+
+      // Sort activities by updatedAt (newest first)
+      final sortedActivities =
+          List<DailyActivityResponse>.from(controller.activities);
+      sortedActivities.sort((a, b) {
+        try {
+          DateTime dateA = _parseActivityDate(a.updatedAt);
+          DateTime dateB = _parseActivityDate(b.updatedAt);
+          return dateB.compareTo(dateA); // Newest first
+        } catch (e) {
+          // Fallback to date if updatedAt parsing fails
+          try {
+            DateTime dateA = _parseActivityDate(a.date);
+            DateTime dateB = _parseActivityDate(b.date);
+            return dateB.compareTo(dateA);
+          } catch (e2) {
+            return 0;
+          }
+        }
+      });
+
+      return RefreshIndicator(
+        onRefresh: () async {
+          await controller.fetchServerActivities();
+        },
+        child: ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: sortedActivities.length,
+          itemBuilder: (context, index) {
+            final DailyActivityResponse activity = sortedActivities[index];
+
+            return DailyActivityCard(
+              activity: activity,
+              onTap: () {
+                print('Tapped on activity: ${activity.id}');
+                print('SPK ID: ${activity.spkId}');
+                print('Status: ${activity.status}');
+              },
+            );
+          },
+        ),
+      );
+    });
+  }
+
+  // Helper method to parse activity date from various formats
+  DateTime _parseActivityDate(String dateString) {
+    try {
+      // Try parsing as epoch milliseconds
+      final epochMs = int.parse(dateString);
+      return DateTime.fromMillisecondsSinceEpoch(epochMs);
+    } catch (_) {
+      try {
+        // Try parsing as ISO date string
+        return DateTime.parse(dateString);
+      } catch (e) {
+        // Fallback to current date
+        return DateTime.now();
+      }
+    }
   }
 }

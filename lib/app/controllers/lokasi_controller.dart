@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../data/models/area_model.dart';
 import '../data/providers/graphql_service.dart';
 import 'dart:async';
+import 'dart:io';
 
 class LokasiController extends GetxController {
   final areas = <Area>[].obs;
@@ -12,24 +13,38 @@ class LokasiController extends GetxController {
   // Flag untuk cek apakah area sudah diambil, untuk menghindari fetch berulang kali
   final hasLoadedAreas = false.obs;
 
+  // Timer untuk timeout handling
+  Timer? _timeoutTimer;
+
   @override
   void onInit() {
     super.onInit();
-    _initDefaultArea();
+    // _initDefaultArea();
     fetchAreas();
   }
 
-  // Inisialisasi area default
-  void _initDefaultArea() {
-    final defaultArea = Area(
-      id: '',
-      name: 'Semua Lokasi',
-      location: Location(type: '', coordinates: []),
-    );
-    selectedArea.value = defaultArea;
+  @override
+  void onClose() {
+    print('[LokasiController] onClose called - cleaning up resources');
+
+    // Cancel any running timers
+    _timeoutTimer?.cancel();
+    _timeoutTimer = null;
+
+    // Clear observables to prevent memory leaks
+    areas.clear();
+    selectedArea.value = null;
+
+    print('[LokasiController] onClose completed - all resources cleaned up');
+    super.onClose();
   }
 
+  // Inisialisasi area default
+
   Future<bool> fetchAreas() async {
+    // Cancel any existing timer
+    _timeoutTimer?.cancel();
+
     // Jika sudah pernah diambil dan berhasil, tidak perlu fetch lagi
     if (hasLoadedAreas.value && areas.isNotEmpty) {
       print(
@@ -41,48 +56,51 @@ class LokasiController extends GetxController {
       isLoading.value = true;
       error.value = '';
 
-      // Set timeout 5 detik
-      final completer = Completer<bool>();
+      print('[LokasiController] Starting fetchAreas');
 
-      Timer(const Duration(seconds: 5), () {
-        if (!completer.isCompleted) {
+      // Set timeout with better error handling
+      _timeoutTimer = Timer(const Duration(seconds: 15), () {
+        if (isLoading.value) {
           print('[LokasiController] Timeout fetchAreas');
-          completer.complete(false);
+          isLoading.value = false;
+          error.value = 'Timeout: Koneksi terlalu lama';
+          _timeoutTimer = null;
         }
       });
 
-      // Fetch data
-      Get.find<GraphQLService>().getAllAreas().then((result) {
-        if (!completer.isCompleted) {
-          if (result.isNotEmpty) {
-            print(
-                '[LokasiController] fetched areas: ${result.map((e) => e.name).toList()}');
-            areas.assignAll(result);
-            hasLoadedAreas.value = true;
-            completer.complete(true);
-          } else {
-            areas.clear();
-            print('[LokasiController] No areas found');
-            completer.complete(true);
-          }
-        }
-      }).catchError((e) {
-        if (!completer.isCompleted) {
-          error.value = e.toString();
-          print('[LokasiController] fetchAreas error: $e');
-          completer.complete(false);
-        }
+      // Fetch data with timeout
+      final result = await Get.find<GraphQLService>()
+          .getAllAreas()
+          .timeout(const Duration(seconds: 30), onTimeout: () {
+        throw TimeoutException(
+            'Timeout saat mengambil data area', const Duration(seconds: 30));
       });
 
-      // Tunggu sampai fetch selesai atau timeout
-      final success = await completer.future;
+      // Cancel timer if successful
+      _timeoutTimer?.cancel();
+      _timeoutTimer = null;
 
-      return success;
+      if (result.isNotEmpty) {
+        print(
+            '[LokasiController] fetched areas: ${result.map((e) => e.name).toList()}');
+        areas.assignAll(result);
+        hasLoadedAreas.value = true;
+        isLoading.value = false;
+        return true;
+      } else {
+        areas.clear();
+        print('[LokasiController] No areas found');
+        isLoading.value = false;
+        return true;
+      }
     } catch (e) {
       error.value = e.toString();
-      print('[LokasiController] fetchAreas unexpected error: $e');
+      print('[LokasiController] fetchAreas error: $e');
+      isLoading.value = false;
       return false;
     } finally {
+      _timeoutTimer?.cancel();
+      _timeoutTimer = null;
       isLoading.value = false;
     }
   }

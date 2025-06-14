@@ -21,10 +21,16 @@ class DailyActivityResponse {
   final List<OtherCostResponse> otherCosts;
   final SPKResponse? spkDetail;
   final UserResponse userDetail;
+  final String? rejectionReason;
+  final AreaResponse? area;
+  final bool isApproved;
+  final UserResponse? approvedBy;
+  final String? approvedAt;
+  final double? budgetUsage;
 
   // Properti tambahan untuk kompatibilitas dengan kode existing
   String get spkId => spkDetail?.id ?? '';
-  String get areaId => ''; // Defaultnya kosong, bisa diupdate nanti
+  String get areaId => area?.id ?? '';
 
   DailyActivityResponse({
     required this.id,
@@ -47,6 +53,12 @@ class DailyActivityResponse {
     required this.otherCosts,
     this.spkDetail,
     required this.userDetail,
+    this.rejectionReason,
+    this.area,
+    required this.isApproved,
+    this.approvedBy,
+    this.approvedAt,
+    this.budgetUsage,
   });
 
   factory DailyActivityResponse.fromJson(Map<String, dynamic> json) {
@@ -99,6 +111,20 @@ class DailyActivityResponse {
             ? SPKResponse.fromJson(json['spkDetail'])
             : null,
         userDetail: UserResponse.fromJson(json['userDetail'] ?? {}),
+        rejectionReason: json['rejectionReason']?.toString(),
+        area: json['area'] != null ? AreaResponse.fromJson(json['area']) : null,
+        isApproved: json['isApproved'] as bool? ?? false,
+        approvedBy: json['approvedBy'] != null
+            ? UserResponse.fromJson(json['approvedBy'])
+            : null,
+        approvedAt: json['approvedAt']?.toString(),
+        budgetUsage: json['budgetUsage'] != null
+            ? json['budgetUsage'] is int
+                ? (json['budgetUsage'] as int).toDouble()
+                : json['budgetUsage'] is double
+                    ? json['budgetUsage']
+                    : 0.0
+            : null,
       );
     } catch (e, stackTrace) {
       print('[DailyActivityResponse] Error parsing JSON: $e');
@@ -380,6 +406,8 @@ class EquipmentLogResponse {
   final String remarks;
   final EquipmentResponse? equipment;
   final double hourlyRate;
+  final double rentalRatePerDay;
+  final double fuelPrice;
 
   EquipmentLogResponse({
     required this.id,
@@ -390,6 +418,8 @@ class EquipmentLogResponse {
     required this.remarks,
     this.equipment,
     required this.hourlyRate,
+    this.rentalRatePerDay = 0.0,
+    this.fuelPrice = 0.0,
   });
 
   factory EquipmentLogResponse.fromJson(Map<String, dynamic> json) {
@@ -428,6 +458,20 @@ class EquipmentLogResponse {
                   ? json['hourlyRate']
                   : 0.0
           : 0.0,
+      rentalRatePerDay: json['rentalRatePerDay'] != null
+          ? json['rentalRatePerDay'] is int
+              ? (json['rentalRatePerDay'] as int).toDouble()
+              : json['rentalRatePerDay'] is double
+                  ? json['rentalRatePerDay']
+                  : 0.0
+          : 0.0,
+      fuelPrice: json['fuelPrice'] != null
+          ? json['fuelPrice'] is int
+              ? (json['fuelPrice'] as int).toDouble()
+              : json['fuelPrice'] is double
+                  ? json['fuelPrice']
+                  : 0.0
+          : 0.0,
     );
   }
 }
@@ -456,6 +500,7 @@ class ManpowerLogResponse {
   final double normalHourlyRate;
   final double overtimeHourlyRate;
   final PersonnelRoleResponse? personnelRole;
+  final double workingHours;
 
   ManpowerLogResponse({
     required this.id,
@@ -464,6 +509,7 @@ class ManpowerLogResponse {
     required this.normalHourlyRate,
     required this.overtimeHourlyRate,
     this.personnelRole,
+    this.workingHours = 0.0,
   });
 
   factory ManpowerLogResponse.fromJson(Map<String, dynamic> json) {
@@ -478,13 +524,19 @@ class ManpowerLogResponse {
                     ? json['normalHoursPerPerson']
                     : 0.0
             : 0.0,
-        normalHourlyRate: json['normalHourlyRate'] != null
-            ? json['normalHourlyRate'] is int
-                ? (json['normalHourlyRate'] as int).toDouble()
-                : json['normalHourlyRate'] is double
-                    ? json['normalHourlyRate']
+        normalHourlyRate: json['hourlyRate'] != null
+            ? json['hourlyRate'] is int
+                ? (json['hourlyRate'] as int).toDouble()
+                : json['hourlyRate'] is double
+                    ? json['hourlyRate']
                     : 0.0
-            : 0.0,
+            : json['normalHourlyRate'] != null
+                ? json['normalHourlyRate'] is int
+                    ? (json['normalHourlyRate'] as int).toDouble()
+                    : json['normalHourlyRate'] is double
+                        ? json['normalHourlyRate']
+                        : 0.0
+                : 0.0,
         overtimeHourlyRate: json['overtimeHourlyRate'] != null
             ? json['overtimeHourlyRate'] is int
                 ? (json['overtimeHourlyRate'] as int).toDouble()
@@ -495,6 +547,13 @@ class ManpowerLogResponse {
         personnelRole: json['personnelRole'] != null
             ? PersonnelRoleResponse.fromJson(json['personnelRole'])
             : null,
+        workingHours: json['workingHours'] != null
+            ? json['workingHours'] is int
+                ? (json['workingHours'] as int).toDouble()
+                : json['workingHours'] is double
+                    ? json['workingHours']
+                    : 0.0
+            : 0.0,
       );
     } catch (e, stackTrace) {
       print('[ManpowerLogResponse] Error parsing JSON: $e');
@@ -600,27 +659,56 @@ class OtherCostResponse {
 class SPKResponse {
   final String id;
   final String spkNo;
+  final String wapNo;
   final String title;
   final String projectName;
+  final String contractor;
+  final double budget;
+  final String startDate;
+  final String endDate;
+  final String workDescription;
+  final String date;
+  final LocationResponse? location;
 
   SPKResponse({
     required this.id,
     required this.spkNo,
+    required this.wapNo,
     required this.title,
     required this.projectName,
+    required this.contractor,
+    required this.budget,
+    required this.startDate,
+    required this.endDate,
+    required this.workDescription,
+    required this.date,
+    this.location,
   });
 
   factory SPKResponse.fromJson(Map<String, dynamic> json) {
     return SPKResponse(
       id: json['id']?.toString() ?? '',
       spkNo: json['spkNo']?.toString() ?? '',
+      wapNo: json['wapNo']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       projectName: json['projectName']?.toString() ?? '',
+      contractor: json['contractor']?.toString() ?? '',
+      budget: json['budget'] != null
+          ? json['budget'] is int
+              ? (json['budget'] as int).toDouble()
+              : json['budget'] is double
+                  ? json['budget']
+                  : 0.0
+          : 0.0,
+      startDate: json['startDate']?.toString() ?? '',
+      endDate: json['endDate']?.toString() ?? '',
+      workDescription: json['workDescription']?.toString() ?? '',
+      date: json['date']?.toString() ?? '',
+      location: json['location'] != null
+          ? LocationResponse.fromJson(json['location'])
+          : null,
     );
   }
-
-  // Property tambahan untuk kompatibilitas
-  LocationResponse? get location => null;
 }
 
 // Class tambahan untuk kompatibilitas dengan code lama
