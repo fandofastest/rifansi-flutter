@@ -1,0 +1,41 @@
+<svg width="90" height="90" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="45" cy="45" r="40" fill="#E8F5E8" stroke="#4CAF50" stroke-width="2"/>
+  
+  <!-- Clipboard Background -->
+  <rect x="28" y="15" width="34" height="60" rx="4" fill="white" stroke="#4CAF50" stroke-width="2"/>
+  
+  <!-- Clipboard Clip -->
+  <rect x="38" y="12" width="14" height="8" rx="2" fill="#4CAF50"/>
+  <rect x="40" y="14" width="10" height="4" rx="1" fill="white"/>
+  
+  <!-- Report Header -->
+  <rect x="32" y="25" width="26" height="3" rx="1" fill="#4CAF50"/>
+  <rect x="32" y="30" width="20" height="2" rx="1" fill="#81C784"/>
+  
+  <!-- Report Lines -->
+  <rect x="32" y="38" width="24" height="1.5" rx="0.5" fill="#E0E0E0"/>
+  <rect x="32" y="42" width="22" height="1.5" rx="0.5" fill="#E0E0E0"/>
+  <rect x="32" y="46" width="26" height="1.5" rx="0.5" fill="#E0E0E0"/>
+  <rect x="32" y="50" width="18" height="1.5" rx="0.5" fill="#E0E0E0"/>
+  
+  <!-- Checkboxes -->
+  <rect x="32" y="56" width="4" height="4" rx="1" fill="white" stroke="#4CAF50" stroke-width="1"/>
+  <path d="M 33 58 L 34 59 L 36 57" stroke="#4CAF50" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <rect x="38" y="57" width="16" height="1.5" rx="0.5" fill="#E0E0E0"/>
+  
+  <rect x="32" y="62" width="4" height="4" rx="1" fill="white" stroke="#4CAF50" stroke-width="1"/>
+  <path d="M 33 64 L 34 65 L 36 63" stroke="#4CAF50" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <rect x="38" y="63" width="16" height="1.5" rx="0.5" fill="#E0E0E0"/>
+  
+  <!-- Pen Icon -->
+  <g transform="translate(50, 45) rotate(45)">
+    <rect x="-1" y="-8" width="2" height="16" rx="1" fill="#FF5722"/>
+    <polygon points="-2,-8 2,-8 0,-12" fill="#FFC107"/>
+    <circle cx="0" cy="6" r="2" fill="#FF5722"/>
+  </g>
+  
+  <!-- Progress Indicator -->
+  <circle cx="55" cy="30" r="8" fill="#4CAF50"/>
+  <text x="55" y="33" text-anchor="middle" fill="white" font-family="Arial" font-size="6" font-weight="bold">75%</text>
+</svg> 

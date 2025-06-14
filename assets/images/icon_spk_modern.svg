@@ -1,0 +1,33 @@
+<svg width="90" height="90" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="45" cy="45" r="40" fill="#FFF3E0" stroke="#FF9800" stroke-width="2"/>
+  
+  <!-- Document Background -->
+  <rect x="25" y="18" width="40" height="54" rx="4" fill="white" stroke="#FF9800" stroke-width="2"/>
+  
+  <!-- Document Header -->
+  <rect x="25" y="18" width="40" height="12" rx="4" fill="#FF9800"/>
+  <text x="45" y="27" text-anchor="middle" fill="white" font-family="Arial" font-size="8" font-weight="bold">SPK</text>
+  
+  <!-- Checklist Items -->
+  <circle cx="32" cy="38" r="3" fill="#4CAF50"/>
+  <path d="M 30 38 L 32 40 L 35 36" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <rect x="38" y="36" width="20" height="2" rx="1" fill="#E0E0E0"/>
+  
+  <circle cx="32" cy="48" r="3" fill="#4CAF50"/>
+  <path d="M 30 48 L 32 50 L 35 46" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <rect x="38" y="46" width="20" height="2" rx="1" fill="#E0E0E0"/>
+  
+  <circle cx="32" cy="58" r="3" fill="#FFC107"/>
+  <rect x="38" y="56" width="20" height="2" rx="1" fill="#E0E0E0"/>
+  
+  <!-- Progress Bar -->
+  <rect x="30" y="64" width="30" height="4" rx="2" fill="#E0E0E0"/>
+  <rect x="30" y="64" width="20" height="4" rx="2" fill="#4CAF50"/>
+  
+  <!-- Tools Icon -->
+  <g transform="translate(52, 52)">
+    <path d="M 2 2 L 8 8 M 8 2 L 2 8" stroke="#FF9800" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="5" cy="5" r="6" fill="none" stroke="#FF9800" stroke-width="1.5"/>
+  </g>
+</svg> 

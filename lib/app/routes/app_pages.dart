@@ -6,6 +6,7 @@ import 'app_routes.dart';
 import '../modules/home/home_binding.dart';
 import 'auth_middleware.dart';
 import 'supervisor_middleware.dart';
+import '../modules/dashboard/dashboard_page.dart';
 import '../modules/settings/settings_page.dart';
 import '../modules/spk/spk_page.dart';
 import '../modules/spk/spk_binding.dart';
@@ -36,6 +37,12 @@ class AppPages {
     GetPage(
       name: Routes.home,
       page: () => const HomePage(),
+      binding: HomeBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: Routes.dashboard,
+      page: () => const DashboardPage(),
       binding: HomeBinding(),
       middlewares: [AuthMiddleware()],
     ),

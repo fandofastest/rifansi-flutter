@@ -366,8 +366,13 @@ class HomePage extends StatelessWidget {
                 crossAxisSpacing: 1,
                 childAspectRatio: 0.8,
                 children: [
+                  _MenuItem(
+                    iconAsset: 'assets/images/icon_dashboard.svg',
+                    label: 'Dashboard\nAnalytics',
+                    onTap: () => Get.toNamed(Routes.dashboard),
+                  ),
                   Obx(() => _MenuItem(
-                        iconAsset: 'assets/images/icon_spk_home.svg',
+                        iconAsset: 'assets/images/icon_spk_modern.svg',
                         label:
                             'Daftar SPK \n(${spkController.spks.length} SPK)',
                         onTap: () => Get.toNamed(Routes.spk),
@@ -375,7 +380,7 @@ class HomePage extends StatelessWidget {
                   // Only show "Laporan Pekerjaan" if user is not supervisor
                   if (user?.role.roleName.toLowerCase() != 'supervisor')
                     Obx(() => _MenuItem(
-                          iconAsset: 'assets/images/icon_kerja_home.svg',
+                          iconAsset: 'assets/images/icon_work_report.svg',
                           label:
                               'Laporan \nPekerjaan\n(${activityController.activities.length} laporan)',
                           onTap: () => Get.toNamed(Routes.workReport),
@@ -383,7 +388,7 @@ class HomePage extends StatelessWidget {
                   // Only show "Laporan Alat" if user is not supervisor
                   if (user?.role.roleName.toLowerCase() != 'supervisor')
                     _MenuItem(
-                      iconAsset: 'assets/images/icon_absen_home.svg',
+                      iconAsset: 'assets/images/icon_equipment.svg',
                       label: 'Laporan Alat',
                       onTap: () => Get.toNamed(Routes.equipmentReport),
                     ),
@@ -391,28 +396,24 @@ class HomePage extends StatelessWidget {
                   // Only show "Approval Laporan" if user is supervisor
                   if (user?.role.roleName.toLowerCase() == 'supervisor')
                     _MenuItem(
-                      iconAsset: 'assets/images/icon_kerja_home.svg',
+                      iconAsset: 'assets/images/icon_approval.svg',
                       label: 'Approval\nLaporan',
                       onTap: () => Get.toNamed(Routes.areaReport),
                     ),
                   // Only show "Approval Alat" if user is supervisor
                   if (user?.role.roleName.toLowerCase() == 'supervisor')
                     _MenuItem(
-                      iconAsset: 'assets/images/icon_absen_home.svg',
+                      iconAsset: 'assets/images/icon_equipment.svg',
                       label: 'Approval\nAlat',
                       onTap: () => Get.toNamed(Routes.equipmentApproval),
                     ),
                   _MenuItem(
-                    iconAsset: 'assets/images/icon_perusahaan.svg',
+                    iconAsset: 'assets/images/icon_company.svg',
                     label: 'Profile Perusahaan',
                     onTap: () => Get.toNamed(Routes.companyProfile),
                   ),
                   _MenuItem(
-                    iconAsset: 'assets/images/icon_profile.svg',
-                    label: 'Coming soon',
-                  ),
-                  _MenuItem(
-                    iconAsset: 'assets/images/icon_profile.svg',
+                    iconAsset: 'assets/images/icon_settings.svg',
                     label: 'Pengaturan',
                     onTap: () => Get.toNamed(Routes.settings),
                   ),

@@ -1,0 +1,75 @@
+<svg width="90" height="90" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="45" cy="45" r="40" fill="#FAFAFA" stroke="#616161" stroke-width="2"/>
+  
+  <!-- Main Gear -->
+  <g transform="translate(45, 45)">
+    <!-- Gear Teeth -->
+    <path d="M 0 -20 L 4 -20 L 4 -16 L 0 -16 Z" fill="#616161"/>
+    <path d="M 14.14 -14.14 L 17.32 -10.96 L 14.14 -7.78 L 10.96 -10.96 Z" fill="#616161"/>
+    <path d="M 20 0 L 20 4 L 16 4 L 16 0 Z" fill="#616161"/>
+    <path d="M 14.14 14.14 L 17.32 10.96 L 14.14 7.78 L 10.96 10.96 Z" fill="#616161"/>
+    <path d="M 0 20 L 4 20 L 4 16 L 0 16 Z" fill="#616161"/>
+    <path d="M -14.14 14.14 L -10.96 10.96 L -7.78 14.14 L -10.96 17.32 Z" fill="#616161"/>
+    <path d="M -20 0 L -16 0 L -16 4 L -20 4 Z" fill="#616161"/>
+    <path d="M -14.14 -14.14 L -10.96 -10.96 L -7.78 -14.14 L -10.96 -17.32 Z" fill="#616161"/>
+    
+    <!-- Gear Body -->
+    <circle cx="0" cy="0" r="15" fill="#757575" stroke="#616161" stroke-width="2"/>
+    
+    <!-- Center Hole -->
+    <circle cx="0" cy="0" r="6" fill="white" stroke="#616161" stroke-width="2"/>
+    
+    <!-- Inner Details -->
+    <circle cx="0" cy="0" r="3" fill="#616161"/>
+  </g>
+  
+  <!-- Small Gear 1 -->
+  <g transform="translate(25, 25)">
+    <!-- Small Gear Teeth -->
+    <path d="M 0 -8 L 2 -8 L 2 -6 L 0 -6 Z" fill="#9E9E9E"/>
+    <path d="M 5.66 -5.66 L 7.07 -4.24 L 5.66 -2.83 L 4.24 -4.24 Z" fill="#9E9E9E"/>
+    <path d="M 8 0 L 8 2 L 6 2 L 6 0 Z" fill="#9E9E9E"/>
+    <path d="M 5.66 5.66 L 7.07 4.24 L 5.66 2.83 L 4.24 4.24 Z" fill="#9E9E9E"/>
+    <path d="M 0 8 L 2 8 L 2 6 L 0 6 Z" fill="#9E9E9E"/>
+    <path d="M -5.66 5.66 L -4.24 4.24 L -2.83 5.66 L -4.24 7.07 Z" fill="#9E9E9E"/>
+    <path d="M -8 0 L -6 0 L -6 2 L -8 2 Z" fill="#9E9E9E"/>
+    <path d="M -5.66 -5.66 L -4.24 -4.24 L -2.83 -5.66 L -4.24 -7.07 Z" fill="#9E9E9E"/>
+    
+    <!-- Small Gear Body -->
+    <circle cx="0" cy="0" r="6" fill="#BDBDBD" stroke="#9E9E9E" stroke-width="1"/>
+    <circle cx="0" cy="0" r="2" fill="white"/>
+  </g>
+  
+  <!-- Small Gear 2 -->
+  <g transform="translate(65, 65)">
+    <!-- Small Gear Teeth -->
+    <path d="M 0 -8 L 2 -8 L 2 -6 L 0 -6 Z" fill="#9E9E9E"/>
+    <path d="M 5.66 -5.66 L 7.07 -4.24 L 5.66 -2.83 L 4.24 -4.24 Z" fill="#9E9E9E"/>
+    <path d="M 8 0 L 8 2 L 6 2 L 6 0 Z" fill="#9E9E9E"/>
+    <path d="M 5.66 5.66 L 7.07 4.24 L 5.66 2.83 L 4.24 4.24 Z" fill="#9E9E9E"/>
+    <path d="M 0 8 L 2 8 L 2 6 L 0 6 Z" fill="#9E9E9E"/>
+    <path d="M -5.66 5.66 L -4.24 4.24 L -2.83 5.66 L -4.24 7.07 Z" fill="#9E9E9E"/>
+    <path d="M -8 0 L -6 0 L -6 2 L -8 2 Z" fill="#9E9E9E"/>
+    <path d="M -5.66 -5.66 L -4.24 -4.24 L -2.83 -5.66 L -4.24 -7.07 Z" fill="#9E9E9E"/>
+    
+    <!-- Small Gear Body -->
+    <circle cx="0" cy="0" r="6" fill="#BDBDBD" stroke="#9E9E9E" stroke-width="1"/>
+    <circle cx="0" cy="0" r="2" fill="white"/>
+  </g>
+  
+  <!-- Settings Sliders -->
+  <g transform="translate(15, 60)">
+    <!-- Slider Track -->
+    <rect x="0" y="0" width="20" height="2" rx="1" fill="#E0E0E0"/>
+    <!-- Slider Handle -->
+    <circle cx="6" cy="1" r="3" fill="#616161" stroke="white" stroke-width="1"/>
+  </g>
+  
+  <g transform="translate(15, 68)">
+    <!-- Slider Track -->
+    <rect x="0" y="0" width="20" height="2" rx="1" fill="#E0E0E0"/>
+    <!-- Slider Handle -->
+    <circle cx="14" cy="1" r="3" fill="#616161" stroke="white" stroke-width="1"/>
+  </g>
+</svg> 
