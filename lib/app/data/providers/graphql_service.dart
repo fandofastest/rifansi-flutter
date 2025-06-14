@@ -14,7 +14,7 @@ import '../models/spk_detail_with_progress_response.dart' as spk_progress;
 
 class GraphQLService extends GetxService {
   late GraphQLClient client;
-  final String baseUrl = 'https://laptop3000.fando.id/graphql';
+  final String baseUrl = 'https://localhost3000.fando.id/graphql';
 
   Future<GraphQLService> init() async {
     final HttpLink httpLink = HttpLink(baseUrl);
@@ -345,7 +345,7 @@ class GraphQLService extends GetxService {
     try {
       print('[GraphQL] Starting fetchPersonnelRoles');
       print('[GraphQL] Executing query: getAllPersonnelRolesQuery');
-      
+
       final result = await query(getAllPersonnelRolesQuery);
       print('[GraphQL] Query execution completed');
 
@@ -356,18 +356,18 @@ class GraphQLService extends GetxService {
       }
 
       final List personnelRoles = result.data?['personnelRoles'] ?? [];
-      print('[GraphQL] Successfully fetched ${personnelRoles.length} personnel roles');
-      
+      print(
+          '[GraphQL] Successfully fetched ${personnelRoles.length} personnel roles');
+
       if (personnelRoles.isEmpty) {
         print('[GraphQL] Warning: No personnel roles found in response');
       } else {
         print('[GraphQL] First role sample: ${personnelRoles.first}');
       }
 
-      final roles = personnelRoles
-          .map((json) => PersonnelRole.fromJson(json))
-          .toList();
-      
+      final roles =
+          personnelRoles.map((json) => PersonnelRole.fromJson(json)).toList();
+
       print('[GraphQL] Successfully parsed ${roles.length} personnel roles');
       return roles;
     } catch (e) {
