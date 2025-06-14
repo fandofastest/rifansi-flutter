@@ -72,15 +72,24 @@ class HomePage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              user != null
-                                  ? 'Selamat Datang, ${user.fullName}'
-                                  : 'Selamat Datang',
+                              'Selamat Datang',
                               style: GoogleFonts.dmSans(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 16,
                               ),
                             ),
+                            if (user != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                user.fullName,
+                                style: GoogleFonts.dmSans(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
                             Text(
                               user != null ? user.role.roleName : '',
                               style: GoogleFonts.dmSans(
@@ -174,23 +183,23 @@ class HomePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            // INFORMASI HARI INI
+            // INFORMASI HARI INI - Compact Grid Layout
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [FigmaColors.primary, FigmaColors.error],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white, width: 2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white, width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
@@ -202,116 +211,146 @@ class HomePage extends StatelessWidget {
                       Icon(
                         Icons.info_outline,
                         color: Colors.white,
-                        size: 20,
+                        size: 16,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Text(
                         'Informasi Hari ini',
                         style: GoogleFonts.dmSans(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
-                          fontSize: 18,
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  // Vertical layout for info stats
-                  Column(
-                    children: [
-                      Obx(() => _InfoStatVertical(
-                            icon: Icons.assignment,
-                            title: 'SPK Aktif',
-                            value: '${spkController.spks.length}',
-                            subtitle: 'Surat Perintah Kerja',
-                          )),
-                      const SizedBox(height: 12),
-                      // Only show "Laporan Kerja" count if user is not supervisor
-                      if (user?.role.roleName.toLowerCase() !=
-                          'supervisor') ...[
-                        Obx(() => _InfoStatVertical(
-                              icon: Icons.work,
-                              title: 'Total Laporan',
-                              value: '${activityController.totalReportsCount}',
-                              subtitle: 'Semua laporan kerja',
-                            )),
-                        const SizedBox(height: 12),
-                        Obx(() => _InfoStatVertical(
-                              icon: Icons.check_circle,
-                              title: 'Laporan Disetujui',
-                              value:
-                                  '${activityController.approvedReportsCount}',
-                              subtitle: 'Laporan yang diterima',
-                            )),
-                        const SizedBox(height: 12),
-                        Obx(() => _InfoStatVertical(
-                              icon: Icons.cancel,
-                              title: 'Laporan Ditolak',
-                              value:
-                                  '${activityController.rejectedReportsCount}',
-                              subtitle: 'Laporan yang ditolak',
-                            )),
-                        const SizedBox(height: 12),
-                        Obx(() => _InfoStatVertical(
-                              icon: Icons.build_circle,
-                              title: 'Alat yang Rusak',
-                              value:
-                                  '${equipmentController.damagedEquipmentCount}',
-                              subtitle: 'Peralatan bermasalah',
-                            )),
-                        const SizedBox(height: 12),
-                        Obx(() => _InfoStatVertical(
-                              icon: Icons.build,
-                              title: 'Alat Siap Pakai',
-                              value:
-                                  '${equipmentController.readyEquipmentCount}',
-                              subtitle: 'Peralatan siap operasi',
-                            )),
+                  const SizedBox(height: 12),
+                  // Compact Grid Layout
+                  if (user?.role.roleName.toLowerCase() != 'supervisor') ...[
+                    // Non-supervisor: 2x3 grid
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.assignment,
+                                title: 'SPK',
+                                value: '${spkController.spks.length}',
+                              )),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.work,
+                                title: 'Total',
+                                value:
+                                    '${activityController.totalReportsCount}',
+                              )),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.check_circle,
+                                title: 'Disetujui',
+                                value:
+                                    '${activityController.approvedReportsCount}',
+                              )),
+                        ),
                       ],
-                      // Show approval statistics if user is supervisor
-                      if (user?.role.roleName.toLowerCase() ==
-                          'supervisor') ...[
-                        Obx(() => _InfoStatVertical(
-                              icon: Icons.work,
-                              title: 'Total Laporan',
-                              value: '${activityController.totalReportsCount}',
-                              subtitle: 'Semua laporan area',
-                            )),
-                        const SizedBox(height: 12),
-                        Obx(() => _InfoStatVertical(
-                              icon: Icons.pending_actions,
-                              title: 'Pending Approval',
-                              value:
-                                  '${activityController.pendingReportsCount}',
-                              subtitle: 'Menunggu persetujuan',
-                            )),
-                        const SizedBox(height: 12),
-                        Obx(() => _InfoStatVertical(
-                              icon: Icons.check_circle,
-                              title: 'Laporan Disetujui',
-                              value:
-                                  '${activityController.approvedReportsCount}',
-                              subtitle: 'Disetujui hari ini',
-                            )),
-                        const SizedBox(height: 12),
-                        Obx(() => _InfoStatVertical(
-                              icon: Icons.cancel,
-                              title: 'Laporan Ditolak',
-                              value:
-                                  '${activityController.rejectedReportsCount}',
-                              subtitle: 'Ditolak hari ini',
-                            )),
-                        const SizedBox(height: 12),
-                        Obx(() => _InfoStatVertical(
-                              icon: Icons.build,
-                              title: 'Alat Siap Pakai',
-                              value:
-                                  '${equipmentController.readyEquipmentCount}',
-                              subtitle: 'Peralatan siap operasi',
-                            )),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.cancel,
+                                title: 'Ditolak',
+                                value:
+                                    '${activityController.rejectedReportsCount}',
+                              )),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.build_circle,
+                                title: 'Rusak',
+                                value:
+                                    '${equipmentController.damagedEquipmentCount}',
+                              )),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.build,
+                                title: 'Siap',
+                                value:
+                                    '${equipmentController.readyEquipmentCount}',
+                              )),
+                        ),
                       ],
-                    ],
-                  ),
+                    ),
+                  ] else ...[
+                    // Supervisor: 2x3 grid
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.assignment,
+                                title: 'SPK',
+                                value: '${spkController.spks.length}',
+                              )),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.work,
+                                title: 'Total',
+                                value:
+                                    '${activityController.totalReportsCount}',
+                              )),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.pending_actions,
+                                title: 'Pending',
+                                value:
+                                    '${activityController.pendingReportsCount}',
+                              )),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.check_circle,
+                                title: 'Disetujui',
+                                value:
+                                    '${activityController.approvedReportsCount}',
+                              )),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.cancel,
+                                title: 'Ditolak',
+                                value:
+                                    '${activityController.rejectedReportsCount}',
+                              )),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Obx(() => _InfoStatCompact(
+                                icon: Icons.build,
+                                title: 'Alat OK',
+                                value:
+                                    '${equipmentController.readyEquipmentCount}',
+                              )),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -478,6 +517,59 @@ class _InfoStatVertical extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _InfoStatCompact extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  const _InfoStatCompact({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: Colors.white,
+            size: 16,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: GoogleFonts.dmSans(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: GoogleFonts.dmSans(
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w500,
+              fontSize: 10,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 }
