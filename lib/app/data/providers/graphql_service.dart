@@ -14,8 +14,8 @@ import '../models/spk_detail_with_progress_response.dart' as spk_progress;
 
 class GraphQLService extends GetxService {
   late GraphQLClient client;
-  // final String baseUrl = 'https://berifansi.fando.id/graphql';
-  final String baseUrl = 'https://localhost3000.fando.id/graphql';
+  final String baseUrl = 'https://berifansi.fando.id/graphql';
+  // final String baseUrl = 'https://localhost3000.fando.id/graphql';
 
   Future<GraphQLService> init() async {
     final HttpLink httpLink = HttpLink(baseUrl);
@@ -47,15 +47,15 @@ class GraphQLService extends GetxService {
       fetchPolicy: FetchPolicy.noCache,
       errorPolicy: ErrorPolicy.all,
       cacheRereadPolicy: CacheRereadPolicy.ignoreAll,
-      pollInterval: const Duration(seconds: 10),
+      pollInterval: const Duration(seconds: 60),
     );
 
     try {
       return await client.query(options).timeout(
-        const Duration(seconds: 15),
+        const Duration(seconds: 20),
         onTimeout: () {
-          print('[GraphQL] Query timeout after 15 seconds');
-          throw Exception('Koneksi timeout setelah 15 detik');
+          print('[GraphQL] Query timeout after 20 seconds');
+          throw Exception('Koneksi timeout setelah 20 detik');
         },
       );
     } catch (e) {
@@ -71,7 +71,18 @@ class GraphQLService extends GetxService {
       variables: variables ?? const {},
     );
 
-    return await client.mutate(options);
+    try {
+      return await client.mutate(options).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () {
+          print('[GraphQL] Mutation timeout after 20 seconds');
+          throw Exception('Koneksi timeout setelah 20 detik');
+        },
+      );
+    } catch (e) {
+      print('[GraphQL] Mutation error: $e');
+      rethrow;
+    }
   }
 
   // Areas Query
@@ -681,7 +692,7 @@ class GraphQLService extends GetxService {
           await query(getDailyActivityByUserQuery, variables: variables);
 
       if (result.hasException) {
-        print('[GraphQL] Error: ${result.exception}');
+        print('[GraphQL] Errorsss: ${result.exception}');
         throw Exception(result.exception.toString());
       }
 

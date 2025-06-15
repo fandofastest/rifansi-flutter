@@ -1853,13 +1853,29 @@ Total Cost: Rp ${entry.totalCost}
               .map((item) => {
                     'name': item.name,
                     'description': item.description,
-                    'volume': item.boqVolume.nr,
+                    // Choose volume: use remote if non-remote is 0, otherwise use non-remote
+                    'volume': item.boqVolume.nr != 0
+                        ? item.boqVolume.nr
+                        : item.boqVolume.r,
+                    'volumeType': item.boqVolume.nr != 0
+                        ? 'nr'
+                        : 'r', // Track which type is being used
                     'unit': item.unit.name,
-                    'unitRate': item.rates.nr.rate,
-                    'progress': item.progressAchieved.nr,
-                    'actualQuantity': item.actualQuantity.nr,
-                    'dailyProgress': item.dailyProgress.nr,
-                    'dailyCost': item.dailyCost.nr,
+                    'unitRate': item.boqVolume.nr != 0
+                        ? item.rates.nr.rate
+                        : item.rates.r.rate,
+                    'progress': item.boqVolume.nr != 0
+                        ? item.progressAchieved.nr
+                        : item.progressAchieved.r,
+                    'actualQuantity': item.boqVolume.nr != 0
+                        ? item.actualQuantity.nr
+                        : item.actualQuantity.r,
+                    'dailyProgress': item.boqVolume.nr != 0
+                        ? item.dailyProgress.nr
+                        : item.dailyProgress.r,
+                    'dailyCost': item.boqVolume.nr != 0
+                        ? item.dailyCost.nr
+                        : item.dailyCost.r,
                   })
               .toList();
         }

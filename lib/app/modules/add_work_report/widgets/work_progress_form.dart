@@ -61,6 +61,96 @@ class WorkProgressForm extends StatelessWidget {
         : 0.0;
   }
 
+  // Menghitung progress percentage sesuai rumus sebenarnya
+  double _calculateCorrectProgressPercentage() {
+    final spkDetail =
+        Get.find<AddWorkReportController>().spkDetailsWithProgress.value;
+
+    if (spkDetail == null || controller.workProgresses.isEmpty) return 0.0;
+
+    // 1. Hitung Total Hari Kerja
+    try {
+      DateTime? startDate;
+      DateTime? endDate;
+
+      // Parse tanggal dari string jika perlu
+      if (spkDetail.startDate is String) {
+        startDate = DateTime.tryParse(spkDetail.startDate as String);
+      } else if (spkDetail.startDate is DateTime) {
+        startDate = spkDetail.startDate as DateTime;
+      }
+
+      if (spkDetail.endDate is String) {
+        endDate = DateTime.tryParse(spkDetail.endDate as String);
+      } else if (spkDetail.endDate is DateTime) {
+        endDate = spkDetail.endDate as DateTime;
+      }
+
+      if (startDate == null || endDate == null) return 0.0;
+
+      final totalWorkDays = ((endDate.difference(startDate).inDays) + 1)
+          .clamp(1, double.infinity)
+          .toInt();
+
+      // 2. Hitung Total Volume BOQ dari semua work item
+      double totalBoqVolume = 0.0;
+      for (var progress in controller.workProgresses) {
+        totalBoqVolume += (progress.boqVolumeNR + progress.boqVolumeR);
+      }
+
+      // 3. Hitung Target Harian
+      final dailyTarget = totalBoqVolume / totalWorkDays;
+
+      // 4. Hitung Volume Progress Hari Ini (dari input user)
+      double todayProgressVolume = 0.0;
+      for (var progress in controller.workProgresses) {
+        todayProgressVolume +=
+            (progress.progressVolumeNR + progress.progressVolumeR);
+      }
+
+      // 5. Hitung Progress Percentage
+      final progressPercentage =
+          dailyTarget > 0 ? (todayProgressVolume / dailyTarget) * 100 : 0.0;
+
+      // 6. Pembulatan hingga 2 desimal
+      return double.parse(progressPercentage.toStringAsFixed(2));
+    } catch (e) {
+      print('Error calculating correct progress percentage: $e');
+      return 0.0;
+    }
+  }
+
+  // Debug function untuk membandingkan kedua metode perhitungan
+  void _debugProgressCalculation() {
+    final oldMethod = _calculateDailyProgressPercentage();
+    final newMethod = _calculateCorrectProgressPercentage();
+
+    print('=== PROGRESS CALCULATION COMPARISON ===');
+    print('Old Method (per item): ${oldMethod.toStringAsFixed(2)}%');
+    print('New Method (correct formula): ${newMethod.toStringAsFixed(2)}%');
+    print('Difference: ${(newMethod - oldMethod).toStringAsFixed(2)}%');
+
+    final spkDetail =
+        Get.find<AddWorkReportController>().spkDetailsWithProgress.value;
+    if (spkDetail != null) {
+      print('SPK Start Date: ${spkDetail.startDate}');
+      print('SPK End Date: ${spkDetail.endDate}');
+
+      // Hitung total BOQ volume
+      double totalBoqVolume = 0.0;
+      double totalProgressVolume = 0.0;
+      for (var progress in controller.workProgresses) {
+        totalBoqVolume += (progress.boqVolumeNR + progress.boqVolumeR);
+        totalProgressVolume +=
+            (progress.progressVolumeNR + progress.progressVolumeR);
+      }
+      print('Total BOQ Volume: ${totalBoqVolume.toStringAsFixed(2)}');
+      print(
+          'Total Progress Volume Today: ${totalProgressVolume.toStringAsFixed(2)}');
+    }
+    print('==========================================');
+  }
+
   // Menghitung total progress kumulatif s/d hari ini
   double _calculateCumulativeProgressPercentage() {
     final spkDetail =
@@ -431,6 +521,9 @@ class WorkProgressForm extends StatelessWidget {
   }
 
   void _showPreviewDialog(BuildContext context) {
+    // Debug perbandingan perhitungan progress
+    _debugProgressCalculation();
+
     final reportController = Get.find<AddWorkReportController>();
     final materialController = Get.find<MaterialController>();
     final otherCostController = Get.find<OtherCostController>();
@@ -578,7 +671,7 @@ class WorkProgressForm extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             _buildInfoRow('Progress Hari Ini',
-                                '${_calculateDailyProgressPercentage().toStringAsFixed(2)}%'),
+                                '${_calculateCorrectProgressPercentage().toStringAsFixed(2)}%'),
                             _buildInfoRow('Nilai Progress Hari Ini',
                                 'Rp ${numberFormat.format(controller.totalValue.value)}'),
                             _buildInfoRow('Total Progress s/d Hari Ini',

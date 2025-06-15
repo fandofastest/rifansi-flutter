@@ -164,7 +164,7 @@ class DailyActivityController extends GetxController
       if (keyword != null) searchKeyword.value = keyword;
 
       // Set timeout with better error handling
-      _timeoutTimer = Timer(const Duration(seconds: 15), () {
+      _timeoutTimer = Timer(const Duration(seconds: 60), () {
         if (isLoading.value) {
           print('[DailyActivity] Timeout saat fetch activities');
           isLoading.value = false;

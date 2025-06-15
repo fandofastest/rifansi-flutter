@@ -13,14 +13,17 @@ class WorkDetailsWidget extends StatelessWidget {
     required this.controller,
   }) : super(key: key);
 
-  String formatVolume(dynamic volume, String unit) {
+  String formatVolume(dynamic volume, String unit, String? volumeType) {
     if (volume == null) return '0 $unit';
-    
+
     // Format number with Indonesian locale
     final formatter = NumberFormat('#,##0.##', 'id_ID');
     final formattedNumber = formatter.format(volume);
-    
-    return '$formattedNumber $unit';
+
+    // Add volume type indicator
+    final typeIndicator = volumeType == 'r' ? ' (Remote)' : ' (Non-Remote)';
+
+    return '$formattedNumber $unit$typeIndicator';
   }
 
   @override
@@ -160,6 +163,7 @@ class WorkDetailsWidget extends StatelessWidget {
                             _buildVolumeCell(
                               item['volume'],
                               item['unit'] ?? '',
+                              item['volumeType'],
                             ),
                           ],
                         ))
@@ -199,11 +203,11 @@ class WorkDetailsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildVolumeCell(dynamic volume, String unit) {
+  Widget _buildVolumeCell(dynamic volume, String unit, String? volumeType) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Text(
-        formatVolume(volume, unit),
+        formatVolume(volume, unit, volumeType),
         style: GoogleFonts.dmSans(
           fontSize: 12,
           color: Colors.black87,
