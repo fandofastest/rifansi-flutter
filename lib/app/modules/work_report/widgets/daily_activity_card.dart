@@ -1122,17 +1122,52 @@ class DailyActivityCard extends StatelessWidget {
         activity.areaId ??
         'N/A';
 
-    // Cek status laporan
-    final bool isDraft = activity.status.toLowerCase().contains('draft');
+    // Cek status laporan dengan debug logging
+    final bool isDraft = activity.status.toLowerCase().contains('draft') ||
+        activity.status.toLowerCase() == 'in_progress';
     final bool isWaitingProgress =
-        activity.status.toLowerCase().contains('menunggu progress');
+        activity.status.toLowerCase().contains('menunggu progress') ||
+            activity.status.toLowerCase().contains('waiting');
     final bool isApproved =
         activity.status.toLowerCase().contains('disetujui') ||
-            activity.status.toLowerCase().contains('approved');
+            activity.status.toLowerCase().contains('approved') ||
+            activity.status.toLowerCase().contains('completed');
+    final bool isRejected =
+        activity.status.toLowerCase().contains('rejected') ||
+            activity.status.toLowerCase().contains('ditolak');
+    final bool isTodayReport = isReportFromToday();
+
+    // Debug logging untuk status
+    print("8. isDraft: $isDraft (draft OR in_progress)");
+    print(
+        "9. isWaitingProgress: $isWaitingProgress (menunggu progress OR waiting)");
+    print("10. isApproved: $isApproved (disetujui OR approved OR completed)");
+    print("11. isRejected: $isRejected (rejected OR ditolak)");
+    print("12. isTodayReport: $isTodayReport");
+    print(
+        "13. Final color logic - isDraft: $isDraft, will use orange: ${isDraft ? 'YES' : 'NO'}");
+    print("14. Status exact match check:");
+    print(
+        "    - Contains 'draft': ${activity.status.toLowerCase().contains('draft')}");
+    print(
+        "    - Equals 'in_progress': ${activity.status.toLowerCase() == 'in_progress'}");
+    print(
+        "    - Status equals 'draft': ${activity.status.toLowerCase() == 'draft'}");
+    print(
+        "    - Status starts with 'draft': ${activity.status.toLowerCase().startsWith('draft')}");
+    print("=============================================\n");
 
     return GestureDetector(
       onTap: () {
+        print("[CARD TAP] Activity ${activity.id} tapped!");
+        print("[CARD TAP] Status: ${activity.status}");
+        print("[CARD TAP] isDraft: $isDraft");
+        print("[CARD TAP] isWaitingProgress: $isWaitingProgress");
+        print("[CARD TAP] onTap handler provided: ${onTap != null}");
+
+        // For draft and waiting progress, use internal handling instead of parent
         if (isDraft || isWaitingProgress) {
+          print("[CARD TAP] Using internal draft handling");
           // Tampilkan dialog konfirmasi untuk draft dan menunggu progress
           Get.dialog(
             Dialog(
@@ -1213,33 +1248,40 @@ class DailyActivityCard extends StatelessWidget {
               ),
             ),
           );
-        } else {
-          // Untuk non-draft, langsung panggil callback
-          if (onTap != null) {
-            onTap!();
-          }
+          return; // Don't call parent handler for draft
         }
+
+        // Prioritize parent onTap handler for non-draft items
+        if (onTap != null) {
+          print("[CARD TAP] Calling parent onTap handler");
+          onTap!();
+          return;
+        }
+
+        print("[CARD TAP] No handler available");
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: isApproved
-              ? Colors.green.shade50
-              : isDraft
-                  ? Colors.orange.shade50
-                  : activity.status.toLowerCase().contains('rejected')
+          color: isDraft
+              ? Colors.orange.shade50
+              : isWaitingProgress
+                  ? Colors.blue.shade50
+                  : isRejected
                       ? Colors.red.shade50
-                      : Colors.white,
+                      : isApproved
+                          ? Colors.green.shade50
+                          : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: isDraft
               ? Border.all(color: Colors.orange, width: 2)
-              : isApproved
-                  ? Border.all(color: Colors.green, width: 2)
-                  : activity.status.toLowerCase().contains('rejected')
+              : isWaitingProgress
+                  ? Border.all(color: Colors.blue, width: 2)
+                  : isRejected
                       ? Border.all(color: Colors.red, width: 2)
-                      : isWaitingProgress
-                          ? Border.all(color: Colors.blue, width: 2)
-                          : isReportFromToday()
+                      : isApproved
+                          ? Border.all(color: Colors.green, width: 2)
+                          : isTodayReport
                               ? Border.all(color: Colors.green, width: 2)
                               : null,
           boxShadow: [
@@ -1297,10 +1339,11 @@ class DailyActivityCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Indicator hari ini (jika laporan dibuat hari ini)
-                        if (isReportFromToday() &&
+                        if (isTodayReport &&
                             !isDraft &&
                             !isWaitingProgress &&
-                            !isApproved)
+                            !isApproved &&
+                            !isRejected)
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
@@ -1321,22 +1364,23 @@ class DailyActivityCard extends StatelessWidget {
                         // Status badge
                         buildStatusLabel(activity.status),
 
-                        // Tombol detail
-                        GestureDetector(
-                          onTap: () => _showDetailDialog(context),
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: FigmaColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Icon(
-                              Icons.info_outline,
-                              color: FigmaColors.primary,
-                              size: 20,
+                        // Tombol detail (hide untuk draft)
+                        if (!isDraft)
+                          GestureDetector(
+                            onTap: () => _showDetailDialog(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: FigmaColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Icon(
+                                Icons.info_outline,
+                                color: FigmaColors.primary,
+                                size: 20,
+                              ),
                             ),
                           ),
-                        ),
 
                         // Tombol hapus hanya untuk draft
                         if (isDraft)

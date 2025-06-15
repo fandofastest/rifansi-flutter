@@ -13,6 +13,9 @@ import 'app/routes/app_pages.dart';
 import 'app/routes/app_routes.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'app/controllers/spk_controller.dart';
+import 'app/controllers/daily_activity_controller.dart';
+import 'app/controllers/equipment_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,7 +33,13 @@ void main() async {
   await Get.putAsync(() => StorageService().init());
   await Get.putAsync(() => HiveService().init(), permanent: true);
 
-  // Initialize controllers
+  // Initialize controllers in proper order
+  // Initialize data controllers first
+  Get.put(SpkController(), permanent: true);
+  Get.put(DailyActivityController(), permanent: true);
+  Get.put(EquipmentController(), permanent: true);
+
+  // Initialize auth controller last so it can use other controllers
   Get.put(AuthController());
 
   runApp(const MyApp());

@@ -590,12 +590,127 @@ class WorkReportPage extends StatelessWidget {
             return DailyActivityCard(
               activity: activity,
               onTap: () {
-                // Tampilkan info tentang aktivitas
-                print('Tapped on activity: ${activity.id}');
-                print('SPK ID: ${activity.spkId}');
-                print('Status: ${activity.status}');
+                // Debug logging untuk status detection
+                print('[WORK_REPORT_TAP] Activity ${activity.id} tapped!');
+                print('[WORK_REPORT_TAP] Status: "${activity.status}"');
+                print(
+                    '[WORK_REPORT_TAP] Status lowercase: "${activity.status.toLowerCase()}"');
 
-                // TODO: Navigasi ke detail laporan
+                // Handle different types of activities
+                final isDraft =
+                    activity.status.toLowerCase().contains('draft') ||
+                        activity.status.toLowerCase() == 'in_progress';
+                final isWaitingProgress = activity.status
+                        .toLowerCase()
+                        .contains('menunggu progress') ||
+                    activity.status.toLowerCase().contains('waiting');
+
+                print('[WORK_REPORT_TAP] isDraft: $isDraft');
+                print(
+                    '[WORK_REPORT_TAP] - contains draft: ${activity.status.toLowerCase().contains('draft')}');
+                print(
+                    '[WORK_REPORT_TAP] - equals in_progress: ${activity.status.toLowerCase() == 'in_progress'}');
+                print(
+                    '[WORK_REPORT_TAP] isWaitingProgress: $isWaitingProgress');
+                print(
+                    '[WORK_REPORT_TAP] Will show dialog: ${isDraft || isWaitingProgress}');
+
+                if (isDraft || isWaitingProgress) {
+                  // Show dialog for draft confirmation
+                  Get.dialog(
+                    Dialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isDraft
+                                  ? Icons.edit_document
+                                  : Icons.pending_actions,
+                              color: isDraft ? Colors.orange : Colors.blue,
+                              size: 48,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              isDraft
+                                  ? 'Lanjutkan Pengisian'
+                                  : 'Lanjutkan Progress',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              isDraft
+                                  ? 'Apakah Anda ingin melanjutkan pengisian laporan kerja ini?'
+                                  : 'Apakah Anda ingin melanjutkan pengisian progress pekerjaan?',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                TextButton(
+                                  onPressed: () => Get.back(),
+                                  child: Text(
+                                    'Batal',
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Get.back(); // Tutup dialog
+                                    // Navigate to edit page
+                                    print(
+                                        '[WorkReport] Navigating to edit draft: ${activity.id}');
+                                    Get.toNamed(
+                                      Routes.addWorkReport,
+                                      arguments: {
+                                        'spkId': activity.spkId,
+                                        'isDraft': true,
+                                        'draftId': activity.id,
+                                        'activityData':
+                                            activity, // Pass the full activity data
+                                      },
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        isDraft ? Colors.orange : Colors.blue,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: Text(
+                                    'Lanjutkan',
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                } else {
+                  // For completed reports, just show info
+                  print(
+                      '[WorkReport] Viewing completed report: ${activity.id}');
+                  print('SPK ID: ${activity.spkId}');
+                  print('Status: ${activity.status}');
+                }
               },
             );
           },
@@ -864,9 +979,133 @@ class WorkReportPage extends StatelessWidget {
                     child: DailyActivityCard(
                       activity: activity,
                       onTap: () {
-                        print('Tapped on activity: ${activity.id}');
-                        print('SPK ID: ${activity.spkId}');
-                        print('Status: ${activity.status}');
+                        // Debug logging untuk status detection
+                        print(
+                            '[WORK_REPORT_SLIVER_TAP] Activity ${activity.id} tapped!');
+                        print(
+                            '[WORK_REPORT_SLIVER_TAP] Status: "${activity.status}"');
+                        print(
+                            '[WORK_REPORT_SLIVER_TAP] Status lowercase: "${activity.status.toLowerCase()}"');
+
+                        // Handle different types of activities
+                        final isDraft =
+                            activity.status.toLowerCase().contains('draft') ||
+                                activity.status.toLowerCase() == 'in_progress';
+                        final isWaitingProgress = activity.status
+                                .toLowerCase()
+                                .contains('menunggu progress') ||
+                            activity.status.toLowerCase().contains('waiting');
+
+                        print('[WORK_REPORT_SLIVER_TAP] isDraft: $isDraft');
+                        print(
+                            '[WORK_REPORT_SLIVER_TAP] - contains draft: ${activity.status.toLowerCase().contains('draft')}');
+                        print(
+                            '[WORK_REPORT_SLIVER_TAP] - equals in_progress: ${activity.status.toLowerCase() == 'in_progress'}');
+                        print(
+                            '[WORK_REPORT_SLIVER_TAP] isWaitingProgress: $isWaitingProgress');
+                        print(
+                            '[WORK_REPORT_SLIVER_TAP] Will show dialog: ${isDraft || isWaitingProgress}');
+
+                        if (isDraft || isWaitingProgress) {
+                          // Show dialog for draft confirmation
+                          Get.dialog(
+                            Dialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isDraft
+                                          ? Icons.edit_document
+                                          : Icons.pending_actions,
+                                      color:
+                                          isDraft ? Colors.orange : Colors.blue,
+                                      size: 48,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      isDraft
+                                          ? 'Lanjutkan Pengisian'
+                                          : 'Lanjutkan Progress',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      isDraft
+                                          ? 'Apakah Anda ingin melanjutkan pengisian laporan kerja ini?'
+                                          : 'Apakah Anda ingin melanjutkan pengisian progress pekerjaan?',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        TextButton(
+                                          onPressed: () => Get.back(),
+                                          child: Text(
+                                            'Batal',
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 16,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            Get.back(); // Tutup dialog
+                                            // Navigate to edit page
+                                            print(
+                                                '[WorkReport] Navigating to edit draft: ${activity.id}');
+                                            Get.toNamed(
+                                              Routes.addWorkReport,
+                                              arguments: {
+                                                'spkId': activity.spkId,
+                                                'isDraft': true,
+                                                'draftId': activity.id,
+                                                'activityData':
+                                                    activity, // Pass the full activity data
+                                              },
+                                            );
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: isDraft
+                                                ? Colors.orange
+                                                : Colors.blue,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          child: Text(
+                                            'Lanjutkan',
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        } else {
+                          // For completed reports, just show info
+                          print(
+                              '[WorkReport] Viewing completed report: ${activity.id}');
+                          print('SPK ID: ${activity.spkId}');
+                          print('Status: ${activity.status}');
+                          // TODO: Add detail view for completed reports
+                        }
                       },
                     ),
                   );
@@ -1120,9 +1359,31 @@ class WorkReportPage extends StatelessWidget {
             return DailyActivityCard(
               activity: activity,
               onTap: () {
-                print('Tapped on activity: ${activity.id}');
-                print('SPK ID: ${activity.spkId}');
-                print('Status: ${activity.status}');
+                // Handle different types of activities
+                final isDraft = activity.status.toLowerCase().contains('draft');
+                final isWaitingProgress =
+                    activity.status.toLowerCase().contains('menunggu progress');
+
+                if (isDraft || isWaitingProgress) {
+                  // For draft and waiting progress, navigate to edit page
+                  print(
+                      '[WorkReport] Navigating to edit draft: ${activity.id}');
+                  Get.toNamed(
+                    Routes.addWorkReport,
+                    arguments: {
+                      'spkId': activity.spkId,
+                      'isDraft': true,
+                      'draftId': activity.id,
+                      'activityData': activity, // Pass the full activity data
+                    },
+                  );
+                } else {
+                  // For completed reports, just show info
+                  print(
+                      '[WorkReport] Viewing completed report: ${activity.id}');
+                  print('SPK ID: ${activity.spkId}');
+                  print('Status: ${activity.status}');
+                }
               },
             );
           },

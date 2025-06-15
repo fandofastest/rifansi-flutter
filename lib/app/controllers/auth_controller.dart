@@ -164,6 +164,7 @@ class AuthController extends GetxController {
       currentUser.value = User.fromJson(userData as Map<String, dynamic>);
       print(
           '[AuthController] User loaded successfully: ${currentUser.value?.fullName}');
+
       return true;
     } catch (e) {
       print('[AuthController] Fetch current user error: $e');

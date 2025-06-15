@@ -16,18 +16,26 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final AuthController authController = Get.find<AuthController>();
-    final SpkController spkController = Get.put(SpkController());
+    final SpkController spkController = Get.find<SpkController>();
     final DailyActivityController activityController =
-        Get.put(DailyActivityController());
+        Get.find<DailyActivityController>();
     final EquipmentController equipmentController =
-        Get.put(EquipmentController());
+        Get.find<EquipmentController>();
     final user = authController.currentUser.value;
 
-    // Load SPK count, activity count, and equipment data when page loads
+    // Load data if not already loaded (for dashboard and home page statistics)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      spkController.fetchSPKs();
-      activityController.fetchServerActivities();
-      equipmentController.fetchEquipments();
+      // Only load if data is empty to avoid duplicate requests
+      if (spkController.spks.isEmpty) {
+        spkController.fetchSPKs();
+      }
+      if (activityController.serverActivities.isEmpty) {
+        activityController.fetchServerActivities();
+      }
+      if (equipmentController.readyEquipmentCount == 0 &&
+          equipmentController.damagedEquipmentCount == 0) {
+        equipmentController.fetchEquipments();
+      }
     });
 
     return Scaffold(

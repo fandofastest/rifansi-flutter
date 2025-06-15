@@ -20,6 +20,21 @@ class DashboardPage extends StatelessWidget {
         Get.find<EquipmentController>();
     final user = authController.currentUser.value;
 
+    // Ensure data is loaded for dashboard analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Only load if data is empty to avoid duplicate requests
+      if (spkController.spks.isEmpty) {
+        spkController.fetchSPKs();
+      }
+      if (activityController.serverActivities.isEmpty) {
+        activityController.fetchServerActivities();
+      }
+      if (equipmentController.readyEquipmentCount == 0 &&
+          equipmentController.damagedEquipmentCount == 0) {
+        equipmentController.fetchEquipments();
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
