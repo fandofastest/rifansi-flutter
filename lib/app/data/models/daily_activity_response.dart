@@ -276,6 +276,64 @@ class ActivityDetailResponse {
 
   factory ActivityDetailResponse.fromJson(Map<String, dynamic> json) {
     try {
+      // === DEBUG LOGGING RAW JSON ===
+      print('[RATE JSON DEBUG] === RAW JSON for ActivityDetail ===');
+      print('[RATE JSON DEBUG] Full JSON: $json');
+      print('[RATE JSON DEBUG] Available keys: ${json.keys.toList()}');
+      print('[RATE JSON DEBUG] rateR value: ${json['rateR']} (type: ${json['rateR'].runtimeType})');
+      print('[RATE JSON DEBUG] rateNR value: ${json['rateNR']} (type: ${json['rateNR'].runtimeType})');
+      print('[RATE JSON DEBUG] totalProgressValue: ${json['totalProgressValue']} (type: ${json['totalProgressValue'].runtimeType})');
+      print('[RATE JSON DEBUG] workItem: ${json['workItem']}');
+      if (json['workItem'] != null) {
+        print('[RATE JSON DEBUG] workItem keys: ${(json['workItem'] as Map).keys.toList()}');
+        // Debug rate location
+        final workItem = json['workItem'] as Map<String, dynamic>;
+        if (workItem['rates'] != null) {
+          print('[RATE JSON DEBUG] workItem.rates: ${workItem['rates']}');
+          final rates = workItem['rates'] as Map<String, dynamic>;
+          print('[RATE JSON DEBUG] rates.nr: ${rates['nr']}');
+          print('[RATE JSON DEBUG] rates.r: ${rates['r']}');
+          if (rates['nr'] != null) {
+            print('[RATE JSON DEBUG] rates.nr.rate: ${rates['nr']['rate']}');
+          }
+          if (rates['r'] != null) {
+            print('[RATE JSON DEBUG] rates.r.rate: ${rates['r']['rate']}');
+          }
+        }
+      }
+      print('[RATE JSON DEBUG] actualQuantity: ${json['actualQuantity']}');
+      print('[RATE JSON DEBUG] boqVolumeR: ${json['boqVolumeR']}');
+      print('[RATE JSON DEBUG] boqVolumeNR: ${json['boqVolumeNR']}');
+      print('[RATE JSON DEBUG] ==========================================');
+      
+      // Extract rates from workItem.rates if available
+      double rateNR = 0.0;
+      double rateR = 0.0;
+      String? rateDescriptionNR;
+      String? rateDescriptionR;
+      
+      if (json['workItem'] != null) {
+        final workItem = json['workItem'] as Map<String, dynamic>;
+        if (workItem['rates'] != null) {
+          final rates = workItem['rates'] as Map<String, dynamic>;
+          if (rates['nr'] != null) {
+            final nrRate = rates['nr'] as Map<String, dynamic>;
+            rateNR = _parseDouble(nrRate['rate']) ?? 0.0;
+            rateDescriptionNR = nrRate['description']?.toString();
+          }
+          if (rates['r'] != null) {
+            final rRate = rates['r'] as Map<String, dynamic>;
+            rateR = _parseDouble(rRate['rate']) ?? 0.0;
+            rateDescriptionR = rRate['description']?.toString();
+          }
+        }
+      }
+      
+      print('[RATE JSON DEBUG] Extracted rateNR: $rateNR');
+      print('[RATE JSON DEBUG] Extracted rateR: $rateR');
+      print('[RATE JSON DEBUG] Extracted rateDescriptionNR: $rateDescriptionNR');
+      print('[RATE JSON DEBUG] Extracted rateDescriptionR: $rateDescriptionR');
+      
       return ActivityDetailResponse(
         id: json['id']?.toString() ?? '',
         actualQuantity: QuantityResponse.fromJson(
@@ -288,10 +346,10 @@ class ActivityDetailResponse {
         progressPercentage: _parseDouble(json['progressPercentage']),
         dailyProgressPercentage: _parseDouble(json['dailyProgressPercentage']),
         totalProgressValue: _parseDouble(json['totalProgressValue']),
-        rateR: _parseDouble(json['rateR']),
-        rateNR: _parseDouble(json['rateNR']),
-        rateDescriptionR: json['rateDescriptionR']?.toString(),
-        rateDescriptionNR: json['rateDescriptionNR']?.toString(),
+        rateR: rateR,  // Use extracted rate
+        rateNR: rateNR,  // Use extracted rate
+        rateDescriptionR: rateDescriptionR,  // Use extracted description
+        rateDescriptionNR: rateDescriptionNR,  // Use extracted description
         boqVolumeR: _parseDouble(json['boqVolumeR']),
         boqVolumeNR: _parseDouble(json['boqVolumeNR']),
         dailyTargetR: _parseDouble(json['dailyTargetR']),
@@ -306,16 +364,35 @@ class ActivityDetailResponse {
   }
 
   static double? _parseDouble(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is int) return value.toDouble();
-    if (value is double) return value;
+    // Debug untuk rate parsing
+    if (value.toString().contains('rate') || value != null) {
+      print('[PARSE DEBUG] Parsing value: $value (type: ${value.runtimeType})');
+    }
+    
+    if (value == null) {
+      print('[PARSE DEBUG] Value is null, returning 0.0');
+      return 0.0;
+    }
+    if (value is int) {
+      final result = value.toDouble();
+      print('[PARSE DEBUG] Int value $value converted to double: $result');
+      return result;
+    }
+    if (value is double) {
+      print('[PARSE DEBUG] Already double: $value');
+      return value;
+    }
     if (value is String) {
       try {
-        return double.parse(value);
-      } catch (_) {
+        final result = double.parse(value);
+        print('[PARSE DEBUG] String "$value" parsed to double: $result');
+        return result;
+      } catch (e) {
+        print('[PARSE DEBUG] Failed to parse string "$value" to double, returning 0.0. Error: $e');
         return 0.0;
       }
     }
+    print('[PARSE DEBUG] Unknown type ${value.runtimeType} for value $value, returning 0.0');
     return 0.0;
   }
 }

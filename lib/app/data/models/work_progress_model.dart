@@ -30,6 +30,10 @@ class WorkProgress {
   final String? rateDescriptionR;
   @HiveField(12)
   final String? rateDescriptionNR;
+  @HiveField(13)
+  final double dailyTargetR;
+  @HiveField(14)
+  final double dailyTargetNR;
 
   WorkProgress({
     required this.workItemId,
@@ -42,16 +46,12 @@ class WorkProgress {
     required this.workingDays,
     required this.rateR,
     required this.rateNR,
+    required this.dailyTargetR,
+    required this.dailyTargetNR,
     this.rateDescriptionR,
     this.rateDescriptionNR,
     this.remarks,
   });
-
-  // Target harian untuk volume R
-  double get dailyTargetR => boqVolumeR > 0 ? boqVolumeR / workingDays : 0;
-
-  // Target harian untuk volume NR
-  double get dailyTargetNR => boqVolumeNR > 0 ? boqVolumeNR / workingDays : 0;
 
   // Persentase progress harian untuk volume R
   double get dailyProgressPercentageR {
@@ -132,6 +132,8 @@ class WorkProgress {
       'workingDays': workingDays,
       'rateR': rateR,
       'rateNR': rateNR,
+      'dailyTargetR': dailyTargetR,
+      'dailyTargetNR': dailyTargetNR,
       'rateDescriptionR': rateDescriptionR,
       'rateDescriptionNR': rateDescriptionNR,
       'remarks': remarks,
@@ -150,6 +152,8 @@ class WorkProgress {
       workingDays: (json['workingDays'] as num?)?.toInt() ?? 1,
       rateR: (json['rateR'] as num?)?.toDouble() ?? 0.0,
       rateNR: (json['rateNR'] as num?)?.toDouble() ?? 0.0,
+      dailyTargetR: (json['dailyTargetR'] as num?)?.toDouble() ?? 0.0,
+      dailyTargetNR: (json['dailyTargetNR'] as num?)?.toDouble() ?? 0.0,
       rateDescriptionR: json['rateDescriptionR']?.toString(),
       rateDescriptionNR: json['rateDescriptionNR']?.toString(),
       remarks: json['remarks']?.toString(),
@@ -161,6 +165,12 @@ class WorkProgress {
     final rates = workItem['rates'] ?? {};
     final rateR = rates['r'] ?? {};
     final rateNR = rates['nr'] ?? {};
+    final dailyTarget = workItem['dailyTarget'] ?? {};
+    
+    // Debug: Log dailyTarget data
+    print('[WorkProgress] Creating from workItem: ${workItem['workItem']?['name']}');
+    print('[WorkProgress] dailyTarget received: $dailyTarget');
+    print('[WorkProgress] dailyTarget.r: ${dailyTarget['r']}, dailyTarget.nr: ${dailyTarget['nr']}');
 
     // Hitung workingDays dari startDate dan endDate SPK
     int calculateWorkingDays(dynamic startDate, dynamic endDate) {
@@ -214,6 +224,8 @@ class WorkProgress {
       workingDays: workingDays, // Gunakan hasil perhitungan
       rateR: (rateR['rate'] as num?)?.toDouble() ?? 0.0,
       rateNR: (rateNR['rate'] as num?)?.toDouble() ?? 0.0,
+      dailyTargetR: (dailyTarget['r'] as num?)?.toDouble() ?? 0.0,
+      dailyTargetNR: (dailyTarget['nr'] as num?)?.toDouble() ?? 0.0,
       rateDescriptionR: rateR['description']?.toString(),
       rateDescriptionNR: rateNR['description']?.toString(),
       remarks: null,

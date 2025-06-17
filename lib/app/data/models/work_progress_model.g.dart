@@ -27,6 +27,8 @@ class WorkProgressAdapter extends TypeAdapter<WorkProgress> {
       workingDays: fields[7] as int,
       rateR: fields[9] as double,
       rateNR: fields[10] as double,
+      dailyTargetR: fields[13] as double,
+      dailyTargetNR: fields[14] as double,
       rateDescriptionR: fields[11] as String?,
       rateDescriptionNR: fields[12] as String?,
       remarks: fields[8] as String?,
@@ -36,7 +38,7 @@ class WorkProgressAdapter extends TypeAdapter<WorkProgress> {
   @override
   void write(BinaryWriter writer, WorkProgress obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.workItemId)
       ..writeByte(1)
@@ -62,7 +64,11 @@ class WorkProgressAdapter extends TypeAdapter<WorkProgress> {
       ..writeByte(11)
       ..write(obj.rateDescriptionR)
       ..writeByte(12)
-      ..write(obj.rateDescriptionNR);
+      ..write(obj.rateDescriptionNR)
+      ..writeByte(13)
+      ..write(obj.dailyTargetR)
+      ..writeByte(14)
+      ..write(obj.dailyTargetNR);
   }
 
   @override

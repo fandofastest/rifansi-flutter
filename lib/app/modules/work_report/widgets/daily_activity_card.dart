@@ -122,6 +122,45 @@ class DailyActivityCard extends StatelessWidget {
     print(
         '[DEBUG] rejectionReason?.isNotEmpty: ${activity.rejectionReason?.isNotEmpty}');
 
+    // === TAMBAHAN: DEBUGGING ACTIVITY DETAILS ===
+    print('[RATE DEBUG] === RAW ACTIVITY DETAILS DEBUG ===');
+    print('[RATE DEBUG] Total activityDetails: ${activity.activityDetails.length}');
+    for (int i = 0; i < activity.activityDetails.length; i++) {
+      final detail = activity.activityDetails[i];
+      print('[RATE DEBUG] --- Activity Detail $i ---');
+      print('[RATE DEBUG] ID: ${detail.id}');
+      print('[RATE DEBUG] Status: ${detail.status}');
+      print('[RATE DEBUG] Remarks: ${detail.remarks}');
+      print('[RATE DEBUG] actualQuantity.nr: ${detail.actualQuantity.nr}');
+      print('[RATE DEBUG] actualQuantity.r: ${detail.actualQuantity.r}');
+      print('[RATE DEBUG] rateNR: ${detail.rateNR}');
+      print('[RATE DEBUG] rateR: ${detail.rateR}');
+      print('[RATE DEBUG] rateDescriptionNR: ${detail.rateDescriptionNR}');
+      print('[RATE DEBUG] rateDescriptionR: ${detail.rateDescriptionR}');
+      print('[RATE DEBUG] boqVolumeNR: ${detail.boqVolumeNR}');
+      print('[RATE DEBUG] boqVolumeR: ${detail.boqVolumeR}');
+      print('[RATE DEBUG] totalProgressValue: ${detail.totalProgressValue}');
+      print('[RATE DEBUG] progressPercentage: ${detail.progressPercentage}');
+      print('[RATE DEBUG] dailyProgressPercentage: ${detail.dailyProgressPercentage}');
+      print('[RATE DEBUG] dailyTargetNR: ${detail.dailyTargetNR}');
+      print('[RATE DEBUG] dailyTargetR: ${detail.dailyTargetR}');
+      
+      // Work Item Details
+      if (detail.workItem != null) {
+        print('[RATE DEBUG] WorkItem ID: ${detail.workItem!.id}');
+        print('[RATE DEBUG] WorkItem Name: ${detail.workItem!.name}');
+        if (detail.workItem!.unit != null) {
+          print('[RATE DEBUG] WorkItem Unit: ${detail.workItem!.unit!.name}');
+        }
+        // Cek apakah ada field rate di workItem
+        print('[RATE DEBUG] WorkItem toString: ${detail.workItem.toString()}');
+      } else {
+        print('[RATE DEBUG] WorkItem: NULL');
+      }
+      print('[RATE DEBUG] -------------------');
+    }
+    print('[RATE DEBUG] === END ACTIVITY DETAILS DEBUG ===');
+
     // Debug logging for cost data
     print('[COST DEBUG] === RAW ACTIVITY DATA ===');
     print(
@@ -506,10 +545,195 @@ class DailyActivityCard extends StatelessWidget {
                       ],
 
                       // Informasi Biaya (jika ada)
-                      if (activity.equipmentLogs.isNotEmpty ||
+                      if (activity.activityDetails.isNotEmpty ||
+                          activity.equipmentLogs.isNotEmpty ||
                           activity.manpowerLogs.isNotEmpty ||
                           activity.materialUsageLogs.isNotEmpty ||
                           activity.otherCosts.isNotEmpty) ...[
+                        
+                        // === TAMBAHAN: Rincian Item Pekerjaan ===
+                        if (activity.activityDetails.isNotEmpty) ...[
+                          _buildDetailSection(
+                            'Rincian Item Pekerjaan',
+                            [
+                              // Filter item yang tidak 0
+                              Builder(
+                                builder: (context) {
+                                  final nonZeroItems = activity.activityDetails.where((detail) {
+                                    final progressValue = _calculateProgressValue(detail);
+                                    final hasValidNR = detail.actualQuantity.nr > 0 && (detail.rateNR ?? 0.0) > 0;
+                                    final hasValidR = detail.actualQuantity.r > 0 && (detail.rateR ?? 0.0) > 0;
+                                    return progressValue > 0 || hasValidNR || hasValidR;
+                                  }).toList();
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Progress Pekerjaan (${nonZeroItems.length} dari ${activity.activityDetails.length} item)',
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      if (nonZeroItems.length < activity.activityDetails.length) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${activity.activityDetails.length - nonZeroItems.length} item dengan nilai 0 disembunyikan',
+                                          style: GoogleFonts.dmSans(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 8),
+                                      if (nonZeroItems.isEmpty) ...[
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.shade50,
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: Colors.orange.shade200),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.warning, color: Colors.orange.shade700, size: 20),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  'Semua item pekerjaan memiliki nilai 0. Periksa data volume dan tarif.',
+                                                  style: GoogleFonts.dmSans(
+                                                    fontSize: 12,
+                                                    color: Colors.orange.shade700,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ] else ...[
+                                        ...nonZeroItems.map((detail) {
+                                          final totalProgressValue = _calculateProgressValue(detail);
+                                          return Padding(
+                                            padding: const EdgeInsets.only(bottom: 8),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.shade50,
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: Colors.blue.shade200),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    detail.workItem?.name ?? 'Unknown Work Item',
+                                                    style: GoogleFonts.dmSans(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          _buildVolumeText(detail),
+                                                          style: GoogleFonts.dmSans(
+                                                            fontSize: 12,
+                                                            color: Colors.black54,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          _buildRateText(detail),
+                                                          style: GoogleFonts.dmSans(
+                                                            fontSize: 12,
+                                                            color: Colors.black54,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                        'Status: ${detail.status}',
+                                                        style: GoogleFonts.dmSans(
+                                                          fontSize: 11,
+                                                          color: Colors.black54,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        'Nilai: Rp ${_formatCurrency(totalProgressValue)}',
+                                                        style: GoogleFonts.dmSans(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: totalProgressValue > 0 ? Colors.green.shade700 : Colors.red.shade700,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  if (detail.remarks.isNotEmpty) ...[
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      'Catatan: ${detail.remarks}',
+                                                      style: GoogleFonts.dmSans(
+                                                        fontSize: 11,
+                                                        color: Colors.black54,
+                                                        fontStyle: FontStyle.italic,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ],
+                                      const SizedBox(height: 8),
+                                      Divider(color: Colors.grey.shade300),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Total Nilai Progress:',
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Rp ${_formatCurrency(_calculateTotalProgressValue())}',
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.blue.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
                         _buildDetailSection(
                           'Rincian Biaya',
                           [
@@ -863,6 +1087,96 @@ class DailyActivityCard extends StatelessWidget {
                                 ],
                               ),
                             ),
+                            
+                            // === TAMBAHAN: Analisis Laba Rugi ===
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: _calculateProfitLoss() >= 0 ? Colors.green.shade50 : Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: _calculateProfitLoss() >= 0 ? Colors.green.shade300 : Colors.red.shade300),
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'NILAI PROGRESS:',
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Rp ${_formatCurrency(_calculateTotalProgressValue())}',
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'TOTAL BIAYA:',
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Rp ${_formatCurrency(_calculateGrandTotal())}',
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.red.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Divider(color: Colors.grey.shade400),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'LABA/RUGI HARIAN:',
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${_calculateProfitLoss() >= 0 ? '+' : ''}Rp ${_formatCurrency(_calculateProfitLoss().abs())}',
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: _calculateProfitLoss() >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _calculateProfitLoss() >= 0 ? 'Menguntungkan' : 'Merugi',
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: _calculateProfitLoss() >= 0 ? Colors.green.shade600 : Colors.red.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -1093,6 +1407,118 @@ class DailyActivityCard extends StatelessWidget {
     print('[COST DEBUG] === END GRAND TOTAL ===');
 
     return grandTotal;
+  }
+
+  double _calculateTotalProgressValue() {
+    print('[PROGRESS DEBUG] === CALCULATING TOTAL PROGRESS VALUE ===');
+    print('[PROGRESS DEBUG] Number of activity details: ${activity.activityDetails.length}');
+    
+    double total = 0.0;
+    for (int i = 0; i < activity.activityDetails.length; i++) {
+      final detail = activity.activityDetails[i];
+      final itemValue = _calculateProgressValue(detail);
+      total += itemValue;
+      print('[PROGRESS DEBUG] Item $i value: $itemValue, Running total: $total');
+    }
+    
+    print('[PROGRESS DEBUG] FINAL TOTAL PROGRESS VALUE: $total');
+    print('[PROGRESS DEBUG] =============================================');
+    return total;
+  }
+
+  double _calculateProgressValue(ActivityDetailResponse detail) {
+    // === DEBUG LOGGING ===
+    print('[PROGRESS DEBUG] === ACTIVITY DETAIL: ${detail.id} ===');
+    print('[PROGRESS DEBUG] Work Item: ${detail.workItem?.name ?? "Unknown"}');
+    print('[PROGRESS DEBUG] totalProgressValue from response: ${detail.totalProgressValue}');
+    print('[PROGRESS DEBUG] actualQuantity.nr: ${detail.actualQuantity.nr}');
+    print('[PROGRESS DEBUG] actualQuantity.r: ${detail.actualQuantity.r}');
+    print('[PROGRESS DEBUG] rateNR: ${detail.rateNR}');
+    print('[PROGRESS DEBUG] rateR: ${detail.rateR}');
+    print('[PROGRESS DEBUG] rateDescriptionNR: ${detail.rateDescriptionNR}');
+    print('[PROGRESS DEBUG] rateDescriptionR: ${detail.rateDescriptionR}');
+    print('[PROGRESS DEBUG] boqVolumeNR: ${detail.boqVolumeNR}');
+    print('[PROGRESS DEBUG] boqVolumeR: ${detail.boqVolumeR}');
+    print('[PROGRESS DEBUG] status: ${detail.status}');
+    print('[PROGRESS DEBUG] remarks: ${detail.remarks}');
+    
+    // Gunakan totalProgressValue jika tersedia, jika tidak hitung manual
+    if (detail.totalProgressValue != null && detail.totalProgressValue! > 0) {
+      print('[PROGRESS DEBUG] Using totalProgressValue: ${detail.totalProgressValue}');
+      print('[PROGRESS DEBUG] ========================================');
+      return detail.totalProgressValue!;
+    }
+    
+    // Fallback: hitung manual berdasarkan actualQuantity dan rate yang ada
+    final volumeNR = detail.actualQuantity.nr;
+    final volumeR = detail.actualQuantity.r;
+    final rateNR = detail.rateNR ?? 0.0;
+    final rateR = detail.rateR ?? 0.0;
+    
+    double totalManual = 0.0;
+    
+    // Hanya hitung jika volume dan rate > 0
+    if (volumeNR > 0 && rateNR > 0) {
+      final manualCalcNR = volumeNR * rateNR;
+      totalManual += manualCalcNR;
+      print('[PROGRESS DEBUG] - volumeNR ($volumeNR) × rateNR ($rateNR) = $manualCalcNR');
+    } else if (volumeNR > 0 || rateNR > 0) {
+      print('[PROGRESS DEBUG] - volumeNR ($volumeNR) × rateNR ($rateNR) = 0 (salah satu adalah 0)');
+    }
+    
+    if (volumeR > 0 && rateR > 0) {
+      final manualCalcR = volumeR * rateR;
+      totalManual += manualCalcR;
+      print('[PROGRESS DEBUG] - volumeR ($volumeR) × rateR ($rateR) = $manualCalcR');
+    } else if (volumeR > 0 || rateR > 0) {
+      print('[PROGRESS DEBUG] - volumeR ($volumeR) × rateR ($rateR) = 0 (salah satu adalah 0)');
+    }
+    
+    print('[PROGRESS DEBUG] - Total manual: $totalManual');
+    print('[PROGRESS DEBUG] ========================================');
+    
+    return totalManual;
+  }
+
+  double _calculateProfitLoss() {
+    double totalProgressValue = _calculateTotalProgressValue();
+    double totalCost = _calculateGrandTotal();
+    return totalProgressValue - totalCost;
+  }
+
+  String _buildVolumeText(ActivityDetailResponse detail) {
+    List<String> volumeTexts = [];
+    
+    if (detail.actualQuantity.nr > 0) {
+      volumeTexts.add('${detail.actualQuantity.nr.toStringAsFixed(1)} (NR)');
+    }
+    if (detail.actualQuantity.r > 0) {
+      volumeTexts.add('${detail.actualQuantity.r.toStringAsFixed(1)} (R)');
+    }
+    
+    if (volumeTexts.isNotEmpty) {
+      return 'Volume: ${volumeTexts.join(' | ')} ${detail.workItem?.unit?.name ?? ''}';
+    } else {
+      return 'Volume: N/A';
+    }
+  }
+
+  String _buildRateText(ActivityDetailResponse detail) {
+    List<String> rateTexts = [];
+    
+    // Hanya tampilkan rate jika ada volume yang sesuai
+    if (detail.actualQuantity.nr > 0 && detail.rateNR != null && detail.rateNR! > 0) {
+      rateTexts.add('Rp ${_formatCurrency(detail.rateNR!)} (NR)');
+    }
+    if (detail.actualQuantity.r > 0 && detail.rateR != null && detail.rateR! > 0) {
+      rateTexts.add('Rp ${_formatCurrency(detail.rateR!)} (R)');
+    }
+    
+    if (rateTexts.isNotEmpty) {
+      return 'Rate: ${rateTexts.join(' | ')}';
+    } else {
+      return 'Rate: N/A';
+    }
   }
 
   @override

@@ -212,6 +212,177 @@ class AddWorkReportController extends GetxController {
     }
   }
 
+  Future<bool> fetchSPKsWithProgress({area_model.Area? area, String? keyword}) async {
+    // Jika sudah ada request yang berjalan, batalkan
+    if (_isFetchingInProgress.value) {
+      print('[AddWorkReport] Fetch dengan progress sudah berjalan, menunggu selesai...');
+      return false;
+    }
+
+    try {
+      _isFetchingInProgress.value = true;
+      isLoading.value = true;
+      error.value = '';
+
+      if (keyword != null) {
+        searchKeyword.value = keyword;
+      }
+
+      // Buat Completer untuk menangani timeout dan hasil
+      final completer = Completer<bool>();
+
+      // Set timeout 8 detik
+      Timer(const Duration(seconds: 8), () {
+        if (!completer.isCompleted) {
+          print('[AddWorkReport] Timeout fetchSPKsWithProgress');
+          error.value = 'Timeout: Proses terlalu lama';
+          completer.complete(false);
+        }
+      });
+
+      // Parameter untuk query
+      final locationId = area?.id.isNotEmpty == true ? area!.id : null;
+      final searchKey =
+          searchKeyword.value.isNotEmpty ? searchKeyword.value : null;
+
+      print(
+          '[AddWorkReport] Memulai fetch SPK dengan progress: locationId=$locationId, keyword=$searchKey');
+
+            // Fetch data SPK biasa terlebih dahulu untuk mendapatkan list SPK
+      final service = Get.find<GraphQLService>();
+      service
+          .fetchSPKs(
+        locationId: locationId,
+        keyword: searchKey,
+      )
+          .then((spkResults) async {
+        if (!completer.isCompleted) {
+          // Update work items untuk setiap SPK yang memiliki progress
+          List<Map<String, dynamic>> enrichedWorkItems = [];
+          
+          // Debug: Log jumlah SPK yang ditemukan
+          print('[AddWorkReport] Found ${spkResults.length} SPKs, fetching progress for each...');
+          
+          for (var spk in spkResults) {
+            try {
+              print('[AddWorkReport] Fetching progress for SPK: ${spk.id} - ${spk.spkNo}');
+              
+              // Fetch detail progress untuk setiap SPK menggunakan query baru
+              final spkWithProgress = await service.fetchSPKWithProgressBySpkId(spk.id);
+              
+              print('[AddWorkReport] SPK ${spk.spkNo} progress data keys: ${spkWithProgress.keys}');
+              
+              final workItemsData = spkWithProgress['workItems'] as List<dynamic>? ?? [];
+              print('[AddWorkReport] SPK ${spk.spkNo} has ${workItemsData.length} work items');
+              
+              for (var item in workItemsData) {
+                print('[AddWorkReport] Processing work item: ${item['name']}');
+                print('[AddWorkReport] - boqVolume: ${item['boqVolume']}');
+                print('[AddWorkReport] - completedVolume: ${item['completedVolume']}');
+                print('[AddWorkReport] - remainingVolume: ${item['remainingVolume']}');
+                print('[AddWorkReport] - progressPercentage: ${item['progressPercentage']}');
+                
+                // Safe casting untuk nilai numerik
+                final boqNr = (item['boqVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
+                final boqR = (item['boqVolume']?['r'] as num?)?.toDouble() ?? 0.0;
+                final dailyTargetNr = (item['dailyTarget']?['nr'] as num?)?.toDouble() ?? 0.0;
+                final dailyTargetR = (item['dailyTarget']?['r'] as num?)?.toDouble() ?? 0.0;
+                final completedNr = (item['completedVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
+                final completedR = (item['completedVolume']?['r'] as num?)?.toDouble() ?? 0.0;
+                final remainingNr = (item['remainingVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
+                final remainingR = (item['remainingVolume']?['r'] as num?)?.toDouble() ?? 0.0;
+                final progress = (item['progressPercentage'] as num?)?.toDouble() ?? 0.0;
+                final amount = (item['amount'] as num?)?.toDouble() ?? 0.0;
+                final spentAmount = (item['spentAmount'] as num?)?.toDouble() ?? 0.0;
+                final remainingAmount = (item['remainingAmount'] as num?)?.toDouble() ?? 0.0;
+                
+                final enrichedItem = {
+                  'spkId': spk.id,
+                  'spkNo': spk.spkNo,
+                  'name': item['name'] ?? '',
+                  'volume': boqNr + boqR,
+                  'unit': item['unit']?['name'] ?? '',
+                  'volumeType': boqR > 0 ? 'r' : 'nr',
+                  'dailyTarget': {'nr': dailyTargetNr, 'r': dailyTargetR},
+                  'completedVolume': {'nr': completedNr, 'r': completedR},
+                  'remainingVolume': {'nr': remainingNr, 'r': remainingR},
+                  'progressPercentage': progress,
+                  'amount': amount,
+                  'spentAmount': spentAmount,
+                  'remainingAmount': remainingAmount,
+                };
+                
+                enrichedWorkItems.add(enrichedItem);
+                print('[AddWorkReport] Added enriched item: ${enrichedItem['name']} with ${enrichedItem['progressPercentage']}% progress');
+              }
+            } catch (e) {
+              print('[AddWorkReport] Error fetching progress for SPK ${spk.id}: $e');
+              print('[AddWorkReport] Stack trace: ${StackTrace.current}');
+              
+              // Jika gagal fetch progress, tetap tambahkan work items tanpa progress
+              if (spk.workItems != null) {
+                print('[AddWorkReport] Using fallback data for SPK ${spk.spkNo}');
+                for (var workItem in spk.workItems!) {
+                  // Safe casting untuk fallback data
+                  final boqNr = workItem.boqVolume.nr.toDouble();
+                  final boqR = workItem.boqVolume.r.toDouble();
+                  final amount = (workItem.amount ?? 0).toDouble();
+                  
+                  enrichedWorkItems.add({
+                    'spkId': spk.id,
+                    'spkNo': spk.spkNo,
+                    'name': workItem.workItem?.name ?? '',
+                    'volume': boqNr + boqR,
+                    'unit': workItem.workItem?.unit?.name ?? '',
+                    'volumeType': boqR > 0 ? 'r' : 'nr',
+                    'dailyTarget': {'nr': 0.0, 'r': 0.0},
+                    'completedVolume': {'nr': 0.0, 'r': 0.0},
+                    'remainingVolume': {'nr': boqNr, 'r': boqR},
+                    'progressPercentage': 0.0,
+                    'amount': amount,
+                    'spentAmount': 0.0,
+                    'remainingAmount': amount,
+                  });
+                }
+              }
+            }
+          }
+
+          spkList.value = spkResults;
+          workItems.value = enrichedWorkItems;
+          
+          print('[AddWorkReport] Final result: ${spkList.length} SPK dengan ${workItems.length} work items');
+          print('[AddWorkReport] Work items dengan progress > 0: ${enrichedWorkItems.where((item) => item['progressPercentage'] > 0).length}');
+
+          // Jika SPK yang sebelumnya dipilih tidak ada lagi dalam daftar, hapus pilihan
+          if (selectedSpk.value != null &&
+              !spkList.any((spk) => spk.id == selectedSpk.value!.id)) {
+            selectedSpk.value = null;
+          }
+
+          completer.complete(true);
+        }
+      }).catchError((e) {
+        if (!completer.isCompleted) {
+          print('[AddWorkReport] Error fetch SPKs dengan progress: $e');
+          error.value = e.toString();
+          completer.complete(false);
+        }
+      });
+
+      // Tunggu sampai fetch selesai atau timeout
+      final success = await completer.future;
+      return success;
+    } catch (e) {
+      print('[AddWorkReport] Unexpected error in fetchSPKsWithProgress: $e');
+      error.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
+      _isFetchingInProgress.value = false;
+    }
+  }
+
   Future<WorkPhoto?> uploadPhoto(File file) async {
     try {
       isUploadingPhoto.value = true;
@@ -591,6 +762,9 @@ class AddWorkReportController extends GetxController {
       // Fetch SPK details with progress
       await fetchSpkDetailsWithProgress(spk.id);
 
+      // Update work items untuk SPK yang dipilih dengan data progress
+      await _updateWorkItemsForSelectedSPK(spk);
+
       // Cek apakah ada draft untuk SPK ini pada hari ini
       final hasDraft = await hasTodayDraft(spk.id);
       if (hasDraft) {
@@ -606,6 +780,107 @@ class AddWorkReportController extends GetxController {
     } catch (e) {
       print('[AddWorkReport] Error in selectSPK: $e');
       error.value = e.toString();
+    }
+  }
+
+  // Method helper untuk mengupdate work items untuk SPK yang dipilih
+  Future<void> _updateWorkItemsForSelectedSPK(Spk spk) async {
+    try {
+      print('[AddWorkReport] Updating work items for selected SPK: ${spk.spkNo}');
+      
+      final service = Get.find<GraphQLService>();
+      final spkWithProgress = await service.fetchSPKWithProgressBySpkId(spk.id);
+      
+      final workItemsData = spkWithProgress['workItems'] as List<dynamic>? ?? [];
+      print('[AddWorkReport] Found ${workItemsData.length} work items for SPK ${spk.spkNo}');
+      
+      List<Map<String, dynamic>> updatedWorkItems = [];
+      
+      for (var item in workItemsData) {
+        print('[AddWorkReport] Processing work item: ${item['name']}');
+        print('[AddWorkReport] - Progress: ${item['progressPercentage']}%');
+        print('[AddWorkReport] - Completed: ${item['completedVolume']}');
+        print('[AddWorkReport] - Remaining: ${item['remainingVolume']}');
+        
+        // Safe casting untuk nilai numerik
+        final boqNr = (item['boqVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
+        final boqR = (item['boqVolume']?['r'] as num?)?.toDouble() ?? 0.0;
+        final dailyTargetNr = (item['dailyTarget']?['nr'] as num?)?.toDouble() ?? 0.0;
+        final dailyTargetR = (item['dailyTarget']?['r'] as num?)?.toDouble() ?? 0.0;
+        final completedNr = (item['completedVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
+        final completedR = (item['completedVolume']?['r'] as num?)?.toDouble() ?? 0.0;
+        final remainingNr = (item['remainingVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
+        final remainingR = (item['remainingVolume']?['r'] as num?)?.toDouble() ?? 0.0;
+        final progress = (item['progressPercentage'] as num?)?.toDouble() ?? 0.0;
+        final amount = (item['amount'] as num?)?.toDouble() ?? 0.0;
+        final spentAmount = (item['spentAmount'] as num?)?.toDouble() ?? 0.0;
+        final remainingAmount = (item['remainingAmount'] as num?)?.toDouble() ?? 0.0;
+        
+        final enrichedItem = {
+          'spkId': spk.id,
+          'spkNo': spk.spkNo,
+          'name': item['name'] ?? '',
+          'volume': boqNr + boqR,
+          'unit': item['unit']?['name'] ?? '',
+          'volumeType': boqR > 0 ? 'r' : 'nr',
+          'dailyTarget': {'nr': dailyTargetNr, 'r': dailyTargetR},
+          'completedVolume': {'nr': completedNr, 'r': completedR},
+          'remainingVolume': {'nr': remainingNr, 'r': remainingR},
+          'progressPercentage': progress,
+          'amount': amount,
+          'spentAmount': spentAmount,
+          'remainingAmount': remainingAmount,
+        };
+        
+        updatedWorkItems.add(enrichedItem);
+        print('[AddWorkReport] Added work item: ${enrichedItem['name']} (${enrichedItem['progressPercentage']}%)');
+      }
+      
+      // Filter hanya work items untuk SPK yang dipilih
+      final filteredExistingItems = workItems.where((item) => item['spkId'] != spk.id).toList();
+      
+      // Tambahkan work items yang baru
+      workItems.value = [...filteredExistingItems, ...updatedWorkItems];
+      
+      print('[AddWorkReport] Updated work items. Total: ${workItems.length}, For this SPK: ${updatedWorkItems.length}');
+      print('[AddWorkReport] Work items with progress > 0: ${updatedWorkItems.where((item) => item['progressPercentage'] > 0).length}');
+      
+    } catch (e) {
+      print('[AddWorkReport] Error updating work items for selected SPK: $e');
+      print('[AddWorkReport] Stack trace: ${StackTrace.current}');
+      
+      // Fallback ke data SPK biasa jika gagal
+      if (spk.workItems != null) {
+        print('[AddWorkReport] Using fallback work items data');
+        List<Map<String, dynamic>> fallbackItems = [];
+        
+        for (var workItem in spk.workItems!) {
+          final boqNr = workItem.boqVolume.nr.toDouble();
+          final boqR = workItem.boqVolume.r.toDouble();
+          final amount = (workItem.amount ?? 0).toDouble();
+          
+          fallbackItems.add({
+            'spkId': spk.id,
+            'spkNo': spk.spkNo,
+            'name': workItem.workItem?.name ?? '',
+            'volume': boqNr + boqR,
+            'unit': workItem.workItem?.unit?.name ?? '',
+            'volumeType': boqR > 0 ? 'r' : 'nr',
+            'dailyTarget': {'nr': 0.0, 'r': 0.0},
+            'completedVolume': {'nr': 0.0, 'r': 0.0},
+            'remainingVolume': {'nr': boqNr, 'r': boqR},
+            'progressPercentage': 0.0,
+            'amount': amount,
+            'spentAmount': 0.0,
+            'remainingAmount': amount,
+          });
+        }
+        
+        // Filter dan update
+        final filteredExistingItems = workItems.where((item) => item['spkId'] != spk.id).toList();
+        workItems.value = [...filteredExistingItems, ...fallbackItems];
+        print('[AddWorkReport] Updated work items with fallback data. Total: ${workItems.length}');
+      }
     }
   }
 
@@ -730,7 +1005,7 @@ class AddWorkReportController extends GetxController {
         }
         print('=== END DEBUG ===');
 
-        // Ambil workItems dari SpkDetailWithProgressResponse
+        // Ambil workItems dari SpkDetailWithProgressResponse dan tambahkan data dailyTarget
         if (spkDetailsWithProgress.value == null ||
             spkDetailsWithProgress.value!.dailyActivities.isEmpty) {
           error.value = 'Data progress SPK tidak lengkap';
@@ -743,54 +1018,76 @@ class AddWorkReportController extends GetxController {
         }
         final latestActivity =
             spkDetailsWithProgress.value!.dailyActivities.first;
-        final workItems = latestActivity.workItems
-            .map((item) => {
-                  'workItemId': item.id,
-                  'workItem': {
-                    'id': item.id,
-                    'name': item.name,
-                    'unit': {'name': item.unit.name},
+            
+        // Ambil data dailyTarget dari workItems yang sudah diupdate
+        final workItemsWithDailyTarget = workItems.where((item) => 
+          item['spkId'] == selectedSpk.value?.id).toList();
+        
+        final workItemsForProgress = latestActivity.workItems
+            .asMap()
+            .entries
+            .map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              
+              // Cari matching workItem berdasarkan ID atau index
+              final matchingWorkItem = workItemsWithDailyTarget.firstWhere(
+                (wItem) => wItem['name'] == item.name,
+                orElse: () => <String, dynamic>{},
+              );
+              
+              return {
+                'workItemId': item.id,
+                'workItem': {
+                  'id': item.id,
+                  'name': item.name,
+                  'unit': {'name': item.unit.name},
+                },
+                'boqVolume': {
+                  'nr': item.boqVolume.nr,
+                  'r': item.boqVolume.r,
+                },
+                'dailyTarget': matchingWorkItem['dailyTarget'] ?? {
+                  'nr': 0.0,
+                  'r': 0.0,
+                },
+                'rates': {
+                  'nr': {
+                    'rate': item.rates.nr.rate,
+                    'description': item.rates.nr.description,
                   },
-                  'boqVolume': {
-                    'nr': item.boqVolume.nr,
-                    'r': item.boqVolume.r,
+                  'r': {
+                    'rate': item.rates.r.rate,
+                    'description': item.rates.r.description,
                   },
-                  'rates': {
-                    'nr': {
-                      'rate': item.rates.nr.rate,
-                      'description': item.rates.nr.description,
-                    },
-                    'r': {
-                      'rate': item.rates.r.rate,
-                      'description': item.rates.r.description,
-                    },
-                  },
-                  'progressAchieved': {
-                    'nr': item.progressAchieved.nr,
-                    'r': item.progressAchieved.r,
-                  },
-                  'actualQuantity': {
-                    'nr': item.actualQuantity.nr,
-                    'r': item.actualQuantity.r,
-                  },
-                  'dailyProgress': {
-                    'nr': item.dailyProgress.nr,
-                    'r': item.dailyProgress.r,
-                  },
-                  'dailyCost': {
-                    'nr': item.dailyCost.nr,
-                    'r': item.dailyCost.r,
-                  },
-                  'description': item.description,
-                  'spk': {
-                    'startDate': selectedSpk.value?.startDate,
-                    'endDate': selectedSpk.value?.endDate,
-                  },
-                })
+                },
+                'progressAchieved': {
+                  'nr': item.progressAchieved.nr,
+                  'r': item.progressAchieved.r,
+                },
+                'actualQuantity': {
+                  'nr': item.actualQuantity.nr,
+                  'r': item.actualQuantity.r,
+                },
+                'dailyProgress': {
+                  'nr': item.dailyProgress.nr,
+                  'r': item.dailyProgress.r,
+                },
+                'dailyCost': {
+                  'nr': item.dailyCost.nr,
+                  'r': item.dailyCost.r,
+                },
+                'description': item.description,
+                'spk': {
+                  'startDate': selectedSpk.value?.startDate,
+                  'endDate': selectedSpk.value?.endDate,
+                },
+              };
+            })
             .toList();
 
-        print('DEBUG: workItems untuk progress: ${workItems.length} item');
-        if (workItems.isEmpty) {
+        print('DEBUG: workItems untuk progress: ${workItemsForProgress.length} item');
+        if (workItemsForProgress.isEmpty) {
           print(
               'WARNING: Tidak ada workItems yang akan diinisialisasi ke progress!');
           error.value = 'Tidak ada item pekerjaan yang tersedia';
@@ -802,7 +1099,17 @@ class AddWorkReportController extends GetxController {
           return;
         }
 
-        workProgressController.initializeFromWorkItems(workItems);
+        // Debug: Log data dailyTarget sebelum pass ke WorkProgressController
+        print('[AddWorkReport] === DEBUG DAILY TARGET DATA ===');
+        for (int i = 0; i < workItemsForProgress.length; i++) {
+          final item = workItemsForProgress[i];
+          print('[AddWorkReport] Item $i: ${item['workItem']['name']}');
+          print('[AddWorkReport]   - dailyTarget: ${item['dailyTarget']}');
+          print('[AddWorkReport]   - boqVolume: ${item['boqVolume']}');
+        }
+        print('[AddWorkReport] === END DEBUG DAILY TARGET ===');
+        
+        workProgressController.initializeFromWorkItems(workItemsForProgress);
 
         // Add validation before navigating to WorkProgressForm
         print('[AddWorkReport] === BEFORE WORK PROGRESS FORM ===');

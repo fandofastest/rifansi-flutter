@@ -61,9 +61,9 @@ class _DialogContentState extends State<_DialogContent> {
   void _fetchSPKsByUserArea() {
     final userArea = authController.currentUser.value?.area;
     if (userArea != null && userArea.id.isNotEmpty && userArea.name.toLowerCase() != 'allarea') {
-      widget.controller.fetchSPKs(area: userArea);
+      widget.controller.fetchSPKsWithProgress(area: userArea);
     } else {
-      widget.controller.fetchSPKs();
+      widget.controller.fetchSPKsWithProgress();
     }
   }
 
@@ -172,9 +172,9 @@ class _DialogContentState extends State<_DialogContent> {
                     onChanged: (value) {
                       widget.controller.searchKeyword.value = value;
                       if (hasAllArea) {
-                        widget.controller.fetchSPKs(keyword: value);
+                        widget.controller.fetchSPKsWithProgress(keyword: value);
                       } else {
-                        widget.controller.fetchSPKs(keyword: value, area: userArea);
+                        widget.controller.fetchSPKsWithProgress(keyword: value, area: userArea);
                       }
                     },
                     onSubmitted: (value) {
@@ -191,7 +191,7 @@ class _DialogContentState extends State<_DialogContent> {
                       onTap: () async {
                         final result = await _showLocationPickerDialog(context);
                         if (result != null && result.isApplied) {
-                          widget.controller.fetchSPKs(area: result.selectedArea);
+                          widget.controller.fetchSPKsWithProgress(area: result.selectedArea);
                         }
                       },
                       child: Padding(

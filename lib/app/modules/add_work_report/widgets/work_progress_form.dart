@@ -9,6 +9,7 @@ import '../../../controllers/add_work_report_controller.dart';
 import '../../../controllers/material_controller.dart';
 import '../../../data/models/daily_activity_model.dart';
 import '../../../controllers/other_cost_controller.dart';
+import '../../../controllers/daily_activity_controller.dart';
 
 class WorkProgressForm extends StatelessWidget {
   final WorkProgressController controller;
@@ -205,30 +206,103 @@ class WorkProgressForm extends StatelessWidget {
         : 0.0;
   }
 
+  // --- Ubah: Hitung total progress fisik sesuai permintaan user (dengan target harian) ---
+  double _calculateTotalProgressFisikBaru() {
+    if (controller.workProgresses.isEmpty) return 0.0;
+    final spkDetail = Get.find<AddWorkReportController>().spkDetailsWithProgress.value;
+    if (spkDetail == null) return 0.0;
+    DateTime? startDate;
+    DateTime? endDate;
+    if (spkDetail.startDate is String) {
+      startDate = DateTime.tryParse(spkDetail.startDate as String);
+    } else if (spkDetail.startDate is DateTime) {
+      startDate = spkDetail.startDate as DateTime;
+    }
+    if (spkDetail.endDate is String) {
+      endDate = DateTime.tryParse(spkDetail.endDate as String);
+    } else if (spkDetail.endDate is DateTime) {
+      endDate = spkDetail.endDate as DateTime;
+    }
+    if (startDate == null || endDate == null) return 0.0;
+    final totalWorkDays = ((endDate.difference(startDate).inDays) + 1).clamp(1, double.infinity).toInt();
+    double totalDikerjakan = 0.0;
+    double totalTarget = 0.0;
+    for (var progress in controller.workProgresses) {
+      totalDikerjakan += (progress.progressVolumeNR + progress.progressVolumeR);
+      totalTarget += (progress.boqVolumeNR + progress.boqVolumeR);
+    }
+    final targetHarian = totalTarget / totalWorkDays;
+    final persentase = targetHarian > 0 ? (totalDikerjakan / targetHarian) * 100 : 0.0;
+    // Log detail
+    print('==== DETAIL PROGRESS FISIK ====');
+    print('Total BOQ: ' + totalTarget.toStringAsFixed(2));
+    print('Durasi Project (hari): ' + totalWorkDays.toString());
+    print('Target Harian: ' + targetHarian.toStringAsFixed(2));
+    print('Total Input (Dikerjakan): ' + totalDikerjakan.toStringAsFixed(2));
+    print('Persentase: ' + persentase.toStringAsFixed(2) + '%');
+    print('===============================');
+    return persentase;
+  }
+
   Widget _buildProgressInputs(WorkProgress progress, int index) {
-    final spkDetail =
-        Get.find<AddWorkReportController>().spkDetailsWithProgress.value;
+    final addWorkReportController = Get.find<AddWorkReportController>();
+    final spkDetail = addWorkReportController.spkDetailsWithProgress.value;
     final dailyActivities = spkDetail?.dailyActivities ?? [];
-    final workItems =
-        dailyActivities.isNotEmpty ? dailyActivities.first.workItems : [];
+    final workItems = dailyActivities.isNotEmpty ? dailyActivities.first.workItems : [];
     final workItemDetail = workItems.isNotEmpty ? workItems[index] : null;
-    final completedVolume = workItemDetail?.progressAchieved.nr ?? 0.0;
-    final remainingVolume = workItemDetail?.boqVolume.nr ?? 0.0;
+    
+    // Cari data work item yang sesuai dari controller workItems
+    final matchingWorkItem = addWorkReportController.workItems.firstWhere(
+      (item) => item['name'] == progress.workItemName && 
+                item['spkId'] == addWorkReportController.selectedSpk.value?.id,
+      orElse: () => <String, dynamic>{},
+    );
 
     // Tentukan jenis BOQ yang aktif
     final bool isN = progress.boqVolumeR > 0;
     final bool isNR = progress.boqVolumeNR > 0;
 
+    // Ambil data volume yang tepat berdasarkan jenis BOQ
+    final double dailyTargetVolume = isN ? progress.dailyTargetR : progress.dailyTargetNR;
+    final double boqVolume = isN ? progress.boqVolumeR : progress.boqVolumeNR;
+    
+    // Ambil completedVolume dan remainingVolume dari matchingWorkItem atau workItemDetail
+    final double completedVolume = isN 
+        ? (matchingWorkItem['completedVolume']?['r'] ?? workItemDetail?.progressAchieved.r ?? 0.0)
+        : (matchingWorkItem['completedVolume']?['nr'] ?? workItemDetail?.progressAchieved.nr ?? 0.0);
+        
+    final double remainingVolume = isN
+        ? (matchingWorkItem['remainingVolume']?['r'] ?? (boqVolume - completedVolume))
+        : (matchingWorkItem['remainingVolume']?['nr'] ?? (boqVolume - completedVolume));
+
+    // Cek apakah item sudah ada progress (untuk highlight kuning)
+    final bool hasProgress = isN 
+        ? progress.progressVolumeR > 0 
+        : progress.progressVolumeNR > 0;
+
+    // Hitung volume sisa untuk validasi
+    final double volumeSisa = remainingVolume;
+    final bool canInput = volumeSisa > 0;
+    
+    // Debug: Log data yang digunakan
+    print('[WorkProgressForm] Item: ${progress.workItemName}');
+    print('[WorkProgressForm] isN: $isN, dailyTarget: $dailyTargetVolume');
+    print('[WorkProgressForm] boqVolume: $boqVolume, completed: $completedVolume, remaining: $remainingVolume');
+    print('[WorkProgressForm] matchingWorkItem keys: ${matchingWorkItem.keys}');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Card utama dengan padding yang lebih kecil
+        // Card utama dengan padding yang lebih kecil dan highlight kuning jika ada progress
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: hasProgress ? Colors.yellow[50] : Colors.white,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(
+              color: hasProgress ? Colors.yellow[400]! : Colors.grey[200]!,
+              width: hasProgress ? 2 : 1,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -243,6 +317,64 @@ class WorkProgressForm extends StatelessWidget {
               // Header dengan harga satuan dan nilai progress
               Row(
                 children: [
+                  // Indikator progress (badge kuning jika ada progress)
+                  if (hasProgress)
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.yellow[600],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.edit,
+                            size: 12,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            'Draft',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  // Status volume sisa
+                  if (!canInput)
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.red[600],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.block,
+                            size: 12,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            'Selesai',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,8 +470,8 @@ class WorkProgressForm extends StatelessWidget {
                     children: [
                       _buildInfoChip(
                           'Target Harian',
-                          '${numberFormat.format(isN ? progress.dailyTargetR : progress.dailyTargetNR)} ${progress.unit}',
-                          Colors.blue),
+                          '${numberFormat.format(dailyTargetVolume)} ${progress.unit}',
+                          dailyTargetVolume > 0 ? Colors.blue : Colors.grey),
                       _buildInfoChip(
                           'Volume Selesai',
                           '${numberFormat.format(completedVolume)} ${progress.unit}',
@@ -351,7 +483,7 @@ class WorkProgressForm extends StatelessWidget {
                       _buildInfoChip(
                           'Volume Sisa',
                           '${numberFormat.format(remainingVolume)} ${progress.unit}',
-                          Colors.orange),
+                          remainingVolume > 0 ? Colors.orange : Colors.red),
                       _buildInfoChip(
                           'Progress Harian',
                           '${numberFormat.format(isN ? progress.dailyProgressPercentageR : progress.dailyProgressPercentageNR)}%',
@@ -389,27 +521,73 @@ class WorkProgressForm extends StatelessWidget {
                                       .format(progress.progressVolumeNR)
                                   : ''),
                           keyboardType: TextInputType.number,
-                          style: GoogleFonts.dmSans(fontSize: 13),
+                          enabled: canInput,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            color: canInput ? Colors.black : Colors.grey[400],
+                          ),
                           decoration: InputDecoration(
-                            hintText: 'Masukkan volume progress',
-                            hintStyle: GoogleFonts.dmSans(fontSize: 12),
+                            hintText: canInput 
+                                ? 'Masukkan volume progress (maks: ${numberFormat.format(remainingVolume)})'
+                                : 'Tidak dapat diisi (volume sisa: ${numberFormat.format(remainingVolume)})',
+                            hintStyle: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              color: canInput ? Colors.grey[600] : Colors.red[400],
+                            ),
                             suffixText: progress.unit,
                             suffixStyle: GoogleFonts.dmSans(fontSize: 12),
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 8),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(6),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
+                              borderSide: BorderSide(
+                                color: canInput ? Colors.grey[300]! : Colors.red[300]!,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(6),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
+                              borderSide: BorderSide(
+                                color: hasProgress 
+                                    ? Colors.yellow[400]!
+                                    : Colors.grey[300]!,
+                              ),
                             ),
+                            disabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(color: Colors.red[300]!),
+                            ),
+                            filled: !canInput,
+                            fillColor: !canInput ? Colors.red[50] : null,
                           ),
+                          validator: (value) {
+                            if (!canInput) return null;
+                            
+                            final volume = double.tryParse(value?.replaceAll(',', '') ?? '');
+                            if (volume != null && volume > remainingVolume) {
+                              return 'Volume tidak boleh melebihi sisa: ${numberFormat.format(remainingVolume)}';
+                            }
+                            return null;
+                          },
                           onChanged: (value) {
+                            if (!canInput) return;
+                            
                             final volume =
                                 double.tryParse(value.replaceAll(',', '')) ??
                                     0.0;
+                                    
+                            // Validasi tidak melebihi volume sisa
+                            if (volume > remainingVolume) {
+                              Get.snackbar(
+                                'Peringatan',
+                                'Volume progress tidak boleh melebihi volume sisa: ${numberFormat.format(remainingVolume)} ${progress.unit}',
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: Colors.orange[100],
+                                colorText: Colors.orange[900],
+                                duration: const Duration(seconds: 2),
+                              );
+                              return;
+                            }
+                            
                             if (isN) {
                               controller.updateProgressR(index, volume);
                             } else {
@@ -936,6 +1114,28 @@ class WorkProgressForm extends StatelessWidget {
                             await reportController.submitWorkReport();
                         isSubmitting.value = false;
                         if (success) {
+                          // Hapus semua draft lokal setelah submit sukses
+                          try {
+                            final dailyActivityController = Get.find<DailyActivityController>();
+                            final draftsToDelete = List<String>.from(
+                              dailyActivityController.localActivities
+                                  .map((activity) => activity.localId)
+                                  .where((id) => id.isNotEmpty)
+                            );
+                            
+                            print('[WorkProgressForm] Menghapus ${draftsToDelete.length} draft lokal setelah submit sukses');
+                            
+                            for (String draftId in draftsToDelete) {
+                              await dailyActivityController.deleteDraftActivity(draftId);
+                              print('[WorkProgressForm] Berhasil menghapus draft: $draftId');
+                            }
+                            
+                            print('[WorkProgressForm] Semua draft lokal berhasil dihapus');
+                          } catch (e) {
+                            print('[WorkProgressForm] Error menghapus draft lokal: $e');
+                            // Tidak perlu menampilkan error ke user karena submit sudah sukses
+                          }
+
                           Get.back(
                               result: true); // Kembali ke halaman sebelumnya
                           Get.snackbar(
@@ -1245,22 +1445,55 @@ class WorkProgressForm extends StatelessWidget {
                         final bool isN = progress.boqVolumeR > 0;
                         final bool isNR = progress.boqVolumeNR > 0;
 
+                        // Cek apakah item ini sudah ada progress untuk styling card
+                        final bool itemHasProgress = progress.boqVolumeR > 0 
+                            ? progress.progressVolumeR > 0 
+                            : progress.progressVolumeNR > 0;
+                            
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
+                          color: itemHasProgress ? Colors.yellow[50] : Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: itemHasProgress ? Colors.yellow[400]! : Colors.grey[200]!,
+                              width: itemHasProgress ? 2 : 1,
+                            ),
                           ),
                           child: ExpansionTile(
                             tilePadding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 8),
                             childrenPadding:
                                 const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                            title: Text(
-                              progress.workItemName,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            title: Row(
+                              children: [
+                                if (itemHasProgress)
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.yellow[600],
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'DRAFT',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                Expanded(
+                                  child: Text(
+                                    progress.workItemName,
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1348,7 +1581,7 @@ class WorkProgressForm extends StatelessWidget {
                             ),
                           ),
                           Obx(() => Text(
-                                '${numberFormat.format(controller.totalProgressPercentage)}%',
+                                '${numberFormat.format(_calculateTotalProgressFisikBaru())}%',
                                 style: GoogleFonts.dmSans(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -1391,15 +1624,29 @@ class WorkProgressForm extends StatelessWidget {
                         onPressed: () async {
                           final reportController =
                               Get.find<AddWorkReportController>();
+                          
+                          // Debug: Log semua progress yang akan disimpan
+                          print('[WorkProgressForm] === SIMPAN DRAFT DEBUG ===');
+                          for (int i = 0; i < controller.workProgresses.length; i++) {
+                            final progress = controller.workProgresses[i];
+                            print('[WorkProgressForm] Progress $i:');
+                            print('  - workItemName: ${progress.workItemName}');
+                            print('  - progressVolumeR: ${progress.progressVolumeR}');
+                            print('  - progressVolumeNR: ${progress.progressVolumeNR}');
+                            print('  - remarks: ${progress.remarks}');
+                            print('  - totalProgressValue: ${progress.totalProgressValue}');
+                          }
+                          print('[WorkProgressForm] === END SIMPAN DRAFT DEBUG ===');
+                          
                           await reportController.saveTemporaryData();
 
                           Get.snackbar(
                             'Sukses',
-                            'Draft laporan berhasil disimpan',
+                            'Draft laporan berhasil disimpan dengan progress yang sudah diinput',
                             snackPosition: SnackPosition.BOTTOM,
                             backgroundColor: Colors.green[100],
                             colorText: Colors.green[900],
-                            duration: const Duration(seconds: 2),
+                            duration: const Duration(seconds: 3),
                           );
                         },
                         icon: const Icon(Icons.save),

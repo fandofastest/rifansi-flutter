@@ -14,8 +14,8 @@ import '../models/spk_detail_with_progress_response.dart' as spk_progress;
 
 class GraphQLService extends GetxService {
   late GraphQLClient client;
-  final String baseUrl = 'https://berifansi.fando.id/graphql';
-  // final String baseUrl = 'https://localhost3000.fando.id/graphql';
+  // final String baseUrl = 'https://berifansi.fando.id/graphql';
+  final String baseUrl = 'https://laptop3000.fando.id/graphql';
 
   Future<GraphQLService> init() async {
     final HttpLink httpLink = HttpLink(baseUrl);
@@ -272,6 +272,86 @@ class GraphQLService extends GetxService {
     }
   }
 
+  static const String getSPKWithProgressBySpkIdQuery = r'''
+    query GetSPKWithProgressBySpkId($spkId: ID!) {
+      spkWithProgressBySpkId(spkId: $spkId) {
+        id
+        spkNo
+        wapNo
+        title
+        projectName
+        date
+        contractor
+        workDescription
+        location {
+          id
+          name
+        }
+        startDate
+        endDate
+        budget
+        workItems {
+          id
+          name
+          description
+          category {
+            id
+            name
+          }
+          subCategory {
+            id
+            name
+          }
+          unit {
+            id
+            name
+          }
+          rates {
+            nr {
+              rate
+              description
+            }
+            r {
+              rate
+              description
+            }
+          }
+          dailyTarget {
+            nr
+            r
+          }
+          boqVolume {
+            nr
+            r
+          }
+          completedVolume {
+            nr
+            r
+          }
+          remainingVolume {
+            nr
+            r
+          }
+          progressPercentage
+          amount
+          spentAmount
+          remainingAmount
+        }
+        totalProgress {
+          percentage
+          totalTargetBOQ
+          totalCompletedBOQ
+          remainingBOQ
+          totalBudget
+          totalSpent
+          remainingBudget
+        }
+        createdAt
+        updatedAt
+      }
+    }
+  ''';
+
   static const String getSPKDetailsWithProgressQuery = r'''
     query GetSPKDetailsWithProgressBySpkId($spkId: ID!) {
       spkDetailsWithProgress(spkId: $spkId) {
@@ -438,6 +518,33 @@ class GraphQLService extends GetxService {
     } catch (e) {
       print('[GraphQL] Error in fetchSPKDetailsWithProgress: $e');
       throw Exception('Gagal mengambil detail SPK dengan progress: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchSPKWithProgressBySpkId(String spkId) async {
+    try {
+      print('[GraphQL] Fetching SPK with progress by ID: $spkId');
+      final variables = {'spkId': spkId};
+      final result =
+          await query(getSPKWithProgressBySpkIdQuery, variables: variables);
+
+      if (result.hasException) {
+        print(
+            '[GraphQL] Error fetching SPK with progress by ID: ${result.exception}');
+        throw Exception(result.exception.toString());
+      }
+
+      final spkData = result.data?['spkWithProgressBySpkId'];
+      if (spkData == null) {
+        print('[GraphQL] No SPK with progress found with ID: $spkId');
+        throw Exception('SPK dengan progress tidak ditemukan');
+      }
+
+      print('[GraphQL] Successfully fetched SPK with progress by ID');
+      return Map<String, dynamic>.from(spkData);
+    } catch (e) {
+      print('[GraphQL] Error in fetchSPKWithProgressBySpkId: $e');
+      throw Exception('Gagal mengambil SPK dengan progress: $e');
     }
   }
 
