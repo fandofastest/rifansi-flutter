@@ -63,10 +63,18 @@ class DailyActivityResponse {
 
   factory DailyActivityResponse.fromJson(Map<String, dynamic> json) {
     try {
+      // Extract location from area.name if available, fallback to location field
+      String location = '';
+      if (json['area'] != null && json['area']['name'] != null) {
+        location = json['area']['name'].toString();
+      } else if (json['location'] != null) {
+        location = json['location'].toString();
+      }
+
       return DailyActivityResponse(
         id: json['id']?.toString() ?? '',
         date: json['date']?.toString() ?? '',
-        location: json['location']?.toString() ?? '',
+        location: location,
         weather: json['weather']?.toString() ?? '',
         status: json['status']?.toString() ?? '',
         workStartTime: json['workStartTime']?.toString() ?? '',
@@ -109,8 +117,12 @@ class DailyActivityResponse {
             : [],
         spkDetail: json['spkDetail'] != null
             ? SPKResponse.fromJson(json['spkDetail'])
-            : null,
-        userDetail: UserResponse.fromJson(json['userDetail'] ?? {}),
+            : json['spk'] != null
+                ? SPKResponse.fromJson(json['spk'])
+                : null,
+        userDetail: json['userDetail'] != null 
+            ? UserResponse.fromJson(json['userDetail'])
+            : UserResponse(id: '', username: '', fullName: ''),
         rejectionReason: json['rejectionReason']?.toString(),
         area: json['area'] != null ? AreaResponse.fromJson(json['area']) : null,
         isApproved: json['isApproved'] as bool? ?? false,

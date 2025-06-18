@@ -21,7 +21,9 @@ class WorkReportPage extends StatelessWidget {
 
     // Refresh data saat masuk halaman
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Load both server and local activities
       controller.fetchServerActivities();
+      controller.fetchLocalActivities();
     });
 
     return Scaffold(
@@ -575,7 +577,9 @@ class WorkReportPage extends StatelessWidget {
 
       return RefreshIndicator(
         onRefresh: () async {
+          // Refresh both server and local activities
           await controller.fetchServerActivities();
+          await controller.fetchLocalActivities();
         },
         child: ListView.builder(
           padding: const EdgeInsets.all(16),

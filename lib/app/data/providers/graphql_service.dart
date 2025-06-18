@@ -14,8 +14,8 @@ import '../models/spk_detail_with_progress_response.dart' as spk_progress;
 
 class GraphQLService extends GetxService {
   late GraphQLClient client;
-  // final String baseUrl = 'https://berifansi.fando.id/graphql';
-  final String baseUrl = 'https://laptop3000.fando.id/graphql';
+  final String baseUrl = 'https://berifansi.fando.id/graphql';
+  // final String baseUrl = 'https://laptop3000.fando.id/graphql';
 
   Future<GraphQLService> init() async {
     final HttpLink httpLink = HttpLink(baseUrl);
@@ -686,6 +686,216 @@ class GraphQLService extends GetxService {
           costType
           description
           amount
+          receiptNumber
+          remarks
+        }
+        spkDetail {
+          id
+          spkNo
+          wapNo
+          title
+          projectName
+          contractor
+          budget
+          startDate
+          endDate
+          workDescription
+          date
+          location {
+            id
+            name
+          }
+          workItems {
+            workItemId
+            boqVolume {
+              nr
+              r
+            }
+            amount
+            rates {
+              nr {
+                rate
+                description
+              }
+              r {
+                rate
+                description
+              }
+            }
+            description
+            workItem {
+              id
+              name
+              description
+              unit {
+                id
+                name
+                code
+              }
+              category {
+                id
+                name
+              }
+              subCategory {
+                id
+                name
+              }
+            }
+          }
+        }
+        userDetail {
+          id
+          username
+          fullName
+          email
+          phone
+          role {
+            id
+            roleCode
+            roleName
+            description
+          }
+          area {
+            id
+            name
+            location {
+              type
+              coordinates
+            }
+          }
+          lastLogin
+        }
+        createdAt
+        updatedAt
+      }
+    }
+  ''';
+
+  static const String getDailyActivityWithDetailsByActivityIdQuery = r'''
+    query GetDailyActivityWithDetailsbyActivityId($activityId: ID!) {
+      getDailyActivityWithDetailsByActivityId(activityId: $activityId) {
+        id
+        date
+        area {
+          id
+          name
+          location {
+            type
+            coordinates
+          }
+        }
+        weather
+        status
+        workStartTime
+        workEndTime
+        startImages
+        finishImages
+        closingRemarks
+        isApproved
+        progressPercentage
+        approvedBy {
+          id
+          username
+          fullName
+          email
+        }
+        approvedAt
+        rejectionReason
+        budgetUsage
+        activityDetails {
+          id
+          actualQuantity {
+            nr
+            r
+          }
+          status
+          remarks
+          workItem {
+            id
+            name
+            description
+            unit {
+              id
+              name
+              code
+            }
+            rates {
+              nr {
+                rate
+                description
+              }
+              r {
+                rate
+                description
+              }
+            }
+            category {
+              id
+              name
+            }
+            subCategory {
+              id
+              name
+            }
+          }
+        }
+        equipmentLogs {
+          id
+          equipment {
+            id
+            equipmentCode
+            equipmentType
+            plateOrSerialNo
+            defaultOperator
+            year
+            serviceStatus
+          }
+          fuelIn
+          fuelRemaining
+          workingHour
+          hourlyRate
+          rentalRatePerDay
+          fuelPrice
+          isBrokenReported
+          remarks
+        }
+        manpowerLogs {
+          id
+          role
+          personCount
+          hourlyRate
+          workingHours
+          personnelRole {
+            id
+            roleCode
+            roleName
+            description
+            isPersonel
+          }
+        }
+        materialUsageLogs {
+          id
+          material {
+            id
+            name
+            description
+            unitRate
+            unit {
+              id
+              name
+              code
+            }
+          }
+          quantity
+          unitRate
+          remarks
+        }
+        otherCosts {
+          id
+          costType
+          description
+          amount
+          receiptNumber
           remarks
         }
         spkDetail {
@@ -814,6 +1024,74 @@ class GraphQLService extends GetxService {
     } catch (e) {
       print('[GraphQL] Error fetching activities: $e');
       throw Exception('Gagal mengambil data aktivitas: $e');
+    }
+  }
+
+  // Daily Activity Queries
+  static const String getMyDailyActivityQuery = r'''
+    query GetMyDailyActivity($limit: Int, $skip: Int) {
+      getMyDailyActivity(limit: $limit, skip: $skip) {
+        activities {
+          id
+          date
+          status
+          workStartTime
+          workEndTime
+          area {
+            id
+            name
+            location {
+              type
+              coordinates
+            }
+          }
+          weather
+          spk {
+            spkNo
+            title
+            projectName
+          }
+        }
+        totalCount
+        hasMore
+        currentPage
+        totalPages
+      }
+    }
+  ''';
+
+  Future<Map<String, dynamic>> fetchMyDailyActivity({int? limit, int? skip}) async {
+    try {
+      print('[GraphQL] Fetching my daily activities');
+      
+      final variables = <String, dynamic>{};
+      if (limit != null) variables['limit'] = limit;
+      if (skip != null) variables['skip'] = skip;
+
+      final result = await query(getMyDailyActivityQuery, variables: variables);
+
+      if (result.hasException) {
+        print('[GraphQL] Error fetching my daily activities: ${result.exception}');
+        throw Exception(result.exception.toString());
+      }
+
+      final data = result.data?['getMyDailyActivity'];
+      if (data == null) {
+        print('[GraphQL] No daily activities found');
+        return {
+          'activities': [],
+          'totalCount': 0,
+          'hasMore': false,
+          'currentPage': 1,
+          'totalPages': 1
+        };
+      }
+
+      print('[GraphQL] Successfully fetched daily activities');
+      return Map<String, dynamic>.from(data);
+    } catch (e) {
+      print('[GraphQL] Error in fetchMyDailyActivity: $e');
+      throw Exception('Gagal mengambil data aktivitas harian: $e');
     }
   }
 
@@ -1671,5 +1949,31 @@ class GraphQLService extends GetxService {
     };
 
     return await reviewEquipmentRepairReport(id: id, input: input);
+  }
+
+  Future<Map<String, dynamic>> fetchDailyActivityWithDetailsByActivityId(String activityId) async {
+    try {
+      print('[GraphQL] Fetching daily activity details by activity ID: $activityId');
+
+      final variables = {'activityId': activityId};
+      final result = await query(getDailyActivityWithDetailsByActivityIdQuery, variables: variables);
+
+      if (result.hasException) {
+        print('[GraphQL] Error fetching daily activity details: ${result.exception}');
+        throw Exception(result.exception.toString());
+      }
+
+      final data = result.data?['getDailyActivityWithDetailsByActivityId'];
+      if (data == null) {
+        print('[GraphQL] No daily activity details found');
+        throw Exception('Detail aktivitas tidak ditemukan');
+      }
+
+      print('[GraphQL] Successfully fetched daily activity details');
+      return Map<String, dynamic>.from(data);
+    } catch (e) {
+      print('[GraphQL] Error in fetchDailyActivityWithDetailsByActivityId: $e');
+      throw Exception('Gagal mengambil detail aktivitas: $e');
+    }
   }
 }

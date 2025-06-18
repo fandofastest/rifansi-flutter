@@ -7,6 +7,7 @@ import './auth_controller.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../data/models/spk_model.dart';
 
 class DailyActivityController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -153,263 +154,117 @@ class DailyActivityController extends GetxController
   }
 
   // Fungsi untuk fetch aktivitas dari server
-  Future<void> fetchServerActivities({String? userId, String? keyword}) async {
-    // Cancel any existing timer
-    _timeoutTimer?.cancel();
-
+  Future<void> fetchServerActivities({String? keyword}) async {
     try {
+      // Cancel any existing timer
+      _timeoutTimer?.cancel();
+      
       isLoading.value = true;
       error.value = '';
-
-      if (keyword != null) searchKeyword.value = keyword;
-
-      // Set timeout with better error handling
-      _timeoutTimer = Timer(const Duration(seconds: 60), () {
+      
+      // Set up timeout
+      _timeoutTimer = Timer(const Duration(seconds: 30), () {
         if (isLoading.value) {
-          print('[DailyActivity] Timeout saat fetch activities');
           isLoading.value = false;
-          error.value = 'Timeout: Koneksi terlalu lama';
-          _timeoutTimer = null;
+          error.value = 'Request timeout. Please try again.';
         }
       });
 
-      String? currentUserId = userId;
-      if (currentUserId == null) {
-        final authController = Get.find<AuthController>();
-        if (authController.currentUser.value != null) {
-          currentUserId = authController.currentUser.value!.id;
-          print(
-              '[DailyActivity] Menggunakan user ID dari auth: $currentUserId');
+      final result = await Get.find<GraphQLService>().fetchMyDailyActivity(limit: 20, skip: 0);
+      print('[DailyActivity] Raw result: $result');
+      
+      // Cancel timer since we got a response
+      _timeoutTimer?.cancel();
+      
+      if (result != null) {
+        print('[DailyActivity] Result type: ${result.runtimeType}');
+        print('[DailyActivity] Result keys: ${result.keys.toList()}');
+        
+        final activitiesList = result['activities'] as List?;
+        print('[DailyActivity] Activities list: $activitiesList');
+        
+        if (activitiesList != null) {
+          print('[DailyActivity] Number of activities: ${activitiesList.length}');
+          if (activitiesList.isNotEmpty) {
+            print('[DailyActivity] First activity: ${activitiesList.first}');
+          }
+          
+          final activities = activitiesList.map((activity) {
+            print('[DailyActivity] Processing activity: $activity');
+            
+            // Extract area information
+            final areaData = activity['area'] as Map<String, dynamic>?;
+            final locationName = areaData?['name']?.toString() ?? '';
+            
+            return DailyActivityResponse(
+              id: activity['id']?.toString() ?? '',
+              date: activity['date']?.toString() ?? '',
+              status: activity['status']?.toString() ?? '',
+              location: locationName,
+              weather: activity['weather']?.toString() ?? '',
+              workStartTime: activity['workStartTime']?.toString() ?? '',
+              workEndTime: activity['workEndTime']?.toString() ?? '',
+              startImages: [],
+              finishImages: [],
+              closingRemarks: '',
+              progressPercentage: 0.0,
+              activityDetails: [],
+              equipmentLogs: [],
+              manpowerLogs: [],
+              materialUsageLogs: [],
+              otherCosts: [],
+              userDetail: UserResponse(
+                id: '',
+                username: '',
+                fullName: '',
+                email: '',
+                role: '',
+              ),
+              createdAt: '',
+              updatedAt: '',
+              isApproved: false,
+              rejectionReason: null,
+              area: areaData != null ? AreaResponse.fromJson(areaData) : null,
+              approvedBy: null,
+              approvedAt: null,
+              budgetUsage: null,
+              spkDetail: activity['spk'] != null ? SPKResponse.fromJson(activity['spk']) : null,
+            );
+          }).toList();
+
+          print('[DailyActivity] Processed activities count: ${activities.length}');
+
+          // Filter activities if keyword is provided
+          if (keyword != null && keyword.isNotEmpty) {
+            final filteredActivities = activities.where((activity) {
+              final spkNo = activity.spkDetail?.spkNo.toLowerCase() ?? '';
+              final title = activity.spkDetail?.title.toLowerCase() ?? '';
+              final searchTerm = keyword.toLowerCase();
+              return spkNo.contains(searchTerm) || title.contains(searchTerm);
+            }).toList();
+            print('[DailyActivity] Filtered activities count: ${filteredActivities.length}');
+            serverActivities.value = filteredActivities;
+          } else {
+            serverActivities.value = activities;
+          }
+
+          // Sort activities by date
+          serverActivities.sort((a, b) => b.date.compareTo(a.date));
+          print('[DailyActivity] Final server activities count: ${serverActivities.length}');
+          
+          // Update activities based on active tab
+          updateActivitiesByTab();
         } else {
-          print('[DailyActivity] User belum login');
-          error.value = 'User belum login';
-          isLoading.value = false;
-          _timeoutTimer?.cancel();
-          return;
+          print('[DailyActivity] Activities list is null');
         }
+      } else {
+        print('[DailyActivity] Result is null');
       }
-
-      print(
-          '[DailyActivity] Memulai fetchServerActivities, userId: $currentUserId, keyword: $keyword');
-
-      // Ambil data dari server dengan timeout menggunakan query baru
-      final service = Get.find<GraphQLService>();
-      final rawResult = await service
-          .fetchDailyActivityByUser(userId: currentUserId)
-          .timeout(const Duration(seconds: 30), onTimeout: () {
-        throw TimeoutException('Timeout saat mengambil data dari server',
-            const Duration(seconds: 30));
-      });
-
-      // Cancel timer if successful
-      _timeoutTimer?.cancel();
-      _timeoutTimer = null;
-
-      // DEBUG: Log raw data dari server
-      print('[DailyActivity] === RAW SERVER DATA DEBUG ===');
-      print('[DailyActivity] Raw result length: ${rawResult.length}');
-      for (int i = 0; i < rawResult.length; i++) {
-        final data = rawResult[i];
-        print('[DailyActivity] Raw Activity $i:');
-        print('  - id: ${data['id']}');
-        print('  - status: ${data['status']}');
-        print('  - isApproved: ${data['isApproved']}');
-        print('  - rejectionReason: ${data['rejectionReason']}');
-        print('  - approvedBy: ${data['approvedBy']}');
-        print('  - approvedAt: ${data['approvedAt']}');
-        print('  - spkDetail: ${data['spkDetail']?['spkNo']}');
-        print('  - userDetail: ${data['userDetail']?['fullName']}');
-        print('  - area: ${data['area']?['name']}');
-        print('  - date: ${data['date']}');
-        print('  - progressPercentage: ${data['progressPercentage']}');
-        print('  - budgetUsage: ${data['budgetUsage']}');
-      }
-      print('[DailyActivity] === END RAW DATA DEBUG ===');
-
-      // Convert raw Map data to DailyActivityResponse objects
-      final List<DailyActivityResponse> result = rawResult.map((data) {
-        try {
-          // Map the response data to match DailyActivityResponse structure
-          final mappedData = {
-            'id': data['id']?.toString() ?? '',
-            'date': data['date']?.toString() ??
-                DateTime.now().millisecondsSinceEpoch.toString(),
-            'location': data['area']?['name']?.toString() ?? '',
-            'weather': data['weather']?.toString() ?? '',
-            'status': data['status']?.toString() ?? '',
-            'workStartTime': data['workStartTime']?.toString() ?? '',
-            'workEndTime': data['workEndTime']?.toString() ?? '',
-            'startImages': data['startImages'] ?? [],
-            'finishImages': data['finishImages'] ?? [],
-            'closingRemarks': data['closingRemarks']?.toString() ?? '',
-            'progressPercentage':
-                (data['progressPercentage'] as num?)?.toDouble() ?? 0.0,
-            'activityDetails': data['activityDetails'] ?? [],
-            'equipmentLogs': data['equipmentLogs'] ?? [],
-            'manpowerLogs': data['manpowerLogs'] ?? [],
-            'materialUsageLogs': data['materialUsageLogs'] ?? [],
-            'otherCosts': data['otherCosts'] ?? [],
-            'spkDetail': data['spkDetail'],
-            'userDetail': data['userDetail'],
-            'createdAt': data['createdAt']?.toString() ?? '',
-            'updatedAt': data['updatedAt']?.toString() ?? '',
-            'isApproved': data['isApproved'] as bool? ?? false,
-            'rejectionReason': data['rejectionReason']?.toString(),
-            'area': data['area'],
-            'approvedBy': data['approvedBy'],
-            'approvedAt': data['approvedAt']?.toString(),
-            'budgetUsage': data['budgetUsage'] as double?,
-          };
-
-          print('[DailyActivity] Parsing activity: ${data['id']}');
-          print(
-              '  - Raw isApproved: ${data['isApproved']} (${data['isApproved'].runtimeType})');
-          print('  - Mapped isApproved: ${mappedData['isApproved']}');
-
-          final response = DailyActivityResponse.fromJson(mappedData);
-
-          print('  - Final response isApproved: ${response.isApproved}');
-          print('  - Final response status: ${response.status}');
-
-          return response;
-        } catch (e) {
-          print('[DailyActivity] Error parsing activity data: $e');
-          print('[DailyActivity] Raw data: $data');
-          // Return a minimal response to avoid breaking the list
-          return DailyActivityResponse(
-            id: data['id']?.toString() ?? '',
-            date: data['date']?.toString() ??
-                DateTime.now().millisecondsSinceEpoch.toString(),
-            location: data['area']?['name']?.toString() ?? '',
-            weather: data['weather']?.toString() ?? '',
-            status: data['status']?.toString() ?? '',
-            workStartTime: data['workStartTime']?.toString() ?? '',
-            workEndTime: data['workEndTime']?.toString() ?? '',
-            startImages: [],
-            finishImages: [],
-            closingRemarks: '',
-            progressPercentage:
-                (data['progressPercentage'] as num?)?.toDouble() ?? 0.0,
-            activityDetails: [],
-            equipmentLogs: [],
-            manpowerLogs: [],
-            materialUsageLogs: [],
-            otherCosts: [],
-            spkDetail: data['spkDetail'] != null
-                ? SPKResponse.fromJson(data['spkDetail'])
-                : null,
-            userDetail: UserResponse(
-              id: '',
-              username: '',
-              fullName: '',
-              email: '',
-              role: '',
-            ),
-            createdAt: data['createdAt']?.toString() ?? '',
-            updatedAt: data['updatedAt']?.toString() ?? '',
-            isApproved: data['isApproved'] as bool? ?? false,
-            rejectionReason: data['rejectionReason']?.toString(),
-            area: data['area'] != null
-                ? AreaResponse.fromJson(data['area'])
-                : null,
-            approvedBy: data['approvedBy'] != null
-                ? UserResponse.fromJson(data['approvedBy'])
-                : null,
-            approvedAt: data['approvedAt']?.toString(),
-            budgetUsage: data['budgetUsage'] != null
-                ? data['budgetUsage'] is int
-                    ? (data['budgetUsage'] as int).toDouble()
-                    : data['budgetUsage'] is double
-                        ? data['budgetUsage']
-                        : 0.0
-                : null,
-          );
-        }
-      }).toList();
-
-      // DEBUG: Log parsed results
-      print('[DailyActivity] === PARSED RESULTS DEBUG ===');
-      print('[DailyActivity] Parsed results length: ${result.length}');
-      for (int i = 0; i < result.length; i++) {
-        final activity = result[i];
-        print('[DailyActivity] Parsed Activity $i:');
-        print('  - id: ${activity.id}');
-        print('  - status: ${activity.status}');
-        print('  - isApproved: ${activity.isApproved}');
-        print('  - rejectionReason: ${activity.rejectionReason}');
-        print('  - spkDetail: ${activity.spkDetail?.spkNo}');
-        print('  - userDetail: ${activity.userDetail.fullName}');
-        print('  - location: ${activity.location}');
-      }
-      print('[DailyActivity] === END PARSED RESULTS DEBUG ===');
-
-      // Debug log untuk memeriksa struktur data
-      if (result.isNotEmpty) {
-        print('============== DATA AKTIVITAS ==============');
-        print('SPK Detail: ${result[0].spkDetail}');
-        print('Activity location: ${result[0].location}');
-        print('Activity area from raw: ${rawResult[0]['area']}');
-        print('Activity status: ${rawResult[0]['status']}');
-        print('Activity rejectionReason: ${rawResult[0]['rejectionReason']}');
-        print('Activity isApproved: ${rawResult[0]['isApproved']}');
-        print('Activity approvedBy: ${rawResult[0]['approvedBy']}');
-        print('============================================');
-      }
-
-      List<DailyActivityResponse> filteredServerActivities = result;
-      if (searchKeyword.value.isNotEmpty) {
-        final kw = searchKeyword.value.toLowerCase();
-        filteredServerActivities = filteredServerActivities.where((activity) {
-          return activity.id.toLowerCase().contains(kw) ||
-              (activity.spkDetail?.id.toLowerCase().contains(kw) ?? false);
-        }).toList();
-        print(
-            '[DailyActivity] Filtered by keyword: ${filteredServerActivities.length} items');
-      }
-
-      // Simpan hasil dari server
-      serverActivities.value = filteredServerActivities;
-
-      // DEBUG: Log final server activities
-      print('[DailyActivity] === FINAL SERVER ACTIVITIES DEBUG ===');
-      print(
-          '[DailyActivity] Final server activities length: ${serverActivities.length}');
-      for (int i = 0; i < serverActivities.length; i++) {
-        final activity = serverActivities[i];
-        print('[DailyActivity] Final Activity $i:');
-        print('  - id: ${activity.id}');
-        print('  - status: ${activity.status}');
-        print('  - isApproved: ${activity.isApproved}');
-        print('  - Will be filtered out: ${activity.isApproved}');
-      }
-      print('[DailyActivity] === END FINAL DEBUG ===');
-
-      // Urutkan serverActivities dengan yang terbaru di atas
-      serverActivities.sort((a, b) {
-        try {
-          DateTime dateA = _parseActivityDate(a.date);
-          DateTime dateB = _parseActivityDate(b.date);
-          return dateB.compareTo(dateA);
-        } catch (e) {
-          return 0;
-        }
-      });
-
-      // Update activities berdasarkan tab yang aktif
-      updateActivitiesByTab();
-
-      isLoading.value = false;
-      print(
-          '[DailyActivity] Success: Server activities loaded: ${serverActivities.length}');
     } catch (e) {
-      print('[DailyActivity] Error: $e');
       error.value = e.toString();
-      isLoading.value = false;
+      print('[DailyActivity] Error fetching server activities: $e');
     } finally {
-      _timeoutTimer?.cancel();
-      _timeoutTimer = null;
-      print(
-          '[DailyActivity] fetchServerActivities selesai. isLoading: ${isLoading.value}');
+      isLoading.value = false;
     }
   }
 
