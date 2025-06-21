@@ -2,7 +2,7 @@ import 'category_model.dart';
 import 'unit_model.dart';
 
 class WorkItem {
-  final String workItemId;
+  final String? workItemId;
   final BoqVolume boqVolume;
   final int amount;
   final Rates rates;
@@ -10,7 +10,7 @@ class WorkItem {
   final WorkItemDetail? workItem;
 
   WorkItem({
-    required this.workItemId,
+    this.workItemId,
     required this.boqVolume,
     required this.amount,
     required this.rates,
@@ -20,10 +20,10 @@ class WorkItem {
 
   factory WorkItem.fromJson(Map<String, dynamic> json) {
     return WorkItem(
-      workItemId: json['workItemId'],
-      boqVolume: BoqVolume.fromJson(json['boqVolume']),
-      amount: json['amount'],
-      rates: Rates.fromJson(json['rates']),
+      workItemId: json['workItemId']?.toString(),
+      boqVolume: BoqVolume.fromJson(json['boqVolume'] ?? {}),
+      amount: json['amount'] ?? 0,
+      rates: Rates.fromJson(json['rates'] ?? {}),
       description: json['description'] as String?,
       workItem: json['workItem'] != null ? WorkItemDetail.fromJson(json['workItem']) : null,
     );
@@ -61,8 +61,8 @@ class BoqVolume {
 
   factory BoqVolume.fromJson(Map<String, dynamic> json) {
     return BoqVolume(
-      nr: (json['nr'] as num).toInt(),
-      r: (json['r'] as num).toInt(),
+      nr: (json['nr'] as num?)?.toInt() ?? 0,
+      r: (json['r'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -75,8 +75,8 @@ class Rates {
 
   factory Rates.fromJson(Map<String, dynamic> json) {
     return Rates(
-      nr: Rate.fromJson(json['nr']),
-      r: Rate.fromJson(json['r']),
+      nr: Rate.fromJson(json['nr'] ?? {}),
+      r: Rate.fromJson(json['r'] ?? {}),
     );
   }
 }
@@ -89,7 +89,7 @@ class Rate {
 
   factory Rate.fromJson(Map<String, dynamic> json) {
     return Rate(
-      rate: json['rate'],
+      rate: json['rate'] ?? 0,
       description: json['description'] as String?,
     );
   }

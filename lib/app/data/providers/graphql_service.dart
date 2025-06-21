@@ -132,7 +132,6 @@ class GraphQLService extends GetxService {
         endDate
         budget
         workItems {
-          workItemId
           boqVolume {
             nr
             r
@@ -207,7 +206,6 @@ class GraphQLService extends GetxService {
         endDate
         budget
         workItems {
-          workItemId
           boqVolume {
             nr
             r
@@ -706,7 +704,6 @@ class GraphQLService extends GetxService {
             name
           }
           workItems {
-            workItemId
             boqVolume {
               nr
               r
@@ -802,6 +799,38 @@ class GraphQLService extends GetxService {
         approvedAt
         rejectionReason
         budgetUsage
+        dailyProgress {
+          totalDailyTargetBOQ {
+            nr
+            r
+            total
+          }
+          totalActualBOQ {
+            nr
+            r
+            total
+          }
+          dailyProgressPercentage
+          workItemProgress {
+            workItemName
+            targetBOQ {
+              nr
+              r
+              total
+            }
+            actualBOQ {
+              nr
+              r
+              total
+            }
+            progressPercentage
+            unit {
+              id
+              name
+              code
+            }
+          }
+        }
         activityDetails {
           id
           actualQuantity {
@@ -915,7 +944,6 @@ class GraphQLService extends GetxService {
             name
           }
           workItems {
-            workItemId
             boqVolume {
               nr
               r
@@ -1060,6 +1088,43 @@ class GraphQLService extends GetxService {
     }
   ''';
 
+  static const String getActivityByAreaQuery = r'''
+    query GetActivityByArea($areaId: ID!, $limit: Int, $skip: Int) {
+      getActivityByArea(areaId: $areaId, limit: $limit, skip: $skip) {
+        activities {
+          id
+          date
+          status
+          workStartTime
+          workEndTime
+          area {
+            id
+            name
+            location {
+              type
+              coordinates
+            }
+          }
+          weather
+          spk {
+            spkNo
+            title
+            projectName
+          }
+          user {
+            id
+            username
+            fullName
+          }
+        }
+        totalCount
+        hasMore
+        currentPage
+        totalPages
+      }
+    }
+  ''';
+
   Future<Map<String, dynamic>> fetchMyDailyActivity({int? limit, int? skip}) async {
     try {
       print('[GraphQL] Fetching my daily activities');
@@ -1092,6 +1157,47 @@ class GraphQLService extends GetxService {
     } catch (e) {
       print('[GraphQL] Error in fetchMyDailyActivity: $e');
       throw Exception('Gagal mengambil data aktivitas harian: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchActivityByArea({
+    required String areaId,
+    int? limit,
+    int? skip
+  }) async {
+    try {
+      print('[GraphQL] Fetching activities by area: $areaId');
+      
+      final variables = <String, dynamic>{
+        'areaId': areaId,
+      };
+      if (limit != null) variables['limit'] = limit;
+      if (skip != null) variables['skip'] = skip;
+
+      final result = await query(getActivityByAreaQuery, variables: variables);
+
+      if (result.hasException) {
+        print('[GraphQL] Error fetching activities by area: ${result.exception}');
+        throw Exception(result.exception.toString());
+      }
+
+      final data = result.data?['getActivityByArea'];
+      if (data == null) {
+        print('[GraphQL] No activities found for area: $areaId');
+        return {
+          'activities': [],
+          'totalCount': 0,
+          'hasMore': false,
+          'currentPage': 1,
+          'totalPages': 1
+        };
+      }
+
+      print('[GraphQL] Successfully fetched activities by area');
+      return Map<String, dynamic>.from(data);
+    } catch (e) {
+      print('[GraphQL] Error in fetchActivityByArea: $e');
+      throw Exception('Gagal mengambil data aktivitas berdasarkan area: $e');
     }
   }
 
@@ -1397,7 +1503,6 @@ class GraphQLService extends GetxService {
         }
         activityDetails {
           id
-          workItemId
           actualQuantity {
             nr
             r
@@ -1977,3 +2082,4 @@ class GraphQLService extends GetxService {
     }
   }
 }
+

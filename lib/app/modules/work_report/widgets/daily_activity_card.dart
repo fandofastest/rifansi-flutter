@@ -598,8 +598,7 @@ class DailyActivityCard extends StatelessWidget {
                                 _getFormattedTimeForActivity(displayActivity.workStartTime)),
                             _buildDetailRow('Waktu Selesai',
                                 _getFormattedTimeForActivity(displayActivity.workEndTime)),
-                            _buildDetailRow('Progress Harian',
-                                _getFormattedProgressPercentageForActivity(displayActivity)),
+
                           ],
                         ),
 
@@ -711,6 +710,194 @@ class DailyActivityCard extends StatelessWidget {
                                   ),
                                 ),
                               ],
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Daily Progress Information (NEW)
+                        if (detailedActivityData != null && detailedActivityData['dailyProgress'] != null) ...[
+                          _buildDetailSection(
+                            'Progress Harian',
+                            [
+                              Builder(
+                                builder: (context) {
+                                  final dailyProgress = detailedActivityData['dailyProgress'];
+                                  final workItemProgress = dailyProgress['workItemProgress'] as List? ?? [];
+                                  final totalDailyTarget = dailyProgress['totalDailyTargetBOQ'];
+                                  final totalActual = dailyProgress['totalActualBOQ'];
+                                  final dailyProgressPercentage = dailyProgress['dailyProgressPercentage'] ?? 0.0;
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Overall Progress Summary
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade50,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.blue.shade200),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Progress Harian:',
+                                              style: GoogleFonts.dmSans(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue.shade800,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${dailyProgressPercentage.toStringAsFixed(2)}%',
+                                              style: GoogleFonts.dmSans(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue.shade700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      
+                                      const SizedBox(height: 12),
+                                      
+                                      // Work Item Progress Details - Only show items with actual values
+                                      Builder(
+                                        builder: (context) {
+                                          // Filter items that have actual values > 0
+                                          final itemsWithActual = workItemProgress.where((item) {
+                                            final actualBOQ = item['actualBOQ'];
+                                            final actualTotal = actualBOQ?['total'] ?? 0.0;
+                                            return actualTotal > 0;
+                                          }).toList();
+
+                                          if (itemsWithActual.isNotEmpty) {
+                                            return Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Detail Progress per Item Pekerjaan (${itemsWithActual.length} item)',
+                                                  style: GoogleFonts.dmSans(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                ...itemsWithActual.map((item) {
+                                                  final targetBOQ = item['targetBOQ'];
+                                                  final actualBOQ = item['actualBOQ'];
+                                                  final progressPercentage = item['progressPercentage'] ?? 0.0;
+                                                  final unit = item['unit'];
+                                                  
+                                                  return Padding(
+                                                    padding: const EdgeInsets.only(bottom: 8),
+                                                    child: Container(
+                                                      padding: const EdgeInsets.all(8),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.green.shade50,
+                                                        borderRadius: BorderRadius.circular(6),
+                                                        border: Border.all(color: Colors.green.shade200),
+                                                      ),
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            item['workItemName'] ?? 'Unknown Work Item',
+                                                            style: GoogleFonts.dmSans(
+                                                              fontSize: 13,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: Colors.black87,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(height: 4),
+                                                          if (unit != null) ...[
+                                                            Text(
+                                                              'Unit: ${unit['name']} (${unit['code']})',
+                                                              style: GoogleFonts.dmSans(
+                                                                fontSize: 11,
+                                                                color: Colors.black54,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(height: 4),
+                                                          ],
+                                                          Row(
+                                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                            children: [
+                                                              Text(
+                                                                'Target: ${targetBOQ?['total']?.toStringAsFixed(2) ?? '0.00'}',
+                                                                style: GoogleFonts.dmSans(
+                                                                  fontSize: 12,
+                                                                  color: Colors.black54,
+                                                                ),
+                                                              ),
+                                                              Text(
+                                                                'Actual: ${actualBOQ?['total']?.toStringAsFixed(2) ?? '0.00'}',
+                                                                style: GoogleFonts.dmSans(
+                                                                  fontSize: 12,
+                                                                  color: Colors.black54,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          const SizedBox(height: 4),
+                                                          Row(
+                                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                            children: [
+                                                              Text(
+                                                                'Progress:',
+                                                                style: GoogleFonts.dmSans(
+                                                                  fontSize: 12,
+                                                                  fontWeight: FontWeight.w600,
+                                                                  color: Colors.black87,
+                                                                ),
+                                                              ),
+                                                              Text(
+                                                                '${progressPercentage.toStringAsFixed(2)}%',
+                                                                style: GoogleFonts.dmSans(
+                                                                  fontSize: 12,
+                                                                  fontWeight: FontWeight.bold,
+                                                                  color: progressPercentage >= 100 
+                                                                    ? Colors.green.shade700 
+                                                                    : progressPercentage >= 50 
+                                                                      ? Colors.orange.shade700 
+                                                                      : Colors.red.shade700,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          // Progress bar
+                                                          const SizedBox(height: 4),
+                                                          LinearProgressIndicator(
+                                                            value: progressPercentage / 100,
+                                                            backgroundColor: Colors.grey.shade300,
+                                                            valueColor: AlwaysStoppedAnimation<Color>(
+                                                              progressPercentage >= 100 
+                                                                ? Colors.green 
+                                                                : progressPercentage >= 50 
+                                                                  ? Colors.orange 
+                                                                  : Colors.red,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  );
+                                                }).toList(),
+                                              ],
+                                            );
+                                          } else {
+                                            return const SizedBox.shrink(); // Don't show anything if no items with actual values
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -1653,7 +1840,10 @@ class DailyActivityCard extends StatelessWidget {
           'N/A';
 
     // Cek status laporan dengan debug logging
-    final bool isDraft = activity.status.toLowerCase().contains('draft');
+    final bool isDraft = activity.status.toLowerCase().contains('draft') ||
+        activity.status.toLowerCase() == 'in_progress' ||
+        activity.status.toLowerCase() == 'on_progress' ||
+        activity.status.toLowerCase().contains('on progress');
     final bool isWaitingProgress =
         activity.status.toLowerCase().contains('menunggu progress') ||
             activity.status.toLowerCase().contains('waiting');
@@ -1667,7 +1857,7 @@ class DailyActivityCard extends StatelessWidget {
     final bool isTodayReport = isReportFromToday();
 
     // Debug logging untuk status
-    print("8. isDraft: $isDraft (draft OR in_progress)");
+    print("8. isDraft: $isDraft (draft OR in_progress OR on_progress)");
     print(
         "9. isWaitingProgress: $isWaitingProgress (menunggu progress OR waiting)");
     print("10. isApproved: $isApproved (disetujui OR approved OR completed)");
@@ -1680,6 +1870,10 @@ class DailyActivityCard extends StatelessWidget {
         "    - Contains 'draft': ${activity.status.toLowerCase().contains('draft')}");
     print(
         "    - Equals 'in_progress': ${activity.status.toLowerCase() == 'in_progress'}");
+    print(
+        "    - Equals 'on_progress': ${activity.status.toLowerCase() == 'on_progress'}");
+    print(
+        "    - Contains 'on progress': ${activity.status.toLowerCase().contains('on progress')}");
     print(
         "    - Status equals 'draft': ${activity.status.toLowerCase() == 'draft'}");
     print(
@@ -2022,24 +2216,6 @@ class DailyActivityCard extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.pie_chart,
-                          color: FigmaColors.primary,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Progress Harian: ${getFormattedProgressPercentage()}',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: FigmaColors.hitam,
-                          ),
-                        ),
-                      ],
-                    ),
                     const SizedBox(height: 4),
                     Row(
                       children: [

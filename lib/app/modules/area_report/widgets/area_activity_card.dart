@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/app_theme.dart';
 import '../../../data/models/daily_activity_response.dart';
-import '../../work_report/widgets/daily_activity_card.dart';
+import '../../../data/providers/graphql_service.dart';
 
 class AreaActivityCard extends StatelessWidget {
   final DailyActivityResponse activity;
@@ -197,11 +197,6 @@ class AreaActivityCard extends StatelessWidget {
                     activity.location.isNotEmpty ? activity.location : 'N/A',
                   ),
                   const SizedBox(height: 12),
-                  _buildInfoRow(
-                    Icons.trending_up_outlined,
-                    'Progress',
-                    '${activity.progressPercentage.toStringAsFixed(1)}%',
-                  ),
                 ],
               ),
             ),
@@ -351,1012 +346,738 @@ class AreaActivityCard extends StatelessWidget {
     }
   }
 
-  void _showDetailDialog(BuildContext context) {
-    final bool isRejected =
-        activity.status.toLowerCase().contains('rejected') ||
-            activity.status.toLowerCase().contains('ditolak');
-
-    // Debug logging for rejectionReason
-    print('[DEBUG] Activity ID: ${activity.id}');
-    print('[DEBUG] Activity Status: ${activity.status}');
-    print('[DEBUG] isRejected: $isRejected');
-    print('[DEBUG] rejectionReason: ${activity.rejectionReason}');
-    print(
-        '[DEBUG] rejectionReason?.isNotEmpty: ${activity.rejectionReason?.isNotEmpty}');
-
-    // Debug logging for cost data
-    print('[COST DEBUG] === RAW ACTIVITY DATA ===');
-    print(
-        '[COST DEBUG] Equipment logs: ${activity.equipmentLogs.length} items');
-    print('[COST DEBUG] Manpower logs: ${activity.manpowerLogs.length} items');
-    print(
-        '[COST DEBUG] Material logs: ${activity.materialUsageLogs.length} items');
-    print('[COST DEBUG] Other costs: ${activity.otherCosts.length} items');
-
-    // Sample data from each category if available
-    if (activity.equipmentLogs.isNotEmpty) {
-      final sample = activity.equipmentLogs.first;
-      print(
-          '[COST DEBUG] Sample equipment: ${sample.equipment?.equipmentCode}, hours: ${sample.workingHour}, rate: ${sample.hourlyRate}');
-    }
-
-    if (activity.manpowerLogs.isNotEmpty) {
-      final sample = activity.manpowerLogs.first;
-      print(
-          '[COST DEBUG] Sample manpower: ${sample.personnelRole?.roleName}, count: ${sample.personCount}, rate: ${sample.normalHourlyRate}, hours: ${sample.normalHoursPerPerson}');
-    }
-
-    if (activity.materialUsageLogs.isNotEmpty) {
-      final sample = activity.materialUsageLogs.first;
-      print(
-          '[COST DEBUG] Sample material: ${sample.material?.name}, qty: ${sample.quantity}, rate: ${sample.unitRate}');
-    }
-
-    if (activity.otherCosts.isNotEmpty) {
-      final sample = activity.otherCosts.first;
-      print(
-          '[COST DEBUG] Sample other cost: ${sample.description}, type: ${sample.costType}, amount: ${sample.amount}');
-    }
-
-    Get.dialog(
-      Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+  void _showDetailDialog(BuildContext context) async {
+    try {
+      // Show loading dialog
+      Get.dialog(
+        const Center(
+          child: CircularProgressIndicator(),
         ),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isRejected
-                      ? Colors.red
-                      : activity.status.toLowerCase().contains('draft')
-                          ? Colors.orange
-                          : activity.status
-                                      .toLowerCase()
-                                      .contains('disetujui') ||
-                                  activity.status
-                                      .toLowerCase()
-                                      .contains('approved')
-                              ? Colors.green
-                              : FigmaColors.primary,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
+        barrierDismissible: false,
+      );
+
+      // Fetch detailed activity data
+      final graphQLService = Get.find<GraphQLService>();
+      final detailedActivityData = await graphQLService.fetchDailyActivityWithDetailsByActivityId(activity.id);
+
+      // Close loading dialog
+      Get.back();
+
+      // Use the detailed activity data for display if available
+      DailyActivityResponse displayActivity = activity;
+      if (detailedActivityData != null && detailedActivityData is Map<String, dynamic>) {
+        try {
+          displayActivity = DailyActivityResponse.fromJson(detailedActivityData);
+        } catch (e) {
+          print('[DEBUG] Error parsing detailed activity data: $e');
+          // Fallback to original activity data
+          displayActivity = activity;
+        }
+      }
+
+      final bool isRejected =
+          displayActivity.status.toLowerCase().contains('rejected') ||
+              displayActivity.status.toLowerCase().contains('ditolak');
+
+      // Show the detail dialog with the fetched data
+      Get.dialog(
+        Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isRejected
+                        ? Colors.red
+                        : displayActivity.status.toLowerCase().contains('draft')
+                            ? Colors.orange
+                            : displayActivity.status
+                                        .toLowerCase()
+                                        .contains('disetujui') ||
+                                    displayActivity.status
+                                        .toLowerCase()
+                                        .contains('approved')
+                                ? Colors.green
+                                : FigmaColors.primary,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isRejected
+                            ? Icons.cancel_outlined
+                            : displayActivity.status.toLowerCase().contains('draft')
+                                ? Icons.edit_document
+                                : displayActivity.status
+                                            .toLowerCase()
+                                            .contains('disetujui') ||
+                                        displayActivity.status
+                                            .toLowerCase()
+                                            .contains('approved')
+                                    ? Icons.check_circle_outline
+                                    : Icons.info_outline,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Detail Laporan Kerja',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Get.back(),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isRejected
-                          ? Icons.cancel_outlined
-                          : activity.status.toLowerCase().contains('draft')
-                              ? Icons.edit_document
-                              : activity.status
-                                          .toLowerCase()
-                                          .contains('disetujui') ||
-                                      activity.status
-                                          .toLowerCase()
-                                          .contains('approved')
-                                  ? Icons.check_circle_outline
-                                  : Icons.info_outline,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Detail Laporan Kerja',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Get.back(),
-                      icon: const Icon(Icons.close, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
 
-              // Content
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Status dengan highlight jika ditolak
-                      if (isRejected) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.red.shade200),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.warning,
-                                      color: Colors.red.shade700, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Laporan Ditolak',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.red.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Alasan Penolakan:',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.red.shade700,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                activity.rejectionReason?.isNotEmpty == true
-                                    ? activity.rejectionReason!
-                                    : 'Tidak ada alasan penolakan yang diberikan. Silakan hubungi supervisor untuk informasi lebih lanjut.',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 14,
-                                  color: Colors.red.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-
-                      // Informasi SPK
-                      _buildDetailSection(
-                        'Informasi SPK',
-                        [
-                          if (activity.spkDetail != null) ...[
-                            _buildDetailRow(
-                                'Judul SPK', activity.spkDetail!.title),
-                            _buildDetailRow(
-                                'No. SPK', activity.spkDetail!.spkNo),
-                            _buildDetailRow(
-                                'Nama Proyek', activity.spkDetail!.projectName),
-                            if (activity.spkDetail!.contractor.isNotEmpty)
-                              _buildDetailRow(
-                                  'Kontraktor', activity.spkDetail!.contractor),
-                          ] else ...[
-                            _buildDetailRow('SPK ID', activity.spkId),
-                          ],
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Informasi Laporan
-                      _buildDetailSection(
-                        'Informasi Laporan',
-                        [
-                          _buildDetailRow('Status', activity.status),
-                          _buildDetailRow(
-                              'Tanggal', _formatDate(activity.date)),
-                          _buildDetailRow(
-                              'Lokasi',
-                              activity.location.isNotEmpty
-                                  ? activity.location
-                                  : 'N/A'),
-                          _buildDetailRow('Waktu Mulai',
-                              _formatTime(activity.workStartTime)),
-                          _buildDetailRow('Waktu Selesai',
-                              _formatTime(activity.workEndTime)),
-                          _buildDetailRow('Progress Harian',
-                              '${activity.progressPercentage.toStringAsFixed(2)}%'),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Catatan Penutup
-                      if (activity.closingRemarks.isNotEmpty) ...[
-                        _buildDetailSection(
-                          'Catatan Penutup',
-                          [
-                            Text(
-                              activity.closingRemarks,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 14,
-                                color: Colors.black87,
-                              ),
+                // Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Status dengan highlight jika ditolak
+                        if (isRejected) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.red.shade200),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                      ],
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.warning,
+                                        color: Colors.red.shade700, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Laporan Ditolak',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.red.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Alasan Penolakan:',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.red.shade700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  displayActivity.rejectionReason?.isNotEmpty == true
+                                      ? displayActivity.rejectionReason!
+                                      : 'Tidak ada alasan penolakan yang diberikan. Silakan hubungi supervisor untuk informasi lebih lanjut.',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 14,
+                                    color: Colors.red.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
 
-                      // Foto-foto
-                      if (activity.startImages.isNotEmpty ||
-                          activity.finishImages.isNotEmpty) ...[
+                        // Informasi SPK
                         _buildDetailSection(
-                          'Dokumentasi',
+                          'Informasi SPK',
                           [
-                            if (activity.startImages.isNotEmpty) ...[
-                              Text(
-                                'Foto Mulai Kerja (${activity.startImages.length})',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                height: 80,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: activity.startImages.length,
-                                  itemBuilder: (context, index) {
-                                    return Container(
-                                      margin: const EdgeInsets.only(right: 8),
-                                      width: 80,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                            color: Colors.grey.shade300),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.network(
-                                          activity.startImages[index],
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error,
-                                                  stackTrace) =>
-                                              const Icon(
-                                                  Icons.image_not_supported),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                            if (activity.finishImages.isNotEmpty) ...[
-                              Text(
-                                'Foto Selesai Kerja (${activity.finishImages.length})',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                height: 80,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: activity.finishImages.length,
-                                  itemBuilder: (context, index) {
-                                    return Container(
-                                      margin: const EdgeInsets.only(right: 8),
-                                      width: 80,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                            color: Colors.grey.shade300),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.network(
-                                          activity.finishImages[index],
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error,
-                                                  stackTrace) =>
-                                              const Icon(
-                                                  Icons.image_not_supported),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
+                            if (displayActivity.spkDetail != null) ...[
+                              _buildDetailRow(
+                                  'Judul SPK', displayActivity.spkDetail!.title),
+                              _buildDetailRow(
+                                  'No. SPK', displayActivity.spkDetail!.spkNo),
+                              _buildDetailRow(
+                                  'Nama Proyek', displayActivity.spkDetail!.projectName),
+                              if (displayActivity.spkDetail!.contractor.isNotEmpty)
+                                _buildDetailRow(
+                                    'Kontraktor', displayActivity.spkDetail!.contractor),
+                            ] else ...[
+                              _buildDetailRow('SPK ID', displayActivity.spkId),
                             ],
                           ],
                         ),
+
                         const SizedBox(height: 16),
-                      ],
 
-                      // === RINCIAN ITEM PEKERJAAN ===
-                      if (activity.activityDetails.isNotEmpty) ...[
+                        // Informasi Laporan
                         _buildDetailSection(
-                          'Rincian Item Pekerjaan',
+                          'Informasi Laporan',
                           [
-                            // Filter item yang tidak 0
-                            Builder(
-                              builder: (context) {
-                                final nonZeroItems = activity.activityDetails.where((detail) {
-                                  final progressValue = _calculateProgressValue(detail);
-                                  final hasValidNR = detail.actualQuantity.nr > 0 && (detail.rateNR ?? 0.0) > 0;
-                                  final hasValidR = detail.actualQuantity.r > 0 && (detail.rateR ?? 0.0) > 0;
-                                  return progressValue > 0 || hasValidNR || hasValidR;
-                                }).toList();
+                            _buildDetailRow('Status', displayActivity.status),
+                            _buildDetailRow(
+                                'Tanggal', _formatDate(displayActivity.date)),
+                            _buildDetailRow(
+                                'Lokasi',
+                                displayActivity.location.isNotEmpty
+                                    ? displayActivity.location
+                                    : 'N/A'),
+                            _buildDetailRow('Waktu Mulai',
+                                _formatTime(displayActivity.workStartTime)),
+                            _buildDetailRow('Waktu Selesai',
+                                _formatTime(displayActivity.workEndTime)),
+                            _buildDetailRow('Progress Harian',
+                                '${displayActivity.progressPercentage.toStringAsFixed(2)}%'),
+                          ],
+                        ),
 
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 16),
+
+                        // Catatan Penutup
+                        if (displayActivity.closingRemarks.isNotEmpty) ...[
+                          _buildDetailSection(
+                            'Catatan Penutup',
+                            [
+                              Text(
+                                displayActivity.closingRemarks,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 14,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Daily Progress Information (NEW)
+                        if (detailedActivityData != null && detailedActivityData['dailyProgress'] != null) ...[
+                          _buildDetailSection(
+                            'Progress Harian',
+                            [
+                              Builder(
+                                builder: (context) {
+                                  final dailyProgress = detailedActivityData['dailyProgress'];
+                                  final workItemProgress = dailyProgress['workItemProgress'] as List? ?? [];
+                                  final totalDailyTarget = dailyProgress['totalDailyTargetBOQ'];
+                                  final totalActual = dailyProgress['totalActualBOQ'];
+                                  final dailyProgressPercentage = dailyProgress['dailyProgressPercentage'] ?? 0.0;
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Overall Progress Summary
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade50,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.blue.shade200),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Progress Harian:',
+                                              style: GoogleFonts.dmSans(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue.shade800,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${dailyProgressPercentage.toStringAsFixed(2)}%',
+                                              style: GoogleFonts.dmSans(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue.shade700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      
+                                      const SizedBox(height: 12),
+                                      
+                                      // Work Item Progress Details - Only show items with actual values
+                                      Builder(
+                                        builder: (context) {
+                                          // Filter items that have actual values > 0
+                                          final itemsWithActual = workItemProgress.where((item) {
+                                            final actualBOQ = item['actualBOQ'];
+                                            final actualTotal = actualBOQ?['total'] ?? 0.0;
+                                            return actualTotal > 0;
+                                          }).toList();
+
+                                          if (itemsWithActual.isNotEmpty) {
+                                            return Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Detail Progress per Item Pekerjaan (${itemsWithActual.length} item)',
+                                                  style: GoogleFonts.dmSans(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                ...itemsWithActual.map((item) {
+                                                  final targetBOQ = item['targetBOQ'];
+                                                  final actualBOQ = item['actualBOQ'];
+                                                  final progressPercentage = item['progressPercentage'] ?? 0.0;
+                                                  final unit = item['unit'];
+                                                  
+                                                  return Padding(
+                                                    padding: const EdgeInsets.only(bottom: 8),
+                                                    child: Container(
+                                                      padding: const EdgeInsets.all(8),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.green.shade50,
+                                                        borderRadius: BorderRadius.circular(6),
+                                                        border: Border.all(color: Colors.green.shade200),
+                                                      ),
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            item['workItemName'] ?? 'Unknown Work Item',
+                                                            style: GoogleFonts.dmSans(
+                                                              fontSize: 13,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: Colors.black87,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(height: 4),
+                                                          if (unit != null) ...[
+                                                            Text(
+                                                              'Unit: ${unit['name']} (${unit['code']})',
+                                                              style: GoogleFonts.dmSans(
+                                                                fontSize: 11,
+                                                                color: Colors.black54,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(height: 4),
+                                                          ],
+                                                          Row(
+                                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                            children: [
+                                                              Text(
+                                                                'Target: ${targetBOQ?['total']?.toStringAsFixed(2) ?? '0.00'}',
+                                                                style: GoogleFonts.dmSans(
+                                                                  fontSize: 12,
+                                                                  color: Colors.black54,
+                                                                ),
+                                                              ),
+                                                              Text(
+                                                                'Actual: ${actualBOQ?['total']?.toStringAsFixed(2) ?? '0.00'}',
+                                                                style: GoogleFonts.dmSans(
+                                                                  fontSize: 12,
+                                                                  color: Colors.black54,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          const SizedBox(height: 4),
+                                                          Row(
+                                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                            children: [
+                                                              Text(
+                                                                'Progress:',
+                                                                style: GoogleFonts.dmSans(
+                                                                  fontSize: 12,
+                                                                  fontWeight: FontWeight.w600,
+                                                                  color: Colors.black87,
+                                                                ),
+                                                              ),
+                                                              Text(
+                                                                '${progressPercentage.toStringAsFixed(2)}%',
+                                                                style: GoogleFonts.dmSans(
+                                                                  fontSize: 12,
+                                                                  fontWeight: FontWeight.bold,
+                                                                  color: progressPercentage >= 100 
+                                                                    ? Colors.green.shade700 
+                                                                    : progressPercentage >= 50 
+                                                                      ? Colors.orange.shade700 
+                                                                      : Colors.red.shade700,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          // Progress bar
+                                                          const SizedBox(height: 4),
+                                                          LinearProgressIndicator(
+                                                            value: progressPercentage / 100,
+                                                            backgroundColor: Colors.grey.shade300,
+                                                            valueColor: AlwaysStoppedAnimation<Color>(
+                                                              progressPercentage >= 100 
+                                                                ? Colors.green 
+                                                                : progressPercentage >= 50 
+                                                                  ? Colors.orange 
+                                                                  : Colors.red,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  );
+                                                }).toList(),
+                                              ],
+                                            );
+                                          } else {
+                                            return const SizedBox.shrink(); // Don't show anything if no items with actual values
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Rincian Item Pekerjaan
+                        if (displayActivity.activityDetails.isNotEmpty) ...[
+                          _buildDetailSection(
+                            'Rincian Item Pekerjaan',
+                            [
+                              Builder(
+                                builder: (context) {
+                                  final nonZeroItems = displayActivity.activityDetails.where((detail) {
+                                    final progressValue = _calculateProgressValue(detail);
+                                    return progressValue > 0;
+                                  }).toList();
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Progress Pekerjaan (${nonZeroItems.length} dari ${displayActivity.activityDetails.length} item)',
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      if (nonZeroItems.isEmpty) ...[
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.shade50,
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: Colors.orange.shade200),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.warning, color: Colors.orange.shade700, size: 20),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  'Semua item pekerjaan memiliki nilai 0.',
+                                                  style: GoogleFonts.dmSans(
+                                                    fontSize: 12,
+                                                    color: Colors.orange.shade700,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ] else ...[
+                                        ...nonZeroItems.map((detail) {
+                                          final totalProgressValue = _calculateProgressValue(detail);
+                                          return Padding(
+                                            padding: const EdgeInsets.only(bottom: 8),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.shade50,
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: Colors.blue.shade200),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    detail.workItem?.name ?? 'Unknown Work Item',
+                                                    style: GoogleFonts.dmSans(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    'Status: ${detail.status}',
+                                                    style: GoogleFonts.dmSans(
+                                                      fontSize: 11,
+                                                      color: Colors.black54,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    'Nilai: Rp ${_formatCurrency(totalProgressValue)}',
+                                                    style: GoogleFonts.dmSans(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.green.shade700,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ],
+                                      const SizedBox(height: 8),
+                                      Divider(color: Colors.grey.shade300),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Total Nilai Progress:',
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Rp ${_formatCurrency(_calculateTotalProgressValue(displayActivity))}',
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.blue.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Analisis Laba Rugi
+                        if (displayActivity.activityDetails.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: _calculateProfitLoss(displayActivity) >= 0 ? Colors.green.shade50 : Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: _calculateProfitLoss(displayActivity) >= 0 ? Colors.green.shade300 : Colors.red.shade300),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Analisis Laba Rugi',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'Progress Pekerjaan (${nonZeroItems.length} dari ${activity.activityDetails.length} item)',
+                                      'NILAI PROGRESS:',
                                       style: GoogleFonts.dmSans(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                         color: Colors.black87,
                                       ),
                                     ),
-                                    if (nonZeroItems.length < activity.activityDetails.length) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${activity.activityDetails.length - nonZeroItems.length} item dengan nilai 0 disembunyikan',
-                                        style: GoogleFonts.dmSans(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                          fontStyle: FontStyle.italic,
-                                        ),
+                                    Text(
+                                      'Rp ${_formatCurrency(_calculateTotalProgressValue(displayActivity))}',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade700,
                                       ),
-                                    ],
-                                    const SizedBox(height: 8),
-                                    if (nonZeroItems.isEmpty) ...[
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.orange.shade50,
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(color: Colors.orange.shade200),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.warning, color: Colors.orange.shade700, size: 20),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                'Semua item pekerjaan memiliki nilai 0. Periksa data volume dan tarif.',
-                                                style: GoogleFonts.dmSans(
-                                                  fontSize: 12,
-                                                  color: Colors.orange.shade700,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ] else ...[
-                                      ...nonZeroItems.map((detail) {
-                                        final totalProgressValue = _calculateProgressValue(detail);
-                                        return Padding(
-                                          padding: const EdgeInsets.only(bottom: 8),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: Colors.blue.shade50,
-                                              borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(color: Colors.blue.shade200),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  detail.workItem?.name ?? 'Unknown Work Item',
-                                                  style: GoogleFonts.dmSans(
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.black87,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        _buildVolumeText(detail),
-                                                        style: GoogleFonts.dmSans(
-                                                          fontSize: 12,
-                                                          color: Colors.black54,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        _buildRateText(detail),
-                                                        style: GoogleFonts.dmSans(
-                                                          fontSize: 12,
-                                                          color: Colors.black54,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Row(
-                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                  children: [
-                                                    Text(
-                                                      'Status: ${detail.status}',
-                                                      style: GoogleFonts.dmSans(
-                                                        fontSize: 11,
-                                                        color: Colors.black54,
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      'Nilai: Rp ${_formatCurrency(totalProgressValue)}',
-                                                      style: GoogleFonts.dmSans(
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: totalProgressValue > 0 ? Colors.green.shade700 : Colors.red.shade700,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                if (detail.remarks.isNotEmpty) ...[
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    'Catatan: ${detail.remarks}',
-                                                    style: GoogleFonts.dmSans(
-                                                      fontSize: 11,
-                                                      color: Colors.black54,
-                                                      fontStyle: FontStyle.italic,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ],
-                                    const SizedBox(height: 8),
-                                    Divider(color: Colors.grey.shade300),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Total Nilai Progress:',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Rp ${_formatCurrency(_calculateTotalProgressValue())}',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue.shade700,
-                                          ),
-                                        ),
-                                      ],
                                     ),
                                   ],
-                                );
-                              },
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'TOTAL BIAYA:',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Rp ${_formatCurrency(_calculateGrandTotal(displayActivity))}',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.red.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Divider(color: Colors.grey.shade400),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'LABA/RUGI HARIAN:',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${_calculateProfitLoss(displayActivity) >= 0 ? '+' : ''}Rp ${_formatCurrency(_calculateProfitLoss(displayActivity).abs())}',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: _calculateProfitLoss(displayActivity) >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _calculateProfitLoss(displayActivity) >= 0 ? 'Menguntungkan' : 'Merugi',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: _calculateProfitLoss(displayActivity) >= 0 ? Colors.green.shade600 : Colors.red.shade600,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
+                          ),
+                        ],
                       ],
+                    ),
+                  ),
+                ),
 
-                      // Informasi Biaya (jika ada)
-                      if (activity.activityDetails.isNotEmpty ||
-                          activity.equipmentLogs.isNotEmpty ||
-                          activity.manpowerLogs.isNotEmpty ||
-                          activity.materialUsageLogs.isNotEmpty ||
-                          activity.otherCosts.isNotEmpty) ...[
-                        _buildDetailSection(
-                          'Rincian Biaya',
-                          [
-                            // Equipment Costs
-                            if (activity.equipmentLogs.isNotEmpty) ...[
-                              Text(
-                                'Biaya Peralatan (${activity.equipmentLogs.length} item)',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ...activity.equipmentLogs.map((log) {
-                                final fuelCost = log.fuelIn * log.fuelPrice;
-                                final cost = fuelCost + log.rentalRatePerDay;
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 2,
-                                        child: Text(
-                                          log.equipment?.equipmentCode ??
-                                              'Unknown Equipment',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          '${log.workingHour.toStringAsFixed(1)} jam',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            color: Colors.black54,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          'Rp ${_formatCurrency(cost)}',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.green.shade700,
-                                          ),
-                                          textAlign: TextAlign.right,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                              Divider(color: Colors.grey.shade300),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Subtotal Peralatan:',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Rp ${_formatCurrency(_calculateEquipmentTotal())}',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-
-                            // Manpower Costs
-                            if (activity.manpowerLogs.isNotEmpty) ...[
-                              Text(
-                                'Biaya Tenaga Kerja (${activity.manpowerLogs.length} item)',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ...activity.manpowerLogs.map((log) {
-                                final cost = log.normalHourlyRate *
-                                    log.personCount *
-                                    log.workingHours;
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 2,
-                                        child: Text(
-                                          log.personnelRole?.roleName ??
-                                              'Unknown Role',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          '${log.personCount} orang',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            color: Colors.black54,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          'Rp ${_formatCurrency(cost)}',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.blue.shade700,
-                                          ),
-                                          textAlign: TextAlign.right,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                              Divider(color: Colors.grey.shade300),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Subtotal Tenaga Kerja:',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Rp ${_formatCurrency(_calculateManpowerTotal())}',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-
-                            // Material Costs
-                            if (activity.materialUsageLogs.isNotEmpty) ...[
-                              Text(
-                                'Biaya Material (${activity.materialUsageLogs.length} item)',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ...activity.materialUsageLogs.map((log) {
-                                final totalCost = log.quantity * log.unitRate;
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 2,
-                                        child: Text(
-                                          log.material?.name ??
-                                              'Unknown Material',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          '${log.quantity.toStringAsFixed(1)}',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            color: Colors.black54,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          'Rp ${_formatCurrency(totalCost)}',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.orange.shade700,
-                                          ),
-                                          textAlign: TextAlign.right,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                              Divider(color: Colors.grey.shade300),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Subtotal Material:',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Rp ${_formatCurrency(_calculateMaterialTotal())}',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.orange.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-
-                            // Other Costs
-                            if (activity.otherCosts.isNotEmpty) ...[
-                              Text(
-                                'Biaya Lain-lain (${activity.otherCosts.length} item)',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ...activity.otherCosts.map((cost) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 2,
-                                        child: Text(
-                                          cost.description,
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          cost.costType,
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            color: Colors.black54,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          'Rp ${_formatCurrency(cost.amount)}',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.purple.shade700,
-                                          ),
-                                          textAlign: TextAlign.right,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                              Divider(color: Colors.grey.shade300),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Subtotal Biaya Lain:',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Rp ${_formatCurrency(_calculateOtherCostsTotal())}',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.purple.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-
-                            // Grand Total
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: FigmaColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                    color:
-                                        FigmaColors.primary.withOpacity(0.3)),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'TOTAL BIAYA:',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: FigmaColors.primary,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Rp ${_formatCurrency(_calculateGrandTotal())}',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: FigmaColors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            
-                            // === ANALISIS LABA RUGI ===
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: _calculateProfitLoss() >= 0 ? Colors.green.shade50 : Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                    color: _calculateProfitLoss() >= 0 ? Colors.green.shade300 : Colors.red.shade300),
-                              ),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'NILAI PROGRESS:',
-                                        style: GoogleFonts.dmSans(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Rp ${_formatCurrency(_calculateTotalProgressValue())}',
-                                        style: GoogleFonts.dmSans(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blue.shade700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'TOTAL BIAYA:',
-                                        style: GoogleFonts.dmSans(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Rp ${_formatCurrency(_calculateGrandTotal())}',
-                                        style: GoogleFonts.dmSans(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.red.shade700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Divider(color: Colors.grey.shade400),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'LABA/RUGI HARIAN:',
-                                        style: GoogleFonts.dmSans(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${_calculateProfitLoss() >= 0 ? '+' : ''}Rp ${_formatCurrency(_calculateProfitLoss().abs())}',
-                                        style: GoogleFonts.dmSans(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: _calculateProfitLoss() >= 0 ? Colors.green.shade700 : Colors.red.shade700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _calculateProfitLoss() >= 0 ? 'Menguntungkan' : 'Merugi',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: _calculateProfitLoss() >= 0 ? Colors.green.shade600 : Colors.red.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                // Footer
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Get.back(),
+                        child: Text(
+                          'Tutup',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
-              ),
-
-              // Footer
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Get.back(),
-                      child: Text(
-                        'Tutup',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      // Close loading dialog if it's still open
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+      
+      // Show error dialog
+      Get.dialog(
+        Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Gagal memuat detail aktivitas: $e',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () => Get.back(),
+                  child: Text(
+                    'Tutup',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 
-  // Helper methods untuk dialog detail
+  // Helper methods
   String _formatTime(String? time) {
     if (time == null || time.isEmpty) return "--:--";
     try {
@@ -1379,63 +1100,11 @@ class AreaActivityCard extends StatelessWidget {
     }
   }
 
-  double _calculateEquipmentTotal() {
-    double total = 0.0;
-    for (final log in activity.equipmentLogs) {
-      final fuelCost = log.fuelIn * log.fuelPrice;
-      final cost = fuelCost + log.rentalRatePerDay;
-      total += cost;
-    }
-    return total;
-  }
-
-  double _calculateManpowerTotal() {
-    double total = 0.0;
-    for (final log in activity.manpowerLogs) {
-      final cost = log.normalHourlyRate * log.personCount * log.workingHours;
-      total += cost;
-    }
-    return total;
-  }
-
-  double _calculateMaterialTotal() {
-    double total = 0.0;
-    for (final log in activity.materialUsageLogs) {
-      final cost = log.quantity * log.unitRate;
-      total += cost;
-    }
-    return total;
-  }
-
-  double _calculateOtherCostsTotal() {
-    double total = 0.0;
-    for (final cost in activity.otherCosts) {
-      total += cost.amount;
-    }
-    return total;
-  }
-
-  double _calculateGrandTotal() {
-    return _calculateEquipmentTotal() +
-        _calculateManpowerTotal() +
-        _calculateMaterialTotal() +
-        _calculateOtherCostsTotal();
-  }
-
-  double _calculateTotalProgressValue() {
-    return activity.activityDetails.fold(
-      0.0,
-      (sum, detail) => sum + _calculateProgressValue(detail),
-    );
-  }
-
   double _calculateProgressValue(ActivityDetailResponse detail) {
-    // Use totalProgressValue if available
     if (detail.totalProgressValue != null && detail.totalProgressValue! > 0) {
       return detail.totalProgressValue!;
     }
     
-    // Fallback: calculate based on actualQuantity and rates
     double total = 0.0;
     
     if (detail.actualQuantity.nr > 0 && detail.rateNR != null && detail.rateNR! > 0) {
@@ -1449,42 +1118,43 @@ class AreaActivityCard extends StatelessWidget {
     return total;
   }
 
-  double _calculateProfitLoss() {
-    return _calculateTotalProgressValue() - _calculateGrandTotal();
+  double _calculateTotalProgressValue(DailyActivityResponse activityData) {
+    return activityData.activityDetails.fold(
+      0.0,
+      (sum, detail) => sum + _calculateProgressValue(detail),
+    );
   }
 
-  String _buildVolumeText(ActivityDetailResponse detail) {
-    List<String> volumeTexts = [];
+  double _calculateGrandTotal(DailyActivityResponse activityData) {
+    double total = 0.0;
     
-    if (detail.actualQuantity.nr > 0) {
-      volumeTexts.add('${detail.actualQuantity.nr.toStringAsFixed(1)} (NR)');
-    }
-    if (detail.actualQuantity.r > 0) {
-      volumeTexts.add('${detail.actualQuantity.r.toStringAsFixed(1)} (R)');
+    // Equipment costs
+    for (final log in activityData.equipmentLogs) {
+      final fuelCost = log.fuelIn * log.fuelPrice;
+      final cost = fuelCost + log.rentalRatePerDay;
+      total += cost;
     }
     
-    if (volumeTexts.isNotEmpty) {
-      return 'Volume: ${volumeTexts.join(' | ')} ${detail.workItem?.unit?.name ?? ''}';
-    } else {
-      return 'Volume: N/A';
+    // Manpower costs
+    for (final log in activityData.manpowerLogs) {
+      final cost = log.normalHourlyRate * log.personCount * log.workingHours;
+      total += cost;
     }
+    
+    // Material costs
+    for (final log in activityData.materialUsageLogs) {
+      final cost = log.quantity * log.unitRate;
+      total += cost;
+    }
+    
+    // Other costs
+    total += activityData.otherCosts.fold(0.0, (sum, cost) => sum + cost.amount);
+    
+    return total;
   }
 
-  String _buildRateText(ActivityDetailResponse detail) {
-    List<String> rateTexts = [];
-    
-    if (detail.actualQuantity.nr > 0 && detail.rateNR != null && detail.rateNR! > 0) {
-      rateTexts.add('Rp ${_formatCurrency(detail.rateNR!)} (NR)');
-    }
-    if (detail.actualQuantity.r > 0 && detail.rateR != null && detail.rateR! > 0) {
-      rateTexts.add('Rp ${_formatCurrency(detail.rateR!)} (R)');
-    }
-    
-    if (rateTexts.isNotEmpty) {
-      return 'Rate: ${rateTexts.join(' | ')}';
-    } else {
-      return 'Rate: N/A';
-    }
+  double _calculateProfitLoss(DailyActivityResponse activityData) {
+    return _calculateTotalProgressValue(activityData) - _calculateGrandTotal(activityData);
   }
 
   Widget _buildDetailSection(String title, List<Widget> children) {
@@ -1509,6 +1179,7 @@ class AreaActivityCard extends StatelessWidget {
             border: Border.all(color: Colors.grey.shade200),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: children,
           ),
         ),
@@ -1546,4 +1217,4 @@ class AreaActivityCard extends StatelessWidget {
       ),
     );
   }
-}
+} 

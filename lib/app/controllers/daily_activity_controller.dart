@@ -460,10 +460,10 @@ class DailyActivityController extends GetxController
       print(
           '[DailyActivity] Memulai fetchServerActivitiesByArea, areaId: $currentAreaId');
 
-      // Ambil data dari server dengan timeout menggunakan query getDailyActivityWithDetails dengan areaId
+      // Gunakan fungsi GraphQL baru fetchActivityByArea
       final service = Get.find<GraphQLService>();
       final rawResult = await service
-          .fetchDailyActivityByUser(areaId: currentAreaId)
+          .fetchActivityByArea(areaId: currentAreaId, limit: 100)
           .timeout(const Duration(seconds: 30), onTimeout: () {
         throw TimeoutException('Timeout saat mengambil data dari server',
             const Duration(seconds: 30));
@@ -475,27 +475,27 @@ class DailyActivityController extends GetxController
 
       // DEBUG: Log raw data dari server
       print('[DailyActivity] === RAW AREA DATA DEBUG ===');
-      print('[DailyActivity] Raw result length: ${rawResult.length}');
-      for (int i = 0; i < rawResult.length; i++) {
-        final data = rawResult[i];
+      print('[DailyActivity] Raw result: $rawResult');
+      print('[DailyActivity] Activities count: ${rawResult['activities']?.length ?? 0}');
+      print('[DailyActivity] Total count: ${rawResult['totalCount']}');
+      print('[DailyActivity] Has more: ${rawResult['hasMore']}');
+
+      final List<dynamic> activitiesData = rawResult['activities'] ?? [];
+      
+      for (int i = 0; i < activitiesData.length; i++) {
+        final data = activitiesData[i];
         print('[DailyActivity] Raw Area Activity $i:');
         print('  - id: ${data['id']}');
         print('  - status: ${data['status']}');
-        print('  - isApproved: ${data['isApproved']}');
-        print('  - rejectionReason: ${data['rejectionReason']}');
-        print('  - approvedBy: ${data['approvedBy']}');
-        print('  - approvedAt: ${data['approvedAt']}');
-        print('  - spkDetail: ${data['spkDetail']?['spkNo']}');
-        print('  - userDetail: ${data['userDetail']?['fullName']}');
-        print('  - area: ${data['area']?['name']}');
         print('  - date: ${data['date']}');
-        print('  - progressPercentage: ${data['progressPercentage']}');
-        print('  - budgetUsage: ${data['budgetUsage']}');
+        print('  - area: ${data['area']?['name']}');
+        print('  - spk: ${data['spk']?['spkNo']}');
+        print('  - user: ${data['user']?['fullName']}');
       }
       print('[DailyActivity] === END RAW AREA DATA DEBUG ===');
 
       // Convert raw Map data to DailyActivityResponse objects
-      final List<DailyActivityResponse> result = rawResult.map((data) {
+      final List<DailyActivityResponse> result = activitiesData.map<DailyActivityResponse>((data) {
         try {
           // Map the response data to match DailyActivityResponse structure
           final mappedData = {
@@ -507,37 +507,33 @@ class DailyActivityController extends GetxController
             'status': data['status']?.toString() ?? '',
             'workStartTime': data['workStartTime']?.toString() ?? '',
             'workEndTime': data['workEndTime']?.toString() ?? '',
-            'startImages': data['startImages'] ?? [],
-            'finishImages': data['finishImages'] ?? [],
-            'closingRemarks': data['closingRemarks']?.toString() ?? '',
-            'progressPercentage':
-                (data['progressPercentage'] as num?)?.toDouble() ?? 0.0,
-            'activityDetails': data['activityDetails'] ?? [],
-            'equipmentLogs': data['equipmentLogs'] ?? [],
-            'manpowerLogs': data['manpowerLogs'] ?? [],
-            'materialUsageLogs': data['materialUsageLogs'] ?? [],
-            'otherCosts': data['otherCosts'] ?? [],
-            'spkDetail': data['spkDetail'],
-            'userDetail': data['userDetail'],
-            'createdAt': data['createdAt']?.toString() ?? '',
-            'updatedAt': data['updatedAt']?.toString() ?? '',
-            'isApproved': data['isApproved'] as bool? ?? false,
-            'rejectionReason': data['rejectionReason']?.toString(),
+            'startImages': [],
+            'finishImages': [],
+            'closingRemarks': '',
+            'progressPercentage': 0.0,
+            'activityDetails': [],
+            'equipmentLogs': [],
+            'manpowerLogs': [],
+            'materialUsageLogs': [],
+            'otherCosts': [],
+            'spkDetail': data['spk'],
+            'userDetail': data['user'],
+            'createdAt': '',
+            'updatedAt': '',
+            'isApproved': false,
+            'rejectionReason': null,
             'area': data['area'],
-            'approvedBy': data['approvedBy'],
-            'approvedAt': data['approvedAt']?.toString(),
-            'budgetUsage': data['budgetUsage'] as double?,
+            'approvedBy': null,
+            'approvedAt': null,
+            'budgetUsage': null,
           };
 
           print('[DailyActivity] Parsing area activity: ${data['id']}');
-          print(
-              '  - Raw isApproved: ${data['isApproved']} (${data['isApproved'].runtimeType})');
-          print('  - Mapped isApproved: ${mappedData['isApproved']}');
 
           final response = DailyActivityResponse.fromJson(mappedData);
 
-          print('  - Final response isApproved: ${response.isApproved}');
           print('  - Final response status: ${response.status}');
+          print('  - Final response location: ${response.location}');
 
           return response;
         } catch (e) {
@@ -556,18 +552,17 @@ class DailyActivityController extends GetxController
             startImages: [],
             finishImages: [],
             closingRemarks: '',
-            progressPercentage:
-                (data['progressPercentage'] as num?)?.toDouble() ?? 0.0,
+            progressPercentage: 0.0,
             activityDetails: [],
             equipmentLogs: [],
             manpowerLogs: [],
             materialUsageLogs: [],
             otherCosts: [],
-            spkDetail: data['spkDetail'] != null
-                ? SPKResponse.fromJson(data['spkDetail'])
+            spkDetail: data['spk'] != null
+                ? SPKResponse.fromJson(data['spk'])
                 : null,
-            userDetail: data['userDetail'] != null
-                ? UserResponse.fromJson(data['userDetail'])
+            userDetail: data['user'] != null
+                ? UserResponse.fromJson(data['user'])
                 : UserResponse(
                     id: '',
                     username: '',
@@ -575,24 +570,16 @@ class DailyActivityController extends GetxController
                     email: '',
                     role: '',
                   ),
-            createdAt: data['createdAt']?.toString() ?? '',
-            updatedAt: data['updatedAt']?.toString() ?? '',
-            isApproved: data['isApproved'] as bool? ?? false,
-            rejectionReason: data['rejectionReason']?.toString(),
+            createdAt: '',
+            updatedAt: '',
+            isApproved: false,
+            rejectionReason: null,
             area: data['area'] != null
                 ? AreaResponse.fromJson(data['area'])
                 : null,
-            approvedBy: data['approvedBy'] != null
-                ? UserResponse.fromJson(data['approvedBy'])
-                : null,
-            approvedAt: data['approvedAt']?.toString(),
-            budgetUsage: data['budgetUsage'] != null
-                ? data['budgetUsage'] is int
-                    ? (data['budgetUsage'] as int).toDouble()
-                    : data['budgetUsage'] is double
-                        ? data['budgetUsage']
-                        : 0.0
-                : null,
+            approvedBy: null,
+            approvedAt: null,
+            budgetUsage: null,
           );
         }
       }).toList();
@@ -605,32 +592,14 @@ class DailyActivityController extends GetxController
         print('[DailyActivity] Parsed Area Activity $i:');
         print('  - id: ${activity.id}');
         print('  - status: ${activity.status}');
-        print('  - isApproved: ${activity.isApproved}');
-        print('  - rejectionReason: ${activity.rejectionReason}');
         print('  - spkDetail: ${activity.spkDetail?.spkNo}');
         print('  - userDetail: ${activity.userDetail.fullName}');
         print('  - location: ${activity.location}');
       }
       print('[DailyActivity] === END PARSED AREA RESULTS DEBUG ===');
 
-      List<DailyActivityResponse> filteredServerActivities = result;
-
       // Simpan hasil dari server
-      serverActivities.value = filteredServerActivities;
-
-      // DEBUG: Log final server activities
-      print('[DailyActivity] === FINAL AREA SERVER ACTIVITIES DEBUG ===');
-      print(
-          '[DailyActivity] Final area server activities length: ${serverActivities.length}');
-      for (int i = 0; i < serverActivities.length; i++) {
-        final activity = serverActivities[i];
-        print('[DailyActivity] Final Area Activity $i:');
-        print('  - id: ${activity.id}');
-        print('  - status: ${activity.status}');
-        print('  - isApproved: ${activity.isApproved}');
-        print('  - Will be filtered out: ${activity.isApproved}');
-      }
-      print('[DailyActivity] === END FINAL AREA DEBUG ===');
+      serverActivities.value = result;
 
       // Urutkan serverActivities dengan yang terbaru di atas
       serverActivities.sort((a, b) {

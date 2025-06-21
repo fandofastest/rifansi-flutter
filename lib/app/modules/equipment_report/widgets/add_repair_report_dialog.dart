@@ -137,7 +137,21 @@ class _AddRepairReportDialogState extends State<AddRepairReportDialog> {
                           ),
                         ),
                         value: selectedEquipment,
-                        items: widget.equipmentList.map((equipment) {
+                        items: widget.equipmentList
+                            .where((equipment) {
+                              // Filter berdasarkan area user
+                              final authController = Get.find<AuthController>();
+                              final userArea = authController.currentUser.value?.area;
+                              
+                              if (userArea == null) {
+                                // Jika tidak ada area user, tampilkan semua equipment
+                                return true;
+                              }
+                              
+                              // Hanya tampilkan equipment yang ada di area user
+                              return equipment.area?.id == userArea.id;
+                            })
+                            .map((equipment) {
                           return DropdownMenuItem<Equipment>(
                             value: equipment,
                             child: Text(

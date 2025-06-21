@@ -1031,10 +1031,14 @@ class AddWorkReportController extends GetxController {
               final item = entry.value;
               
               // Cari matching workItem berdasarkan ID atau index
-              final matchingWorkItem = workItemsWithDailyTarget.firstWhere(
-                (wItem) => wItem['name'] == item.name,
-                orElse: () => <String, dynamic>{},
-              );
+              Map<String, dynamic>? matchingWorkItem;
+              try {
+                matchingWorkItem = workItemsWithDailyTarget.firstWhere(
+                  (wItem) => wItem['name'] == item.name,
+                );
+              } catch (e) {
+                matchingWorkItem = <String, dynamic>{};
+              }
               
               return {
                 'workItemId': item.id,
@@ -1047,7 +1051,7 @@ class AddWorkReportController extends GetxController {
                   'nr': item.boqVolume.nr,
                   'r': item.boqVolume.r,
                 },
-                'dailyTarget': matchingWorkItem['dailyTarget'] ?? {
+                'dailyTarget': matchingWorkItem?['dailyTarget'] ?? {
                   'nr': 0.0,
                   'r': 0.0,
                 },

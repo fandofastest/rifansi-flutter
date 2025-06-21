@@ -142,14 +142,14 @@ class EquipmentListWidget extends StatelessWidget {
                           Text(
                             entry.equipment.equipmentCode,
                             style: GoogleFonts.dmSans(
-                              fontSize: 14,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
                             entry.equipment.equipmentType,
                             style: GoogleFonts.dmSans(
-                              fontSize: 12,
+                              fontSize: 11,
                               color: Colors.grey[600],
                             ),
                           ),
@@ -157,7 +157,7 @@ class EquipmentListWidget extends StatelessWidget {
                             Text(
                               'Kontrak: ${entry.selectedContract!.contract.contractNo}',
                               style: GoogleFonts.dmSans(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: Colors.grey[600],
                               ),
                             ),

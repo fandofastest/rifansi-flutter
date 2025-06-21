@@ -951,19 +951,19 @@ class WorkReportPage extends StatelessWidget {
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  // Sort activities by updatedAt (newest first)
+                  // Sort activities by date (newest first)
                   final sortedActivities =
                       List<DailyActivityResponse>.from(controller.activities);
                   sortedActivities.sort((a, b) {
                     try {
-                      DateTime dateA = _parseActivityDate(a.updatedAt);
-                      DateTime dateB = _parseActivityDate(b.updatedAt);
+                      DateTime dateA = _parseActivityDate(a.date);
+                      DateTime dateB = _parseActivityDate(b.date);
                       return dateB.compareTo(dateA); // Newest first
                     } catch (e) {
-                      // Fallback to date if updatedAt parsing fails
+                      // Fallback to createdAt if date parsing fails
                       try {
-                        DateTime dateA = _parseActivityDate(a.date);
-                        DateTime dateB = _parseActivityDate(b.date);
+                        DateTime dateA = _parseActivityDate(a.createdAt);
+                        DateTime dateB = _parseActivityDate(b.createdAt);
                         return dateB.compareTo(dateA);
                       } catch (e2) {
                         return 0;
@@ -1330,19 +1330,19 @@ class WorkReportPage extends StatelessWidget {
         );
       }
 
-      // Sort activities by updatedAt (newest first)
+      // Sort activities by date (newest first)
       final sortedActivities =
           List<DailyActivityResponse>.from(controller.activities);
       sortedActivities.sort((a, b) {
         try {
-          DateTime dateA = _parseActivityDate(a.updatedAt);
-          DateTime dateB = _parseActivityDate(b.updatedAt);
+          DateTime dateA = _parseActivityDate(a.date);
+          DateTime dateB = _parseActivityDate(b.date);
           return dateB.compareTo(dateA); // Newest first
         } catch (e) {
-          // Fallback to date if updatedAt parsing fails
+          // Fallback to createdAt if date parsing fails
           try {
-            DateTime dateA = _parseActivityDate(a.date);
-            DateTime dateB = _parseActivityDate(b.date);
+            DateTime dateA = _parseActivityDate(a.createdAt);
+            DateTime dateB = _parseActivityDate(b.createdAt);
             return dateB.compareTo(dateA);
           } catch (e2) {
             return 0;
