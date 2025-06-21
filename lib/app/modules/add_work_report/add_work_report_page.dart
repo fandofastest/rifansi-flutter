@@ -18,6 +18,7 @@ import './widgets/other_cost_step_widget.dart';
 import 'package:intl/intl.dart';
 import '../../data/providers/graphql_service.dart';
 import '../../data/models/spk_detail_with_progress_response.dart';
+import 'dart:async';
 
 // Kelas untuk menyimpan hasil dari dialog pemilihan area
 class AreaPickerResult {
@@ -33,102 +34,69 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
 
   @override
   Widget build(BuildContext context) {
-    // Cek apakah ada data draft yang dikirim
+    print('=== ADD WORK REPORT PAGE BUILD CALLED ===');
+    print('Build timestamp: ${DateTime.now()}');
+    print('Controller available: ${controller.toString()}');
+    print('Controller currentStep: ${controller.currentStep.value}');
+    print(
+        'Controller selectedSpk: ${controller.selectedSpk.value?.spkNo ?? 'NULL'}');
+    print('Controller workItems.length: ${controller.workItems.length}');
+
+    // Debug: Cek apakah ada data draft yang dikirim (hanya untuk logging)
     final args = Get.arguments;
-    if (args != null && args['isDraft'] == true) {
-      // Tunggu sampai controller siap
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        try {
-          print('=== MULAI LOAD DATA DRAFT ===');
-          print('SPK ID: ${args['spkId']}');
 
-          // Load data draft
-          print('Memuat data temporary...');
-          await controller.loadTemporaryData(args['spkId']);
-          print('Data temporary berhasil dimuat');
+    // Debug: Print arguments yang diterima
+    print('=== ADD WORK REPORT PAGE BUILD ===');
+    print('Get.arguments: $args');
+    print('Args type: ${args.runtimeType}');
+    if (args != null) {
+      print('Args contents: ${args.toString()}');
+      print('isDraft: ${args['isDraft']}');
+      print('isDraft type: ${args['isDraft'].runtimeType}');
+      print('spkId: ${args['spkId']}');
+    }
+    print(
+        'Draft condition would be: ${args != null && args['isDraft'] == true}');
+    print('Note: Draft loading now handled by controller.onReady()');
+    print('=====================================');
 
-          // Log isi data temporary
-          print('\n=== ISI DATA TEMPORARY ===');
+    // FALLBACK: Jika controller onReady tidak bekerja, coba trigger manual
+    if (args != null && args['isDraft'] == true && args['spkId'] != null) {
+      print('FALLBACK: Setting up timer-based draft loading...');
+
+      // Trigger manual load setelah 2 detik jika selectedSpk masih null
+      Timer(const Duration(seconds: 2), () async {
+        if (controller.selectedSpk.value == null && args['isDraft'] == true) {
           print(
-              'Selected SPK: ${controller.selectedSpk.value?.spkNo} - ${controller.selectedSpk.value?.title}');
-          print('Work Items: ${controller.workItems.value}');
-          print('Start Photos: ${controller.startPhotos.value}');
-          print('End Photos: ${controller.endPhotos.value}');
-
-          // Format waktu dengan penanganan error
-          String formatTime(DateTime? time) {
-            if (time == null) return 'null';
-            try {
-              return DateFormat('dd/MM/yyyy HH:mm').format(time);
-            } catch (e) {
-              print('Error formatting time: $e');
-              return 'invalid time';
-            }
+              'FALLBACK: selectedSpk still null after 2s, triggering manual load...');
+          try {
+            await controller.manualLoadDraft();
+          } catch (e) {
+            print('FALLBACK: Error in manual load: $e');
           }
-
+        } else {
           print(
-              'Work Start Time: ${formatTime(safeParseDate(controller.workStartTime.value))}');
-          print(
-              'Work End Time: ${formatTime(safeParseDate(controller.workEndTime.value))}');
-          print('Selected Manpower: ${controller.selectedManpower.value}');
-          print('Selected Equipment: ${controller.selectedEquipment.value}');
-          print('Current Step: ${controller.currentStep.value}');
-          print('========================\n');
-
-          // Ambil detail SPK dengan progress
-          print('Mengambil detail SPK dengan progress...');
-          final graphQLService = Get.find<GraphQLService>();
-          final spkDetail =
-              await graphQLService.fetchSPKDetailsWithProgress(args['spkId']);
-          print('Detail SPK berhasil diambil');
-
-          // Update controller dengan data SPK yang baru
-          if (spkDetail != null) {
-            print('\n=== UPDATE DATA SPK ===');
-            try {
-              controller.spkDetailsWithProgress.value = spkDetail;
-
-              // Update workItems di controller dengan data dari SpkDetailWithProgressResponse
-              if (spkDetail.dailyActivities.isNotEmpty) {
-                final latestActivity = spkDetail.dailyActivities.first;
-                controller.workItems.value = latestActivity.workItems
-                    .map((item) => {
-                          'name': item.name,
-                          'description': item.description,
-                          'volume': item.boqVolume.nr,
-                          'unit': item.unit.name,
-                          'unitRate': item.rates.nr.rate,
-                          'progress': item.progressAchieved.nr,
-                          'actualQuantity': item.actualQuantity.nr,
-                          'dailyProgress': item.dailyProgress.nr,
-                          'dailyCost': item.dailyCost.nr,
-                        })
-                    .toList();
-              }
-              print('Data SPK berhasil diupdate');
-              print(
-                  'DEBUG: dailyActivities: ${spkDetail.dailyActivities.length}');
-            } catch (e) {
-              print('Error saat memproses data SPK: $e');
-              print('Data SPK yang diterima: $spkDetail');
-            }
-            print('========================\n');
-          }
-
-          // Refresh UI jika perlu
-          controller.update();
-          print('=== SELESAI LOAD DATA DRAFT ===\n');
-        } catch (e) {
-          print('Error loading draft and SPK detail: $e');
-          Get.snackbar(
-            'Error',
-            'Gagal memuat detail SPK: $e',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red[100],
-            colorText: Colors.red[900],
-          );
+              'FALLBACK: selectedSpk already loaded, no need for manual trigger');
         }
       });
+
+      // Trigger lagi setelah 5 detik jika masih null (last resort)
+      Timer(const Duration(seconds: 5), () async {
+        if (controller.selectedSpk.value == null && args['isDraft'] == true) {
+          print('FALLBACK: Last resort - forcing load after 5s...');
+          try {
+            // Pastikan SPK list dimuat dulu
+            if (controller.spkList.isEmpty) {
+              await controller.fetchSPKs();
+            }
+            await controller.loadTemporaryData(args['spkId']);
+          } catch (e) {
+            print('FALLBACK: Error in last resort load: $e');
+          }
+        }
+      });
+    } else {
+      print('FALLBACK: Not a draft load, skipping timer fallback mechanism');
     }
 
     final materialController = Get.find<MaterialController>();
@@ -152,6 +120,64 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
             icon: const Icon(Icons.save_outlined),
             onPressed: () {
               controller.saveTemporaryData();
+            },
+          ),
+          // DEBUG: Test button untuk reload workItems
+          if (Get.arguments != null && Get.arguments['isDraft'] == true)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () async {
+                print('=== MANUAL DEBUG: RELOAD WORK ITEMS ===');
+                if (controller.selectedSpk.value != null) {
+                  print('DEBUG: Attempting to reload workItems...');
+                  print(
+                      'DEBUG: Current selectedSpk: ${controller.selectedSpk.value?.spkNo}');
+                  print(
+                      'DEBUG: Current workItems count: ${controller.workItems.length}');
+
+                  try {
+                    await controller.fetchSpkDetailsWithProgress(
+                        controller.selectedSpk.value!.id);
+                    print('DEBUG: fetchSpkDetailsWithProgress completed');
+                    print(
+                        'DEBUG: New workItems count: ${controller.workItems.length}');
+                  } catch (e) {
+                    print('DEBUG: Error in fetchSpkDetailsWithProgress: $e');
+                  }
+                } else {
+                  print('DEBUG: selectedSpk is null, cannot reload workItems');
+                }
+              },
+            ),
+          // DEBUG: Manual test load draft button
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: () async {
+              print('=== MANUAL TEST: FORCE LOAD DRAFT ===');
+              final args = Get.arguments;
+              print('Current arguments: $args');
+
+              if (args != null && args['spkId'] != null) {
+                print('Attempting manual loadTemporaryData...');
+                try {
+                  // Ensure SPK list is loaded first
+                  if (controller.spkList.isEmpty) {
+                    await controller.fetchSPKs();
+                  }
+
+                  final result =
+                      await controller.loadTemporaryData(args['spkId']);
+                  print('Manual load result: $result');
+                  print(
+                      'selectedSpk after manual load: ${controller.selectedSpk.value?.spkNo ?? 'NULL'}');
+                  print(
+                      'workItems after manual load: ${controller.workItems.length}');
+                } catch (e) {
+                  print('Error in manual load: $e');
+                }
+              } else {
+                print('No spkId in arguments for manual test');
+              }
             },
           ),
         ],
@@ -407,44 +433,16 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
 
               if (result != null) {
                 try {
-                  // Set SPK yang dipilih
+                  // Set SPK yang dipilih - selectSPK sudah handle semua termasuk workItems
                   controller.selectSPK(result);
-
-                  // Ambil detail SPK dengan progress
-                  final graphQLService = Get.find<GraphQLService>();
-                  final spkDetail = await graphQLService
-                      .fetchSPKDetailsWithProgress(result.id);
-
-                  // Update controller dengan data SPK yang baru
-                  if (spkDetail != null) {
-                    controller.spkDetailsWithProgress.value = spkDetail;
-
-                    // Update workItems di controller dengan data dari SpkDetailWithProgressResponse
-                    if (spkDetail.dailyActivities.isNotEmpty) {
-                      final latestActivity = spkDetail.dailyActivities.first;
-                      controller.workItems.value = latestActivity.workItems
-                          .map((item) => {
-                                'name': item.name,
-                                'description': item.description,
-                                'volume': item.boqVolume.nr,
-                                'unit': item.unit.name,
-                                'unitRate': item.rates.nr.rate,
-                                'progress': item.progressAchieved.nr,
-                                'actualQuantity': item.actualQuantity.nr,
-                                'dailyProgress': item.dailyProgress.nr,
-                                'dailyCost': item.dailyCost.nr,
-                              })
-                          .toList();
-                    }
-                  }
 
                   // Refresh UI
                   controller.update();
                 } catch (e) {
-                  print('Error fetching SPK details: $e');
+                  print('Error selecting SPK: $e');
                   Get.snackbar(
                     'Error',
-                    'Gagal mengambil detail SPK: $e',
+                    'Gagal memilih SPK: $e',
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: Colors.red[100],
                     colorText: Colors.red[900],

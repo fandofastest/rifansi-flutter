@@ -13,22 +13,67 @@ class WorkDetailsWidget extends StatelessWidget {
     required this.controller,
   }) : super(key: key);
 
-
-
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final selectedSpk = controller.selectedSpk.value;
-      
-      // Filter work items untuk SPK yang dipilih saja
-      final workItems = controller.workItems.where((item) {
-        return selectedSpk != null && item['spkId'] == selectedSpk.id;
-      }).toList();
 
-      print('[WorkDetailsWidget] SPK dipilih: ${selectedSpk?.spkNo}');
-      print('[WorkDetailsWidget] Total work items: ${controller.workItems.length}');
-      print('[WorkDetailsWidget] Filtered work items: ${workItems.length}');
-      
+      print('[WorkDetailsWidget] === DEBUG BUILD ===');
+      print('[WorkDetailsWidget] selectedSpk: ${selectedSpk?.spkNo}');
+      print('[WorkDetailsWidget] selectedSpk.id: ${selectedSpk?.id}');
+      print(
+          '[WorkDetailsWidget] controller.workItems.length: ${controller.workItems.length}');
+
+      // Print semua workItems untuk debug
+      for (int i = 0; i < controller.workItems.length; i++) {
+        final item = controller.workItems[i];
+        print(
+            '[WorkDetailsWidget] WorkItem $i: ${item['name']} (spkId: ${item['spkId'] ?? 'NO_SPK_ID'})');
+      }
+
+      // Filter work items untuk SPK yang dipilih saja
+      // Jika workItems memiliki field 'spkId', gunakan untuk filtering
+      // Jika tidak, ambil semua workItems (untuk backward compatibility)
+      List<Map<String, dynamic>> workItems;
+
+      if (controller.workItems.isNotEmpty &&
+          controller.workItems.first.containsKey('spkId') &&
+          selectedSpk != null) {
+        // Filter berdasarkan spkId jika field tersedia dan ada SPK yang dipilih
+        workItems = controller.workItems.where((item) {
+          return item['spkId'] == selectedSpk.id;
+        }).toList();
+
+        print(
+            '[WorkDetailsWidget] Filtering dengan spkId. SPK dipilih: ${selectedSpk.spkNo}');
+        print(
+            '[WorkDetailsWidget] Total work items: ${controller.workItems.length}');
+        print('[WorkDetailsWidget] Filtered work items: ${workItems.length}');
+      } else if (controller.workItems.isNotEmpty && selectedSpk != null) {
+        // Jika tidak ada field spkId tapi ada selectedSpk, ambil semua workItems
+        // (asumsi semua workItems untuk SPK yang sama)
+        workItems = controller.workItems.toList();
+
+        print(
+            '[WorkDetailsWidget] Tidak ada spkId field tapi ada selectedSpk, menggunakan semua work items');
+        print('[WorkDetailsWidget] SPK dipilih: ${selectedSpk.spkNo}');
+        print('[WorkDetailsWidget] Total work items: ${workItems.length}');
+      } else {
+        // Tidak ada SPK yang dipilih atau workItems kosong
+        workItems = [];
+
+        print(
+            '[WorkDetailsWidget] Tidak ada SPK dipilih atau workItems kosong');
+        print(
+            '[WorkDetailsWidget] SPK dipilih: ${selectedSpk?.spkNo ?? 'NULL'}');
+        print(
+            '[WorkDetailsWidget] Total work items: ${controller.workItems.length}');
+      }
+
+      print(
+          '[WorkDetailsWidget] Final workItems untuk ditampilkan: ${workItems.length}');
+      print('[WorkDetailsWidget] === END DEBUG ===');
+
       if (workItems.isEmpty) {
         return Center(
           child: Column(
@@ -41,7 +86,7 @@ class WorkDetailsWidget extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                selectedSpk != null 
+                selectedSpk != null
                     ? 'Tidak ada detail pekerjaan untuk SPK ini'
                     : 'Silakan pilih SPK terlebih dahulu',
                 style: GoogleFonts.dmSans(
@@ -57,6 +102,14 @@ class WorkDetailsWidget extends StatelessWidget {
                   style: GoogleFonts.dmSans(
                     fontSize: 12,
                     color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Debug: Total controller.workItems = ${controller.workItems.length}',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 10,
+                    color: Colors.red[600],
                   ),
                 ),
               ],
@@ -152,7 +205,7 @@ class WorkDetailsWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-                    ListView.separated(
+          ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: sortedItems.length,
@@ -166,8 +219,6 @@ class WorkDetailsWidget extends StatelessWidget {
       );
     });
   }
-
-
 
   Widget _buildWorkItemCard(Map<String, dynamic> item) {
     // Parse progress percentage
@@ -184,20 +235,20 @@ class WorkDetailsWidget extends StatelessWidget {
 
     if (item['completedVolume'] is Map) {
       final completed = item['completedVolume'] as Map;
-      completedVolume = ((completed['nr'] as num?)?.toDouble() ?? 0.0) + 
-                       ((completed['r'] as num?)?.toDouble() ?? 0.0);
+      completedVolume = ((completed['nr'] as num?)?.toDouble() ?? 0.0) +
+          ((completed['r'] as num?)?.toDouble() ?? 0.0);
     }
 
     if (item['remainingVolume'] is Map) {
       final remaining = item['remainingVolume'] as Map;
-      remainingVolume = ((remaining['nr'] as num?)?.toDouble() ?? 0.0) + 
-                       ((remaining['r'] as num?)?.toDouble() ?? 0.0);
+      remainingVolume = ((remaining['nr'] as num?)?.toDouble() ?? 0.0) +
+          ((remaining['r'] as num?)?.toDouble() ?? 0.0);
     }
 
     if (item['dailyTarget'] is Map) {
       final dailyTarget = item['dailyTarget'] as Map;
-      dailyTargetVolume = ((dailyTarget['nr'] as num?)?.toDouble() ?? 0.0) + 
-                         ((dailyTarget['r'] as num?)?.toDouble() ?? 0.0);
+      dailyTargetVolume = ((dailyTarget['nr'] as num?)?.toDouble() ?? 0.0) +
+          ((dailyTarget['r'] as num?)?.toDouble() ?? 0.0);
     }
 
     if (item['volume'] is num) {
@@ -205,7 +256,8 @@ class WorkDetailsWidget extends StatelessWidget {
     }
 
     // Calculate actual progress percentage from volumes
-    double actualProgress = totalVolume > 0 ? (completedVolume / totalVolume) * 100 : 0.0;
+    double actualProgress =
+        totalVolume > 0 ? (completedVolume / totalVolume) * 100 : 0.0;
 
     // Determine progress color
     Color progressColor;
@@ -221,7 +273,8 @@ class WorkDetailsWidget extends StatelessWidget {
 
     // Format currency
     final formatter = NumberFormat('#,##0.##', 'id_ID');
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final currencyFormatter =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
     return Card(
       elevation: 2,
@@ -309,7 +362,9 @@ class WorkDetailsWidget extends StatelessWidget {
             const SizedBox(height: 6),
             // Progress bar
             LinearProgressIndicator(
-              value: totalVolume > 0 ? (completedVolume / totalVolume).clamp(0.0, 1.0) : 0.0,
+              value: totalVolume > 0
+                  ? (completedVolume / totalVolume).clamp(0.0, 1.0)
+                  : 0.0,
               backgroundColor: Colors.grey[200],
               valueColor: AlwaysStoppedAnimation<Color>(progressColor),
               minHeight: 4,
@@ -322,7 +377,7 @@ class WorkDetailsWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
-              
+
               // Volume details in grid
               Container(
                 padding: const EdgeInsets.all(12),
@@ -347,8 +402,12 @@ class WorkDetailsWidget extends StatelessWidget {
                           child: _buildVolumeInfo(
                             'Target Harian',
                             '${formatter.format(dailyTargetVolume)} ${item['unit'] ?? ''}',
-                            dailyTargetVolume > 0 ? Colors.teal[700]! : Colors.grey[500]!,
-                            dailyTargetVolume > 0 ? Icons.flag : Icons.flag_outlined,
+                            dailyTargetVolume > 0
+                                ? Colors.teal[700]!
+                                : Colors.grey[500]!,
+                            dailyTargetVolume > 0
+                                ? Icons.flag
+                                : Icons.flag_outlined,
                           ),
                         ),
                       ],
@@ -369,8 +428,12 @@ class WorkDetailsWidget extends StatelessWidget {
                           child: _buildVolumeInfo(
                             'Sisa',
                             '${formatter.format(remainingVolume)} ${item['unit'] ?? ''}',
-                            remainingVolume > 0 ? Colors.orange[700]! : Colors.red[700]!,
-                            remainingVolume > 0 ? Icons.pending : Icons.done_all,
+                            remainingVolume > 0
+                                ? Colors.orange[700]!
+                                : Colors.red[700]!,
+                            remainingVolume > 0
+                                ? Icons.pending
+                                : Icons.done_all,
                           ),
                         ),
                       ],
@@ -398,7 +461,8 @@ class WorkDetailsWidget extends StatelessWidget {
               ),
 
               // Financial info
-              if ((item['spentAmount'] ?? 0) > 0 || (item['remainingAmount'] ?? 0) > 0) ...[
+              if ((item['spentAmount'] ?? 0) > 0 ||
+                  (item['remainingAmount'] ?? 0) > 0) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -461,7 +525,8 @@ class WorkDetailsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildVolumeInfo(String label, String value, Color color, IconData icon) {
+  Widget _buildVolumeInfo(
+      String label, String value, Color color, IconData icon) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

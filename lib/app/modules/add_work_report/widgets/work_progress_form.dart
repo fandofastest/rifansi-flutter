@@ -209,7 +209,8 @@ class WorkProgressForm extends StatelessWidget {
   // --- Ubah: Hitung total progress fisik sesuai permintaan user (dengan target harian) ---
   double _calculateTotalProgressFisikBaru() {
     if (controller.workProgresses.isEmpty) return 0.0;
-    final spkDetail = Get.find<AddWorkReportController>().spkDetailsWithProgress.value;
+    final spkDetail =
+        Get.find<AddWorkReportController>().spkDetailsWithProgress.value;
     if (spkDetail == null) return 0.0;
     DateTime? startDate;
     DateTime? endDate;
@@ -224,7 +225,9 @@ class WorkProgressForm extends StatelessWidget {
       endDate = spkDetail.endDate as DateTime;
     }
     if (startDate == null || endDate == null) return 0.0;
-    final totalWorkDays = ((endDate.difference(startDate).inDays) + 1).clamp(1, double.infinity).toInt();
+    final totalWorkDays = ((endDate.difference(startDate).inDays) + 1)
+        .clamp(1, double.infinity)
+        .toInt();
     double totalDikerjakan = 0.0;
     double totalTarget = 0.0;
     for (var progress in controller.workProgresses) {
@@ -232,7 +235,8 @@ class WorkProgressForm extends StatelessWidget {
       totalTarget += (progress.boqVolumeNR + progress.boqVolumeR);
     }
     final targetHarian = totalTarget / totalWorkDays;
-    final persentase = targetHarian > 0 ? (totalDikerjakan / targetHarian) * 100 : 0.0;
+    final persentase =
+        targetHarian > 0 ? (totalDikerjakan / targetHarian) * 100 : 0.0;
     // Log detail
     print('==== DETAIL PROGRESS FISIK ====');
     print('Total BOQ: ' + totalTarget.toStringAsFixed(2));
@@ -248,13 +252,15 @@ class WorkProgressForm extends StatelessWidget {
     final addWorkReportController = Get.find<AddWorkReportController>();
     final spkDetail = addWorkReportController.spkDetailsWithProgress.value;
     final dailyActivities = spkDetail?.dailyActivities ?? [];
-    final workItems = dailyActivities.isNotEmpty ? dailyActivities.first.workItems : [];
+    final workItems =
+        dailyActivities.isNotEmpty ? dailyActivities.first.workItems : [];
     final workItemDetail = workItems.isNotEmpty ? workItems[index] : null;
-    
+
     // Cari data work item yang sesuai dari controller workItems
     final matchingWorkItem = addWorkReportController.workItems.firstWhere(
-      (item) => item['name'] == progress.workItemName && 
-                item['spkId'] == addWorkReportController.selectedSpk.value?.id,
+      (item) =>
+          item['name'] == progress.workItemName &&
+          item['spkId'] == addWorkReportController.selectedSpk.value?.id,
       orElse: () => <String, dynamic>{},
     );
 
@@ -263,31 +269,38 @@ class WorkProgressForm extends StatelessWidget {
     final bool isNR = progress.boqVolumeNR > 0;
 
     // Ambil data volume yang tepat berdasarkan jenis BOQ
-    final double dailyTargetVolume = isN ? progress.dailyTargetR : progress.dailyTargetNR;
+    final double dailyTargetVolume =
+        isN ? progress.dailyTargetR : progress.dailyTargetNR;
     final double boqVolume = isN ? progress.boqVolumeR : progress.boqVolumeNR;
-    
+
     // Ambil completedVolume dan remainingVolume dari matchingWorkItem atau workItemDetail
-    final double completedVolume = isN 
-        ? (matchingWorkItem['completedVolume']?['r'] ?? workItemDetail?.progressAchieved.r ?? 0.0)
-        : (matchingWorkItem['completedVolume']?['nr'] ?? workItemDetail?.progressAchieved.nr ?? 0.0);
-        
+    final double completedVolume = isN
+        ? (matchingWorkItem['completedVolume']?['r'] ??
+            workItemDetail?.progressAchieved.r ??
+            0.0)
+        : (matchingWorkItem['completedVolume']?['nr'] ??
+            workItemDetail?.progressAchieved.nr ??
+            0.0);
+
     final double remainingVolume = isN
-        ? (matchingWorkItem['remainingVolume']?['r'] ?? (boqVolume - completedVolume))
-        : (matchingWorkItem['remainingVolume']?['nr'] ?? (boqVolume - completedVolume));
+        ? (matchingWorkItem['remainingVolume']?['r'] ??
+            (boqVolume - completedVolume))
+        : (matchingWorkItem['remainingVolume']?['nr'] ??
+            (boqVolume - completedVolume));
 
     // Cek apakah item sudah ada progress (untuk highlight kuning)
-    final bool hasProgress = isN 
-        ? progress.progressVolumeR > 0 
-        : progress.progressVolumeNR > 0;
+    final bool hasProgress =
+        isN ? progress.progressVolumeR > 0 : progress.progressVolumeNR > 0;
 
     // Hitung volume sisa untuk validasi
     final double volumeSisa = remainingVolume;
     final bool canInput = volumeSisa > 0;
-    
+
     // Debug: Log data yang digunakan
     print('[WorkProgressForm] Item: ${progress.workItemName}');
     print('[WorkProgressForm] isN: $isN, dailyTarget: $dailyTargetVolume');
-    print('[WorkProgressForm] boqVolume: $boqVolume, completed: $completedVolume, remaining: $remainingVolume');
+    print(
+        '[WorkProgressForm] boqVolume: $boqVolume, completed: $completedVolume, remaining: $remainingVolume');
     print('[WorkProgressForm] matchingWorkItem keys: ${matchingWorkItem.keys}');
 
     return Column(
@@ -321,7 +334,8 @@ class WorkProgressForm extends StatelessWidget {
                   if (hasProgress)
                     Container(
                       margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.yellow[600],
                         borderRadius: BorderRadius.circular(12),
@@ -350,7 +364,8 @@ class WorkProgressForm extends StatelessWidget {
                   if (!canInput)
                     Container(
                       margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.red[600],
                         borderRadius: BorderRadius.circular(12),
@@ -527,12 +542,13 @@ class WorkProgressForm extends StatelessWidget {
                             color: canInput ? Colors.black : Colors.grey[400],
                           ),
                           decoration: InputDecoration(
-                            hintText: canInput 
+                            hintText: canInput
                                 ? 'Masukkan volume progress (maks: ${numberFormat.format(remainingVolume)})'
                                 : 'Tidak dapat diisi (volume sisa: ${numberFormat.format(remainingVolume)})',
                             hintStyle: GoogleFonts.dmSans(
                               fontSize: 12,
-                              color: canInput ? Colors.grey[600] : Colors.red[400],
+                              color:
+                                  canInput ? Colors.grey[600] : Colors.red[400],
                             ),
                             suffixText: progress.unit,
                             suffixStyle: GoogleFonts.dmSans(fontSize: 12),
@@ -541,13 +557,15 @@ class WorkProgressForm extends StatelessWidget {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(6),
                               borderSide: BorderSide(
-                                color: canInput ? Colors.grey[300]! : Colors.red[300]!,
+                                color: canInput
+                                    ? Colors.grey[300]!
+                                    : Colors.red[300]!,
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(6),
                               borderSide: BorderSide(
-                                color: hasProgress 
+                                color: hasProgress
                                     ? Colors.yellow[400]!
                                     : Colors.grey[300]!,
                               ),
@@ -561,8 +579,9 @@ class WorkProgressForm extends StatelessWidget {
                           ),
                           validator: (value) {
                             if (!canInput) return null;
-                            
-                            final volume = double.tryParse(value?.replaceAll(',', '') ?? '');
+
+                            final volume = double.tryParse(
+                                value?.replaceAll(',', '') ?? '');
                             if (volume != null && volume > remainingVolume) {
                               return 'Volume tidak boleh melebihi sisa: ${numberFormat.format(remainingVolume)}';
                             }
@@ -570,11 +589,11 @@ class WorkProgressForm extends StatelessWidget {
                           },
                           onChanged: (value) {
                             if (!canInput) return;
-                            
+
                             final volume =
                                 double.tryParse(value.replaceAll(',', '')) ??
                                     0.0;
-                                    
+
                             // Validasi tidak melebihi volume sisa
                             if (volume > remainingVolume) {
                               Get.snackbar(
@@ -587,7 +606,7 @@ class WorkProgressForm extends StatelessWidget {
                               );
                               return;
                             }
-                            
+
                             if (isN) {
                               controller.updateProgressR(index, volume);
                             } else {
@@ -710,16 +729,96 @@ class WorkProgressForm extends StatelessWidget {
     final workItems =
         dailyActivities.isNotEmpty ? dailyActivities.first.workItems : [];
 
-    // Ambil data preview dari SpkDetailWithProgressResponse
+    // Debug logging untuk troubleshooting
+    print('[WorkProgressForm] === PREVIEW DEBUG START ===');
+    print('[WorkProgressForm] spkDetail: $spkDetail');
+    print('[WorkProgressForm] spkDetail?.id: ${spkDetail?.id}');
+    print('[WorkProgressForm] spkDetail?.spkNo: ${spkDetail?.spkNo}');
+    print('[WorkProgressForm] spkDetail?.title: ${spkDetail?.title}');
+    print(
+        '[WorkProgressForm] spkDetail?.projectName: ${spkDetail?.projectName}');
+    print('[WorkProgressForm] spkDetail?.contractor: ${spkDetail?.contractor}');
+    print(
+        '[WorkProgressForm] spkDetail?.location?.name: ${spkDetail?.location?.name}');
+    print('[WorkProgressForm] spkDetail?.startDate: ${spkDetail?.startDate}');
+    print('[WorkProgressForm] spkDetail?.endDate: ${spkDetail?.endDate}');
+    print(
+        '[WorkProgressForm] selectedSpk: ${reportController.selectedSpk.value}');
+    print(
+        '[WorkProgressForm] selectedSpk?.id: ${reportController.selectedSpk.value?.id}');
+    print(
+        '[WorkProgressForm] selectedSpk?.spkNo: ${reportController.selectedSpk.value?.spkNo}');
+    print(
+        '[WorkProgressForm] selectedSpk?.title: ${reportController.selectedSpk.value?.title}');
+    print(
+        '[WorkProgressForm] selectedSpk?.projectName: ${reportController.selectedSpk.value?.projectName}');
+    print(
+        '[WorkProgressForm] selectedSpk?.contractor: ${reportController.selectedSpk.value?.contractor}');
+    print(
+        '[WorkProgressForm] selectedSpk?.location?.name: ${reportController.selectedSpk.value?.location?.name}');
+    print(
+        '[WorkProgressForm] selectedSpk?.startDate: ${reportController.selectedSpk.value?.startDate}');
+    print(
+        '[WorkProgressForm] selectedSpk?.endDate: ${reportController.selectedSpk.value?.endDate}');
+    print(
+        '[WorkProgressForm] dailyActivities.length: ${dailyActivities.length}');
+    print('[WorkProgressForm] workItems.length: ${workItems.length}');
+
+    // Debug WorkProgressController data
+    print('[WorkProgressForm] === CONTROLLER DATA ===');
+    print(
+        '[WorkProgressForm] controller.workProgresses.length: ${controller.workProgresses.length}');
+    print(
+        '[WorkProgressForm] controller.totalValue: ${controller.totalValue.value}');
+
+    // Debug progress data yang akan ditampilkan di preview
+    for (int i = 0; i < controller.workProgresses.length; i++) {
+      final progress = controller.workProgresses[i];
+      if (progress.progressVolumeR > 0 || progress.progressVolumeNR > 0) {
+        print(
+            '[WorkProgressForm] Progress with value $i: ${progress.workItemName}');
+        print('  - workItemId: ${progress.workItemId}');
+        print('  - progressVolumeR: ${progress.progressVolumeR}');
+        print('  - progressVolumeNR: ${progress.progressVolumeNR}');
+        print('  - totalProgressValue: ${progress.totalProgressValue}');
+        print('  - remarks: ${progress.remarks}');
+      }
+    }
+
+    // Debug other controllers
+    print('[WorkProgressForm] === OTHER CONTROLLERS ===');
+    print(
+        '[WorkProgressForm] materialController.selectedMaterials.length: ${materialController.selectedMaterials.length}');
+    print(
+        '[WorkProgressForm] materialController.totalCost: ${materialController.totalCost}');
+    print(
+        '[WorkProgressForm] otherCostController.otherCosts.length: ${otherCostController.otherCosts.length}');
+    print(
+        '[WorkProgressForm] reportController.selectedManpower.length: ${reportController.selectedManpower.length}');
+    print(
+        '[WorkProgressForm] reportController.selectedEquipment.length: ${reportController.selectedEquipment.length}');
+    print(
+        '[WorkProgressForm] reportController.startPhotos.length: ${reportController.startPhotos.length}');
+    print(
+        '[WorkProgressForm] reportController.endPhotos.length: ${reportController.endPhotos.length}');
+    print(
+        '[WorkProgressForm] reportController.remarks.value: "${reportController.remarks.value}"');
+
+    print('[WorkProgressForm] === END PREVIEW DEBUG ===');
+
+    // Fallback: jika spkDetail tidak ada, gunakan selectedSpk
+    final selectedSpk = reportController.selectedSpk.value;
+
+    // Ambil data preview dari SpkDetailWithProgressResponse atau fallback ke selectedSpk
     final previewProgressData = {
-      'spkId': spkDetail?.id,
-      'spkNo': spkDetail?.spkNo,
-      'title': spkDetail?.title,
-      'projectName': spkDetail?.projectName,
-      'contractor': spkDetail?.contractor,
-      'location': spkDetail?.location.name,
-      'startDate': spkDetail?.startDate,
-      'endDate': spkDetail?.endDate,
+      'spkId': spkDetail?.id ?? selectedSpk?.id,
+      'spkNo': spkDetail?.spkNo ?? selectedSpk?.spkNo,
+      'title': spkDetail?.title ?? selectedSpk?.title,
+      'projectName': spkDetail?.projectName ?? selectedSpk?.projectName,
+      'contractor': spkDetail?.contractor ?? selectedSpk?.contractor,
+      'location': spkDetail?.location?.name ?? selectedSpk?.location?.name,
+      'startDate': spkDetail?.startDate ?? selectedSpk?.startDate,
+      'endDate': spkDetail?.endDate ?? selectedSpk?.endDate,
       'workItems': workItems
           .map((item) => {
                 'workItemId': item.id,
@@ -742,6 +841,24 @@ class WorkProgressForm extends StatelessWidget {
           .toList(),
     };
 
+    // Debug previewProgressData yang akan digunakan untuk display
+    print('[WorkProgressForm] === PREVIEW PROGRESS DATA ===');
+    print(
+        '[WorkProgressForm] previewProgressData keys: ${previewProgressData.keys}');
+    print('[WorkProgressForm] spkId: ${previewProgressData['spkId']}');
+    print('[WorkProgressForm] spkNo: ${previewProgressData['spkNo']}');
+    print('[WorkProgressForm] title: ${previewProgressData['title']}');
+    print(
+        '[WorkProgressForm] projectName: ${previewProgressData['projectName']}');
+    print(
+        '[WorkProgressForm] contractor: ${previewProgressData['contractor']}');
+    print('[WorkProgressForm] location: ${previewProgressData['location']}');
+    print('[WorkProgressForm] startDate: ${previewProgressData['startDate']}');
+    print('[WorkProgressForm] endDate: ${previewProgressData['endDate']}');
+    print(
+        '[WorkProgressForm] workItems in previewProgressData: ${(previewProgressData['workItems'] as List).length}');
+    print('[WorkProgressForm] === END PREVIEW PROGRESS DATA ===');
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -750,7 +867,11 @@ class WorkProgressForm extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 600),
+          width: MediaQuery.of(context).size.width * 0.95,
+          constraints: BoxConstraints(
+            maxWidth: 600,
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -793,6 +914,7 @@ class WorkProgressForm extends StatelessWidget {
                     children: [
                       // SPK Info
                       Container(
+                        width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.blue[50],
@@ -811,15 +933,33 @@ class WorkProgressForm extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            _buildInfoRow('No. SPK', spkDetail?.spkNo ?? '-'),
+                            _buildInfoRow(
+                                'No. SPK',
+                                previewProgressData['spkNo']?.toString() ??
+                                    '-'),
+                            _buildInfoRow(
+                                'Judul',
+                                previewProgressData['title']?.toString() ??
+                                    '-'),
+                            _buildInfoRow(
+                                'Proyek',
+                                previewProgressData['projectName']
+                                        ?.toString() ??
+                                    '-'),
+                            _buildInfoRow(
+                                'Kontraktor',
+                                previewProgressData['contractor']?.toString() ??
+                                    '-'),
                             _buildInfoRow(
                                 'Tanggal',
-                                spkDetail?.startDate
+                                previewProgressData['startDate']
                                         ?.toString()
                                         .split(" ")[0] ??
                                     '-'),
                             _buildInfoRow(
-                                'Area', spkDetail?.location?.name ?? '-'),
+                                'Area',
+                                previewProgressData['location']?.toString() ??
+                                    '-'),
                             // _buildInfoRow(
                             //     'Cuaca', reportController.weather.value),
                           ],
@@ -830,6 +970,7 @@ class WorkProgressForm extends StatelessWidget {
 
                       // Progress Info
                       Container(
+                        width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.green[50],
@@ -862,6 +1003,7 @@ class WorkProgressForm extends StatelessWidget {
 
                       // Biaya Info
                       Container(
+                        width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.orange[50],
@@ -986,6 +1128,7 @@ class WorkProgressForm extends StatelessWidget {
 
                       // Summary Profit/Loss
                       Container(
+                        width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.blue[50],
@@ -1024,26 +1167,36 @@ class WorkProgressForm extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // Remarks Input
-                      Text(
-                        'Catatan Laporan',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                      SizedBox(
+                        width: double.infinity,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Catatan Laporan',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              initialValue: reportController.remarks.value,
+                              maxLines: 3,
+                              decoration: InputDecoration(
+                                hintText: 'Masukkan catatan laporan (opsional)',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: const EdgeInsets.all(12),
+                              ),
+                              style: GoogleFonts.dmSans(fontSize: 14),
+                              onChanged: (value) {
+                                reportController.remarks.value = value;
+                              },
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        initialValue: reportController.remarks.value,
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          hintText: 'Masukkan catatan laporan (opsional)',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onChanged: (value) {
-                          reportController.remarks.value = value;
-                        },
                       ),
                     ],
                   ),
@@ -1052,127 +1205,218 @@ class WorkProgressForm extends StatelessWidget {
 
               // Bottom Actions
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.grey[50],
                   border: Border(
                     top: BorderSide(color: Colors.grey[200]!),
                   ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     // Submit Button
-                    ElevatedButton(
-                      onPressed: () async {
-                        // Validasi foto akhir kerja
-                        final reportController =
-                            Get.find<AddWorkReportController>();
-                        if (reportController.endPhotos.isEmpty) {
-                          Get.snackbar(
-                            'Error',
-                            'Foto akhir kerja wajib diunggah!',
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.red[100],
-                            colorText: Colors.red[900],
-                            duration: const Duration(seconds: 3),
-                          );
-                          return;
-                        }
-
-                        // Enhanced validation and debugging
-                        print('[WorkProgressForm] === SUBMIT VALIDATION ===');
-                        print(
-                            'reportController.selectedSpk.value: ${reportController.selectedSpk.value}');
-                        print(
-                            'reportController.selectedSpk.value?.id: ${reportController.selectedSpk.value?.id}');
-                        print(
-                            'reportController.selectedSpk.value?.spkNo: ${reportController.selectedSpk.value?.spkNo}');
-                        print(
-                            'reportController.spkList.length: ${reportController.spkList.length}');
-
-                        // Use the validation method
-                        if (!reportController.validateControllerState()) {
-                          print(
-                              '[WorkProgressForm] ERROR: Controller state validation failed!');
-                          Get.snackbar(
-                            'Error',
-                            'Data tidak lengkap. Silakan kembali dan pastikan SPK sudah dipilih.',
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.red[100],
-                            colorText: Colors.red[900],
-                            duration: const Duration(seconds: 3),
-                          );
-                          return;
-                        }
-
-                        print(
-                            '[WorkProgressForm] Controller state validation passed, proceeding with submit');
-
-                        isSubmitting.value = true;
-                        final success =
-                            await reportController.submitWorkReport();
-                        isSubmitting.value = false;
-                        if (success) {
-                          // Hapus semua draft lokal setelah submit sukses
-                          try {
-                            final dailyActivityController = Get.find<DailyActivityController>();
-                            final draftsToDelete = List<String>.from(
-                              dailyActivityController.localActivities
-                                  .map((activity) => activity.localId)
-                                  .where((id) => id.isNotEmpty)
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          // Validasi foto akhir kerja
+                          final reportController =
+                              Get.find<AddWorkReportController>();
+                          if (reportController.endPhotos.isEmpty) {
+                            Get.snackbar(
+                              'Error',
+                              'Foto akhir kerja wajib diunggah!',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: Colors.red[100],
+                              colorText: Colors.red[900],
+                              duration: const Duration(seconds: 3),
                             );
-                            
-                            print('[WorkProgressForm] Menghapus ${draftsToDelete.length} draft lokal setelah submit sukses');
-                            
-                            for (String draftId in draftsToDelete) {
-                              await dailyActivityController.deleteDraftActivity(draftId);
-                              print('[WorkProgressForm] Berhasil menghapus draft: $draftId');
-                            }
-                            
-                            print('[WorkProgressForm] Semua draft lokal berhasil dihapus');
-                          } catch (e) {
-                            print('[WorkProgressForm] Error menghapus draft lokal: $e');
-                            // Tidak perlu menampilkan error ke user karena submit sudah sukses
+                            return;
                           }
 
-                          Get.back(
-                              result: true); // Kembali ke halaman sebelumnya
-                          Get.snackbar(
-                            'Sukses',
-                            'Laporan pekerjaan berhasil disimpan',
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.green[100],
-                            colorText: Colors.green[900],
-                            duration: const Duration(seconds: 2),
-                          );
-                          Get.offAllNamed(
-                              '/work-report'); // Kembali ke halaman laporan
-                        } else {
-                          Get.snackbar(
-                            'Error',
-                            'Gagal menyimpan laporan: ${reportController.error.value}',
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.red[100],
-                            colorText: Colors.red[900],
-                            duration: const Duration(seconds: 3),
-                          );
-                        }
-                      },
-                      child: Obx(() => isSubmitting.value
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text('Submit')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: FigmaColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                          // Enhanced validation and debugging
+                          print('[WorkProgressForm] === SUBMIT VALIDATION ===');
+                          print(
+                              'reportController.selectedSpk.value: ${reportController.selectedSpk.value}');
+                          print(
+                              'reportController.selectedSpk.value?.id: ${reportController.selectedSpk.value?.id}');
+                          print(
+                              'reportController.selectedSpk.value?.spkNo: ${reportController.selectedSpk.value?.spkNo}');
+                          print(
+                              'reportController.spkList.length: ${reportController.spkList.length}');
+                          print(
+                              'reportController.spkDetailsWithProgress.value: ${reportController.spkDetailsWithProgress.value}');
+                          print(
+                              'controller.workProgresses.length: ${controller.workProgresses.length}');
+
+                          // Validate basic requirements
+                          if (reportController.selectedSpk.value == null) {
+                            print(
+                                '[WorkProgressForm] ERROR: selectedSpk is null!');
+                            Get.snackbar(
+                              'Error',
+                              'SPK tidak terpilih. Silakan kembali dan pilih SPK.',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: Colors.red[100],
+                              colorText: Colors.red[900],
+                              duration: const Duration(seconds: 3),
+                            );
+                            return;
+                          }
+
+                          if (controller.workProgresses.isEmpty) {
+                            print(
+                                '[WorkProgressForm] ERROR: workProgresses is empty!');
+                            Get.snackbar(
+                              'Error',
+                              'Tidak ada progress pekerjaan. Silakan isi minimal satu item.',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: Colors.red[100],
+                              colorText: Colors.red[900],
+                              duration: const Duration(seconds: 3),
+                            );
+                            return;
+                          }
+
+                          // Check if any progress is inputted
+                          final hasAnyProgress = controller.workProgresses.any(
+                              (p) =>
+                                  (p.progressVolumeR > 0) ||
+                                  (p.progressVolumeNR > 0));
+
+                          if (!hasAnyProgress) {
+                            print(
+                                '[WorkProgressForm] WARNING: No progress inputted');
+                            final confirmProceed = await Get.dialog<bool>(
+                                  AlertDialog(
+                                    title: Text('Konfirmasi',
+                                        style: GoogleFonts.dmSans(
+                                            fontWeight: FontWeight.bold)),
+                                    content: Text(
+                                        'Tidak ada progress yang diinput. Apakah Anda ingin melanjutkan submit dengan progress 0?',
+                                        style: GoogleFonts.dmSans()),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Get.back(result: false),
+                                        child: Text('Batal',
+                                            style: GoogleFonts.dmSans()),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Get.back(result: true),
+                                        child: Text('Lanjutkan',
+                                            style: GoogleFonts.dmSans()),
+                                      ),
+                                    ],
+                                  ),
+                                ) ??
+                                false;
+
+                            if (!confirmProceed) return;
+                          }
+
+                          print(
+                              '[WorkProgressForm] Validation passed, proceeding with submit');
+
+                          // Log progress data yang akan disubmit (semua progress)
+                          print(
+                              '[WorkProgressForm] === ALL PROGRESS DATA TO SUBMIT ===');
+                          for (int i = 0;
+                              i < controller.workProgresses.length;
+                              i++) {
+                            final p = controller.workProgresses[i];
+                            print(
+                                '[WorkProgressForm] Progress $i: ${p.workItemName}');
+                            print('  - workItemId: ${p.workItemId}');
+                            print('  - progressVolumeR: ${p.progressVolumeR}');
+                            print(
+                                '  - progressVolumeNR: ${p.progressVolumeNR}');
+                            print(
+                                '  - totalProgressValue: ${p.totalProgressValue}');
+                            print('  - remarks: ${p.remarks}');
+                            print('  - boqVolumeR: ${p.boqVolumeR}');
+                            print('  - boqVolumeNR: ${p.boqVolumeNR}');
+                            print('  - dailyTargetR: ${p.dailyTargetR}');
+                            print('  - dailyTargetNR: ${p.dailyTargetNR}');
+                          }
+                          print(
+                              '[WorkProgressForm] === END ALL PROGRESS DATA ===');
+
+                          isSubmitting.value = true;
+                          final success =
+                              await reportController.submitWorkReport();
+                          isSubmitting.value = false;
+                          if (success) {
+                            // Hapus semua draft lokal setelah submit sukses
+                            try {
+                              final dailyActivityController =
+                                  Get.find<DailyActivityController>();
+                              final draftsToDelete = List<String>.from(
+                                  dailyActivityController.localActivities
+                                      .map((activity) => activity.localId)
+                                      .where((id) => id.isNotEmpty));
+
+                              print(
+                                  '[WorkProgressForm] Menghapus ${draftsToDelete.length} draft lokal setelah submit sukses');
+
+                              for (String draftId in draftsToDelete) {
+                                await dailyActivityController
+                                    .deleteDraftActivity(draftId);
+                                print(
+                                    '[WorkProgressForm] Berhasil menghapus draft: $draftId');
+                              }
+
+                              print(
+                                  '[WorkProgressForm] Semua draft lokal berhasil dihapus');
+                            } catch (e) {
+                              print(
+                                  '[WorkProgressForm] Error menghapus draft lokal: $e');
+                              // Tidak perlu menampilkan error ke user karena submit sudah sukses
+                            }
+
+                            Get.back(
+                                result: true); // Kembali ke halaman sebelumnya
+                            Get.snackbar(
+                              'Sukses',
+                              'Laporan pekerjaan berhasil disimpan',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: Colors.green[100],
+                              colorText: Colors.green[900],
+                              duration: const Duration(seconds: 2),
+                            );
+                            Get.offAllNamed(
+                                '/work-report'); // Kembali ke halaman laporan
+                          } else {
+                            Get.snackbar(
+                              'Error',
+                              'Gagal menyimpan laporan: ${reportController.error.value}',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: Colors.red[100],
+                              colorText: Colors.red[900],
+                              duration: const Duration(seconds: 3),
+                            );
+                          }
+                        },
+                        child: Obx(() => isSubmitting.value
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Submit')),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: FigmaColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
                     ),
                   ],
@@ -1219,21 +1463,37 @@ class WorkProgressForm extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           Text(
-            label,
+            ':',
             style: GoogleFonts.dmSans(
               fontSize: 14,
               color: Colors.black54,
             ),
           ),
-          Text(
-            value,
-            style: GoogleFonts.dmSans(
-              fontSize: 14,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-              color: valueColor,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+                color: valueColor,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
             ),
           ),
         ],
@@ -1446,18 +1706,92 @@ class WorkProgressForm extends StatelessWidget {
                         final bool isNR = progress.boqVolumeNR > 0;
 
                         // Cek apakah item ini sudah ada progress untuk styling card
-                        final bool itemHasProgress = progress.boqVolumeR > 0 
-                            ? progress.progressVolumeR > 0 
+                        final bool itemHasProgress = progress.boqVolumeR > 0
+                            ? progress.progressVolumeR > 0
                             : progress.progressVolumeNR > 0;
-                            
+
+                        // Hitung volume sisa untuk menentukan apakah bisa diinput
+                        final addWorkReportController =
+                            Get.find<AddWorkReportController>();
+                        final matchingWorkItem =
+                            addWorkReportController.workItems.firstWhere(
+                          (item) =>
+                              item['name'] == progress.workItemName &&
+                              item['spkId'] ==
+                                  addWorkReportController.selectedSpk.value?.id,
+                          orElse: () => <String, dynamic>{},
+                        );
+
+                        final spkDetail = addWorkReportController
+                            .spkDetailsWithProgress.value;
+                        final dailyActivities =
+                            spkDetail?.dailyActivities ?? [];
+                        final workItems = dailyActivities.isNotEmpty
+                            ? dailyActivities.first.workItems
+                            : [];
+                        final workItemDetail =
+                            workItems.isNotEmpty && index < workItems.length
+                                ? workItems[index]
+                                : null;
+
+                        final double boqVolume =
+                            isN ? progress.boqVolumeR : progress.boqVolumeNR;
+                        final double completedVolume = isN
+                            ? (matchingWorkItem['completedVolume']?['r'] ??
+                                workItemDetail?.progressAchieved.r ??
+                                0.0)
+                            : (matchingWorkItem['completedVolume']?['nr'] ??
+                                workItemDetail?.progressAchieved.nr ??
+                                0.0);
+                        final double remainingVolume = isN
+                            ? (matchingWorkItem['remainingVolume']?['r'] ??
+                                (boqVolume - completedVolume))
+                            : (matchingWorkItem['remainingVolume']?['nr'] ??
+                                (boqVolume - completedVolume));
+
+                        // Cek apakah item tidak bisa diinput (volume sisa <= 0)
+                        final bool canNotInput = remainingVolume <= 0;
+
+                        // Debug log untuk troubleshooting
+                        if (canNotInput) {
+                          print(
+                              '[WorkProgressForm] Item TIDAK BISA DIINPUT: ${progress.workItemName}');
+                          print('  - boqVolume: $boqVolume');
+                          print('  - completedVolume: $completedVolume');
+                          print('  - remainingVolume: $remainingVolume');
+                          print('  - canNotInput: $canNotInput');
+                        }
+
+                        // Tentukan warna card berdasarkan status
+                        Color cardColor;
+                        Color borderColor;
+                        int borderWidth;
+
+                        if (canNotInput) {
+                          // Merah untuk item yang tidak bisa diinput (sudah selesai)
+                          cardColor = Colors.red[50]!;
+                          borderColor = Colors.red[400]!;
+                          borderWidth = 2;
+                        } else if (itemHasProgress) {
+                          // Kuning untuk item yang sudah ada progress
+                          cardColor = Colors.yellow[50]!;
+                          borderColor = Colors.yellow[400]!;
+                          borderWidth = 2;
+                        } else {
+                          // Putih untuk item normal
+                          cardColor = Colors.white;
+                          borderColor = Colors.grey[200]!;
+                          borderWidth = 1;
+                        }
+
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
-                          color: itemHasProgress ? Colors.yellow[50] : Colors.white,
+                          color: cardColor,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                             side: BorderSide(
-                              color: itemHasProgress ? Colors.yellow[400]! : Colors.grey[200]!,
-                              width: itemHasProgress ? 2 : 1,
+                              color: borderColor,
+                              width: borderWidth.toDouble(),
                             ),
                           ),
                           child: ExpansionTile(
@@ -1467,21 +1801,62 @@ class WorkProgressForm extends StatelessWidget {
                                 const EdgeInsets.fromLTRB(16, 0, 16, 16),
                             title: Row(
                               children: [
-                                if (itemHasProgress)
+                                if (canNotInput)
                                   Container(
                                     margin: const EdgeInsets.only(right: 8),
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red[600],
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.block,
+                                          size: 10,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'SELESAI',
+                                          style: GoogleFonts.dmSans(
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else if (itemHasProgress)
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
                                       color: Colors.yellow[600],
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Text(
-                                      'DRAFT',
-                                      style: GoogleFonts.dmSans(
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.edit,
+                                          size: 10,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'DRAFT',
+                                          style: GoogleFonts.dmSans(
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 Expanded(
@@ -1490,6 +1865,9 @@ class WorkProgressForm extends StatelessWidget {
                                     style: GoogleFonts.dmSans(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
+                                      color: canNotInput
+                                          ? Colors.red[700]
+                                          : Colors.black,
                                     ),
                                   ),
                                 ),
@@ -1503,23 +1881,65 @@ class WorkProgressForm extends StatelessWidget {
                                   'Volume BOQ: ${numberFormat.format(isN ? progress.boqVolumeR : progress.boqVolumeNR)} ${progress.unit}',
                                   style: GoogleFonts.dmSans(
                                     fontSize: 12,
-                                    color: Colors.black54,
+                                    color: canNotInput
+                                        ? Colors.red[600]
+                                        : Colors.black54,
                                   ),
                                 ),
                                 Text(
                                   'Harga: Rp ${numberFormat.format(isN ? progress.rateR : progress.rateNR)}/${progress.unit}',
                                   style: GoogleFonts.dmSans(
                                     fontSize: 12,
-                                    color: Colors.black54,
+                                    color: canNotInput
+                                        ? Colors.red[600]
+                                        : Colors.black54,
                                   ),
                                 ),
+                                if (canNotInput)
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red[100],
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Volume Sisa: ${numberFormat.format(remainingVolume)} ${progress.unit} (Tidak dapat diinput)',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 11,
+                                        color: Colors.red[700],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  )
+                                else if (remainingVolume > 0)
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green[100],
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Volume Sisa: ${numberFormat.format(remainingVolume)} ${progress.unit}',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 11,
+                                        color: Colors.green[700],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: FigmaColors.primary.withOpacity(0.1),
+                                color: canNotInput
+                                    ? Colors.red.withOpacity(0.1)
+                                    : FigmaColors.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -1527,7 +1947,9 @@ class WorkProgressForm extends StatelessWidget {
                                 style: GoogleFonts.dmSans(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: FigmaColors.primary,
+                                  color: canNotInput
+                                      ? Colors.red[600]
+                                      : FigmaColors.primary,
                                 ),
                               ),
                             ),
@@ -1624,20 +2046,27 @@ class WorkProgressForm extends StatelessWidget {
                         onPressed: () async {
                           final reportController =
                               Get.find<AddWorkReportController>();
-                          
+
                           // Debug: Log semua progress yang akan disimpan
-                          print('[WorkProgressForm] === SIMPAN DRAFT DEBUG ===');
-                          for (int i = 0; i < controller.workProgresses.length; i++) {
+                          print(
+                              '[WorkProgressForm] === SIMPAN DRAFT DEBUG ===');
+                          for (int i = 0;
+                              i < controller.workProgresses.length;
+                              i++) {
                             final progress = controller.workProgresses[i];
                             print('[WorkProgressForm] Progress $i:');
                             print('  - workItemName: ${progress.workItemName}');
-                            print('  - progressVolumeR: ${progress.progressVolumeR}');
-                            print('  - progressVolumeNR: ${progress.progressVolumeNR}');
+                            print(
+                                '  - progressVolumeR: ${progress.progressVolumeR}');
+                            print(
+                                '  - progressVolumeNR: ${progress.progressVolumeNR}');
                             print('  - remarks: ${progress.remarks}');
-                            print('  - totalProgressValue: ${progress.totalProgressValue}');
+                            print(
+                                '  - totalProgressValue: ${progress.totalProgressValue}');
                           }
-                          print('[WorkProgressForm] === END SIMPAN DRAFT DEBUG ===');
-                          
+                          print(
+                              '[WorkProgressForm] === END SIMPAN DRAFT DEBUG ===');
+
                           await reportController.saveTemporaryData();
 
                           Get.snackbar(

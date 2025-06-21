@@ -14,8 +14,8 @@ import '../models/spk_detail_with_progress_response.dart' as spk_progress;
 
 class GraphQLService extends GetxService {
   late GraphQLClient client;
-  final String baseUrl = 'https://berifansi.fando.id/graphql';
-  // final String baseUrl = 'https://laptop3000.fando.id/graphql';
+  // final String baseUrl = 'https://berifansi.fando.id/graphql';
+  final String baseUrl = 'https://localhost3000.fando.id/graphql';
 
   Future<GraphQLService> init() async {
     final HttpLink httpLink = HttpLink(baseUrl);
@@ -1125,10 +1125,11 @@ class GraphQLService extends GetxService {
     }
   ''';
 
-  Future<Map<String, dynamic>> fetchMyDailyActivity({int? limit, int? skip}) async {
+  Future<Map<String, dynamic>> fetchMyDailyActivity(
+      {int? limit, int? skip}) async {
     try {
       print('[GraphQL] Fetching my daily activities');
-      
+
       final variables = <String, dynamic>{};
       if (limit != null) variables['limit'] = limit;
       if (skip != null) variables['skip'] = skip;
@@ -1136,7 +1137,8 @@ class GraphQLService extends GetxService {
       final result = await query(getMyDailyActivityQuery, variables: variables);
 
       if (result.hasException) {
-        print('[GraphQL] Error fetching my daily activities: ${result.exception}');
+        print(
+            '[GraphQL] Error fetching my daily activities: ${result.exception}');
         throw Exception(result.exception.toString());
       }
 
@@ -1160,14 +1162,11 @@ class GraphQLService extends GetxService {
     }
   }
 
-  Future<Map<String, dynamic>> fetchActivityByArea({
-    required String areaId,
-    int? limit,
-    int? skip
-  }) async {
+  Future<Map<String, dynamic>> fetchActivityByArea(
+      {required String areaId, int? limit, int? skip}) async {
     try {
       print('[GraphQL] Fetching activities by area: $areaId');
-      
+
       final variables = <String, dynamic>{
         'areaId': areaId,
       };
@@ -1177,7 +1176,8 @@ class GraphQLService extends GetxService {
       final result = await query(getActivityByAreaQuery, variables: variables);
 
       if (result.hasException) {
-        print('[GraphQL] Error fetching activities by area: ${result.exception}');
+        print(
+            '[GraphQL] Error fetching activities by area: ${result.exception}');
         throw Exception(result.exception.toString());
       }
 
@@ -2056,15 +2056,19 @@ class GraphQLService extends GetxService {
     return await reviewEquipmentRepairReport(id: id, input: input);
   }
 
-  Future<Map<String, dynamic>> fetchDailyActivityWithDetailsByActivityId(String activityId) async {
+  Future<Map<String, dynamic>> fetchDailyActivityWithDetailsByActivityId(
+      String activityId) async {
     try {
-      print('[GraphQL] Fetching daily activity details by activity ID: $activityId');
+      print(
+          '[GraphQL] Fetching daily activity details by activity ID: $activityId');
 
       final variables = {'activityId': activityId};
-      final result = await query(getDailyActivityWithDetailsByActivityIdQuery, variables: variables);
+      final result = await query(getDailyActivityWithDetailsByActivityIdQuery,
+          variables: variables);
 
       if (result.hasException) {
-        print('[GraphQL] Error fetching daily activity details: ${result.exception}');
+        print(
+            '[GraphQL] Error fetching daily activity details: ${result.exception}');
         throw Exception(result.exception.toString());
       }
 
@@ -2082,4 +2086,3 @@ class GraphQLService extends GetxService {
     }
   }
 }
-
