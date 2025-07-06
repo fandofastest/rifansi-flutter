@@ -46,6 +46,7 @@ class HiveService extends GetxService {
 
   // Simpan DailyActivity dengan localId sebagai key
   Future<void> saveDailyActivity(DailyActivity activity) async {
+
     try {
       await _dailyActivitiesBox.put(activity.localId, activity);
       print(
@@ -55,6 +56,10 @@ class HiveService extends GetxService {
 
       // Verify the save by reading it back
       final saved = _dailyActivitiesBox.get(activity.localId);
+      saved?.activityDetails.forEach((element) {
+        print('xxzxtest'+element.actualQuantity.nr.toString());
+      });
+
       if (saved != null) {
         print(
             '[HiveService] Verification: Activity successfully saved and can be retrieved');

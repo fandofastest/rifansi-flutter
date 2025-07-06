@@ -33,6 +33,8 @@ import 'package:rifansi/app/controllers/material_controller.dart';
 import 'package:rifansi/app/controllers/other_cost_controller.dart';
 import 'package:rifansi/app/controllers/daily_activity_controller.dart';
 import 'package:collection/collection.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../data/models/work_progress_model.dart';
 
 class AddWorkReportController extends GetxController {
   final currentStep = 0.obs;
@@ -73,8 +75,8 @@ class AddWorkReportController extends GetxController {
 
   // Token untuk upload
   final String uploadToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MmE5NzUzOTRlNGQ3ZWJkMDc1YjM2NyIsImlhdCI6MTc0NzYyMTgyMywiZXhwIjoxNzc4NzI1ODIzfQ.teq_-tgZBuaQQ5h3DxcY5xHmZIIEA6NA8omq2NLnGq8';
-  final String uploadUrl = 'https://cloudfiles.fando.id/api/files/upload';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Njc0MmVhZTYzY2NhN2RkZGY1ZmJjOCIsImlhdCI6MTc1MTYxNTQzNSwiZXhwIjoxNzgyNzE5NDM1fQ.6MVR9qFqfWuzdPnxIgI7soMYdbAIluruGhQHhTVljGA';
+  final String uploadUrl = 'http://api-app25.rifansi.co.id/api/files/upload';
 
   // Layanan Hive untuk penyimpanan lokal
   late HiveService _hiveService;
@@ -625,9 +627,14 @@ class AddWorkReportController extends GetxController {
   Future<List<WorkPhoto>> pickAndUploadMultiplePhotos(
       ImageSource source) async {
     try {
-      // Ambil foto dari gallery atau kamera
       final ImagePicker picker = ImagePicker();
-      final List<XFile> images = await picker.pickMultiImage();
+      List<XFile> images = [];
+      if (source == ImageSource.camera) {
+        final XFile? image = await picker.pickImage(source: ImageSource.camera);
+        if (image != null) images = [image];
+      } else {
+        images = await picker.pickMultiImage();
+      }
 
       if (images.isEmpty) {
         return [];
@@ -1093,17 +1100,11 @@ class AddWorkReportController extends GetxController {
         return true;
 
       case 3: // Manpower dan Konfigurasi
-        if (selectedManpower.isEmpty) {
-          error.value = 'Silakan tambahkan minimal 1 personel';
-          return false;
-        }
+        // Manpower opsional, bisa di-skip
         return true;
 
       case 4: // Peralatan
-        if (selectedEquipment.isEmpty) {
-          error.value = 'Silakan tambahkan minimal 1 peralatan';
-          return false;
-        }
+        // Peralatan opsional, bisa di-skip
         return true;
 
       case 5: // Material
@@ -1262,6 +1263,9 @@ class AddWorkReportController extends GetxController {
                 '[AddWorkReport] Using fallback workItems for progress: ${fallbackWorkItemsForProgress.length} items');
             workProgressController
                 .initializeFromWorkItems(fallbackWorkItemsForProgress);
+      workProgressController.workProgresses.forEach((element) {
+        print('xxzxtestxx'+element.workItemName+element.progressVolumeR.toString());
+      });
 
             // Proceed to WorkProgressForm with fallback data
             final result = await Get.to<bool>(
@@ -1411,6 +1415,9 @@ class AddWorkReportController extends GetxController {
         print(
             '[AddWorkReport] SPK validation passed, opening WorkProgressForm');
 
+workProgressController.workProgresses.forEach((element) {
+        print('xxzxtestxx'+element.workItemName+element.progressVolumeNR.toString()+'x'+element.progressVolumeR.toString());
+      });
         final result = await Get.to<bool>(
           () => WorkProgressForm(controller: workProgressController),
           transition: Transition.rightToLeft,
@@ -1940,6 +1947,31 @@ Total Cost: Rp ${entry.totalCost}
       // Debug: Check other costs before saving
       final otherCostController = Get.find<OtherCostController>();
 
+      // Ambil progress data dari WorkProgressController jika ada
+      List<activity_input.ActivityDetail> activityDetails = [];
+      try {
+        final workProgressController = Get.find<WorkProgressController>();
+        if (workProgressController.workProgresses.isNotEmpty) {
+          print('[AddWorkReport] Saving ${workProgressController.workProgresses.length} progress items to draft');
+          activityDetails = workProgressController.workProgresses.map((progress) {
+            return activity_input.ActivityDetail(
+              id: progress.workItemId,
+              workItemId: progress.workItemId,
+              actualQuantity: activity_input.Quantity(
+                nr: progress.progressVolumeNR,
+                r: progress.progressVolumeR,
+              ),
+              status: 'COMPLETED',
+              remarks: progress.remarks ?? '',
+            );
+          }).toList();
+          print('[AddWorkReport] Successfully converted ${activityDetails.length} progress items for draft');
+        }
+      } catch (e) {
+        print('[AddWorkReport] Error getting progress data for draft: $e');
+        // Continue without progress data if there's an error
+      }
+
       // Buat objek DailyActivity dari data sementara menggunakan model dari activity_input
       final dailyActivity = activity_input.DailyActivity(
         id: '', // ID akan di-generate oleh Hive
@@ -1957,7 +1989,7 @@ Total Cost: Rp ${entry.totalCost}
         finishImages: endPhotos.map((p) => p.accessUrl).toList(),
         closingRemarks: remarks.value,
         progressPercentage: 0.0,
-        activityDetails: [], // Ini perlu diisi jika ada data progress
+        activityDetails: activityDetails, // Simpan progress data yang sudah diinput
         equipmentLogs: selectedEquipment
             .map((e) => activity_input.EquipmentLog(
                   id: '',
@@ -1984,7 +2016,7 @@ Total Cost: Rp ${entry.totalCost}
             .map((m) => activity_input.MaterialUsageLog(
                   id: '',
                   materialId: m.material.id,
-                  quantity: m.quantity,
+                  quantity: m.quantity ?? 0.0,
                   unitRate: m.material.unitRate ?? 0.0,
                   remarks: m.remarks ?? '',
                 ))
@@ -2010,6 +2042,7 @@ Total Cost: Rp ${entry.totalCost}
 
       print(
           '[AddWorkReport] Data sementara berhasil disimpan untuk SPK: $spkId dengan status: $activityStatus');
+      print('[AddWorkReport] Progress data saved: ${activityDetails.length} items');
 
       // Refresh data lokal di DailyActivityController jika ada
       try {
@@ -2033,6 +2066,10 @@ Total Cost: Rp ${entry.totalCost}
 
       // Ambil data dari HiveService menggunakan model dari activity_input
       final dailyActivity = await _hiveService.getDailyActivity(spkId);
+      dailyActivity?.activityDetails.forEach((element) {
+        print('xxzxtest'+element.actualQuantity.nr.toString());
+      });
+
       if (dailyActivity == null) {
         print('[AddWorkReport] Tidak ada data sementara untuk SPK: $spkId');
         showSnackbar(
@@ -2360,6 +2397,49 @@ Total Cost: Rp ${entry.totalCost}
         }
       }
 
+
+      // Load progress data dari draft jika ada
+      if (dailyActivity.activityDetails.isNotEmpty) {
+        print('[AddWorkReport] xxzxtest Loading ${dailyActivity.activityDetails.length} progress items from draft');
+
+        try {
+          final workProgressController = Get.find<WorkProgressController>();
+          // Inisialisasi workProgresses dengan data dari draft
+          workProgressController.workProgresses.clear();
+
+          for (var detail in dailyActivity.activityDetails) {
+            // Langsung buat WorkProgress dari detail tanpa matching
+            final workProgress = WorkProgress(
+              workItemId: detail.workItemId,
+              workItemName: detail.workItemId, // Gunakan workItemId sebagai name
+              unit: '', // Default empty string
+              boqVolumeR: 0.0, // Default 0
+              boqVolumeNR: 0.0, // Default 0
+              progressVolumeR: detail.actualQuantity.r,
+              progressVolumeNR: detail.actualQuantity.nr,
+              workingDays: 1, // Default value
+              rateR: 0.0, // Default 0
+              rateNR: 0.0, // Default 0
+              dailyTargetR: 0.0, // Default 0
+              dailyTargetNR: 0.0, // Default 0
+              rateDescriptionR: '', // Default empty string
+              rateDescriptionNR: '', // Default empty string
+              remarks: detail.remarks,
+            );
+            workProgressController.workProgresses.add(workProgress);
+            print('xxxx11 ${workProgress.workItemName}: R=${workProgress.progressVolumeR}, NR=${workProgress.progressVolumeNR}');
+          }
+
+          // Recalculate total progress
+          workProgressController.calculateTotalProgress();
+          print('[AddWorkReport] Successfully loaded ${workProgressController.workProgresses.length} progress items from draft');
+        } catch (e) {
+          print('[AddWorkReport] Error loading progress data from draft: $e');
+        }
+      } else {
+        print('[AddWorkReport] No progress data found in draft');
+      }
+
       print('[AddWorkReport] Berhasil memuat semua data untuk SPK: $spkId');
 
       // Setelah semua data berhasil dimuat, pastikan workItems juga diupdate
@@ -2461,56 +2541,6 @@ Total Cost: Rp ${entry.totalCost}
   }
 
   // Menciptakan data aktivitas sementara
-  Future<void> createTemporaryActivity() async {
-    try {
-      if (selectedSpk.value == null) {
-        return;
-      }
-
-      final spk = selectedSpk.value!;
-      final now = DateTime.now();
-
-      final existingActivity = await _hiveService.getDailyActivity(spk.id);
-      if (existingActivity != null) {
-        // Hapus aktivitas sebelumnya jika ada
-        await _hiveService.deleteDailyActivity(existingActivity.localId);
-      }
-
-      // Buat SPKDetails untuk menyimpan detail lengkap SPK
-      final spkDetails = activity_input.SPKDetails.fromSpk(spk);
-
-      final dailyActivity = activity_input.DailyActivity(
-        id: '', // ID akan di-generate oleh Hive
-        spkId: spk.id,
-        spkDetails: spkDetails,
-        date: now.millisecondsSinceEpoch.toString(), // Gunakan timestamp
-        areaId: spk.location?.id ?? '',
-        weather: 'Cerah',
-        status: 'Menunggu Progress',
-        workStartTime:
-            now.millisecondsSinceEpoch.toString(), // Gunakan timestamp
-        workEndTime: '',
-        startImages: [],
-        finishImages: [],
-        closingRemarks: '',
-        progressPercentage: 0.0,
-        activityDetails: [],
-        equipmentLogs: [],
-        manpowerLogs: [],
-        materialUsageLogs: [],
-        otherCosts: [],
-        createdAt: now.toIso8601String(),
-        updatedAt: now.toIso8601String(),
-        localId: spk.id,
-        lastSyncAttempt: now,
-      );
-
-      await _hiveService.saveDailyActivity(dailyActivity);
-      print('[AddWorkReport] Temporary activity created for SPK: ${spk.id}');
-    } catch (e) {
-      print('Error saving temporary activity: $e');
-    }
-  }
 
   // Fungsi parsing tanggal yang aman
   DateTime? safeParseDate(dynamic value) {

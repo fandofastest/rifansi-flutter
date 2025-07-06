@@ -20,6 +20,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   late TextEditingController usernameController;
   late TextEditingController passwordController;
   final LocalAuthentication auth = LocalAuthentication();
+  bool _showPassword = false;
 
   @override
   void initState() {
@@ -303,7 +304,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               final isFocused = Focus.of(context).hasFocus;
                               return TextField(
                                 controller: passwordController,
-                                obscureText: true,
+                                obscureText: !_showPassword,
                                 style: GoogleFonts.dmSans(
                                   color: FigmaColors.abu,
                                   fontSize: 14,
@@ -316,6 +317,17 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                     fontSize: 14,
                                     fontWeight: FontWeight.w400,
                                     height: 1.71,
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _showPassword ? Icons.visibility : Icons.visibility_off,
+                                      color: FigmaColors.abu,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _showPassword = !_showPassword;
+                                      });
+                                    },
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(100),
