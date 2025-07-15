@@ -14,8 +14,8 @@ import '../models/spk_detail_with_progress_response.dart' as spk_progress;
 
 class GraphQLService extends GetxService {
   late GraphQLClient client;
-  final String baseUrl = 'https://app25.rifansi.co.id/graphql';
-  // final String baseUrl = 'https://laptop3000.fando.id/graphql';
+  // final String baseUrl = 'https://app25.rifansi.co.id/graphql';
+  final String baseUrl = 'https://lap3000.fando.id/graphql';
 
   Future<GraphQLService> init() async {
     final HttpLink httpLink = HttpLink(baseUrl);
@@ -839,6 +839,20 @@ class GraphQLService extends GetxService {
           }
           status
           remarks
+          rates {
+            nr {
+              rate
+              description
+            }
+            r {
+              rate
+              description
+            }
+          }
+          boqVolume {
+            nr
+            r
+          }
           workItem {
             id
             name
@@ -847,16 +861,6 @@ class GraphQLService extends GetxService {
               id
               name
               code
-            }
-            rates {
-              nr {
-                rate
-                description
-              }
-              r {
-                rate
-                description
-              }
             }
             category {
               id
