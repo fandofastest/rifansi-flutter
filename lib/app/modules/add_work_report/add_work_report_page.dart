@@ -115,72 +115,72 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
         ),
         centerTitle: true,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save_outlined),
-            onPressed: () {
-              controller.saveTemporaryData();
-            },
-          ),
-          // DEBUG: Test button untuk reload workItems
-          if (Get.arguments != null && Get.arguments['isDraft'] == true)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () async {
-                print('=== MANUAL DEBUG: RELOAD WORK ITEMS ===');
-                if (controller.selectedSpk.value != null) {
-                  print('DEBUG: Attempting to reload workItems...');
-                  print(
-                      'DEBUG: Current selectedSpk: ${controller.selectedSpk.value?.spkNo}');
-                  print(
-                      'DEBUG: Current workItems count: ${controller.workItems.length}');
+        // actions: [
+        //   IconButton(
+        //     icon: const Icon(Icons.save_outlined),
+        //     onPressed: () {
+        //       controller.saveTemporaryData();
+        //     },
+        //   ),
+        //   // DEBUG: Test button untuk reload workItems
+        //   if (Get.arguments != null && Get.arguments['isDraft'] == true)
+        //     IconButton(
+        //       icon: const Icon(Icons.refresh),
+        //       onPressed: () async {
+        //         print('=== MANUAL DEBUG: RELOAD WORK ITEMS ===');
+        //         if (controller.selectedSpk.value != null) {
+        //           print('DEBUG: Attempting to reload workItems...');
+        //           print(
+        //               'DEBUG: Current selectedSpk: ${controller.selectedSpk.value?.spkNo}');
+        //           print(
+        //               'DEBUG: Current workItems count: ${controller.workItems.length}');
 
-                  try {
-                    await controller.fetchSpkDetailsWithProgress(
-                        controller.selectedSpk.value!.id);
-                    print('DEBUG: fetchSpkDetailsWithProgress completed');
-                    print(
-                        'DEBUG: New workItems count: ${controller.workItems.length}');
-                  } catch (e) {
-                    print('DEBUG: Error in fetchSpkDetailsWithProgress: $e');
-                  }
-                } else {
-                  print('DEBUG: selectedSpk is null, cannot reload workItems');
-                }
-              },
-            ),
-          // DEBUG: Manual test load draft button
-          IconButton(
-            icon: const Icon(Icons.bug_report),
-            onPressed: () async {
-              print('=== MANUAL TEST: FORCE LOAD DRAFT ===');
-              final args = Get.arguments;
-              print('Current arguments: $args');
+        //           try {
+        //             await controller.fetchSpkDetailsWithProgress(
+        //                 controller.selectedSpk.value!.id);
+        //             print('DEBUG: fetchSpkDetailsWithProgress completed');
+        //             print(
+        //                 'DEBUG: New workItems count: ${controller.workItems.length}');
+        //           } catch (e) {
+        //             print('DEBUG: Error in fetchSpkDetailsWithProgress: $e');
+        //           }
+        //         } else {
+        //           print('DEBUG: selectedSpk is null, cannot reload workItems');
+        //         }
+        //       },
+        //     ),
+        //   // DEBUG: Manual test load draft button
+        //   IconButton(
+        //     icon: const Icon(Icons.bug_report),
+        //     onPressed: () async {
+        //       print('=== MANUAL TEST: FORCE LOAD DRAFT ===');
+        //       final args = Get.arguments;
+        //       print('Current arguments: $args');
 
-              if (args != null && args['spkId'] != null) {
-                print('Attempting manual loadTemporaryData...');
-                try {
-                  // Ensure SPK list is loaded first
-                  if (controller.spkList.isEmpty) {
-                    await controller.fetchSPKs();
-                  }
+        //       if (args != null && args['spkId'] != null) {
+        //         print('Attempting manual loadTemporaryData...');
+        //         try {
+        //           // Ensure SPK list is loaded first
+        //           if (controller.spkList.isEmpty) {
+        //             await controller.fetchSPKs();
+        //           }
 
-                  final result =
-                      await controller.loadTemporaryData(args['spkId']);
-                  print('Manual load result: $result');
-                  print(
-                      'selectedSpk after manual load: ${controller.selectedSpk.value?.spkNo ?? 'NULL'}');
-                  print(
-                      'workItems after manual load: ${controller.workItems.length}');
-                } catch (e) {
-                  print('Error in manual load: $e');
-                }
-              } else {
-                print('No spkId in arguments for manual test');
-              }
-            },
-          ),
-        ],
+        //           final result =
+        //               await controller.loadTemporaryData(args['spkId']);
+        //           print('Manual load result: $result');
+        //           print(
+        //               'selectedSpk after manual load: ${controller.selectedSpk.value?.spkNo ?? 'NULL'}');
+        //           print(
+        //               'workItems after manual load: ${controller.workItems.length}');
+        //         } catch (e) {
+        //           print('Error in manual load: $e');
+        //         }
+        //       } else {
+        //         print('No spkId in arguments for manual test');
+        //       }
+        //     },
+        //   ),
+        // ],
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.spkList.isEmpty) {
