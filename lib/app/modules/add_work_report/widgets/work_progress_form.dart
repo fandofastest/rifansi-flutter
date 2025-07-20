@@ -1698,7 +1698,7 @@ class WorkProgressForm extends StatelessWidget {
                           }
                         });
                         final entry = filtered[idx];
-                        final progress = entry.value;
+                        var progress = entry.value;
                         final index = entry.key;
 
                         // Tentukan jenis BOQ yang aktif

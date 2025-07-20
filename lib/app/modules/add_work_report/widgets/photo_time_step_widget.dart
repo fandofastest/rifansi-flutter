@@ -16,313 +16,347 @@ class PhotoTimeStepWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
       children: [
-        Text(
-          'Dokumentasi & Waktu Pekerjaan',
-          style: GoogleFonts.dmSans(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Tambahkan foto dokumentasi dan catat waktu pengerjaan',
-          style: GoogleFonts.dmSans(
-            fontSize: 14,
-            color: Colors.black54,
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Tanggal pekerjaan
-        Text(
-          'Tanggal Pekerjaan',
-          style: GoogleFonts.dmSans(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () => _selectDate(context),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.black12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Obx(() => Text(
-                      DateFormat('dd MMMM yyyy', 'id_ID')
-                          .format(controller.reportDate.value),
-                      style: GoogleFonts.dmSans(
-                        fontSize: 14,
-                      ),
-                    )),
-                const Icon(Icons.calendar_today,
-                    size: 20, color: Colors.black54),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Waktu mulai dan selesai
-        Obx(() {
-          final hasStartPhotos = controller.startPhotos.isNotEmpty;
-          final hasEndPhotos = controller.endPhotos.isNotEmpty;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Waktu Pengerjaan',
-                style: GoogleFonts.dmSans(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Dokumentasi & Waktu Pekerjaan',
+              style: GoogleFonts.dmSans(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tambahkan foto dokumentasi dan catat waktu pengerjaan',
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Tanggal pekerjaan
+            Text(
+              'Tanggal Pekerjaan',
+              style: GoogleFonts.dmSans(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => _selectDate(context),
+              child: Container(
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: hasStartPhotos || hasEndPhotos
-                      ? Colors.green[50]
-                      : Colors.grey[50],
+                  border: Border.all(color: Colors.black12),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: hasStartPhotos || hasEndPhotos
-                          ? Colors.green[200]!
-                          : Colors.grey[300]!),
                 ),
-                child: Column(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Waktu Mulai',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 14,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              InkWell(
-                                onTap: () => _selectTime(context, true),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey[300]!),
-                                    borderRadius: BorderRadius.circular(8),
-                                    color: Colors.white,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.access_time,
-                                        color: hasStartPhotos ? Colors.green : Colors.grey,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        DateFormat('HH:mm').format(controller.workStartTime.value),
-                                        style: GoogleFonts.dmSans(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: hasStartPhotos ? Colors.green[800] : Colors.black,
-                                        ),
-                                      ),
-                                      if (hasStartPhotos)
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 4),
-                                          child: Icon(
-                                            Icons.check_circle,
-                                            color: Colors.green,
-                                            size: 16,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              if (hasStartPhotos)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Text(
-                                    'Dari metadata foto',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 12,
-                                      color: Colors.green[700],
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 40,
-                          color: Colors.grey[300],
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Waktu Selesai',
-                                  style: GoogleFonts.dmSans(
-                                    fontSize: 14,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                InkWell(
-                                  onTap: () => _selectTime(context, false),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey[300]!),
-                                      borderRadius: BorderRadius.circular(8),
-                                      color: Colors.white,
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.access_time,
-                                          color: hasEndPhotos ? Colors.green : Colors.grey,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          controller.workEndTime.value != null
-                                              ? DateFormat('HH:mm').format(controller.workEndTime.value!)
-                                              : '--:--',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: hasEndPhotos ? Colors.green[800] : Colors.black,
-                                          ),
-                                        ),
-                                        if (hasEndPhotos)
-                                          Padding(
-                                            padding: const EdgeInsets.only(left: 4),
-                                            child: Icon(
-                                              Icons.check_circle,
-                                              color: Colors.green,
-                                              size: 16,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (hasEndPhotos)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 2),
-                                    child: Text(
-                                      'Dari metadata foto',
-                                      style: GoogleFonts.dmSans(
-                                        fontSize: 12,
-                                        color: Colors.green[700],
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (!hasStartPhotos || !hasEndPhotos)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          'Waktu dapat diisi manual atau otomatis dari metadata foto',
+                    Obx(() => Text(
+                          DateFormat('dd MMMM yyyy', 'id_ID')
+                              .format(controller.reportDate.value),
                           style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                            fontStyle: FontStyle.italic,
+                            fontSize: 14,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
+                        )),
+                    const Icon(Icons.calendar_today,
+                        size: 20, color: Colors.black54),
                   ],
                 ),
               ),
-            ],
-          );
-        }),
+            ),
 
-        const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-        // Foto Awal Pekerjaan
-        Text(
-          'Foto Awal Pekerjaan',
-          style: GoogleFonts.dmSans(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Obx(
-          () => controller.startPhotos.isEmpty
-              ? _buildPhotoSelector(
-                  context,
-                  'Tambahkan foto awal pekerjaan',
-                  () async {
-                    final photos = await controller
-                        .pickAndUploadMultiplePhotos(ImageSource.gallery);
-                    for (var photo in photos) {
-                      controller.addStartPhoto(photo);
-                    }
-                  },
-                )
-              : _buildPhotoList(controller.startPhotos, (photoId) {
-                  controller.removeStartPhoto(photoId);
-                }),
-        ),
-        const SizedBox(height: 16),
+            // Waktu mulai dan selesai
+            Obx(() {
+              final hasStartPhotos = controller.startPhotos.isNotEmpty;
+              final hasEndPhotos = controller.endPhotos.isNotEmpty;
 
-        // Foto Akhir Pekerjaan
-        Text(
-          'Foto Akhir Pekerjaan',
-          style: GoogleFonts.dmSans(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Waktu Pengerjaan',
+                    style: GoogleFonts.dmSans(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: hasStartPhotos || hasEndPhotos
+                          ? Colors.green[50]
+                          : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: hasStartPhotos || hasEndPhotos
+                              ? Colors.green[200]!
+                              : Colors.grey[300]!),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Waktu Mulai',
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 14,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  InkWell(
+                                    onTap: () => _selectTime(context, true),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey[300]!),
+                                        borderRadius: BorderRadius.circular(8),
+                                        color: Colors.white,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.access_time,
+                                            color: hasStartPhotos ? Colors.green : Colors.grey,
+                                            size: 16,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            DateFormat('HH:mm').format(controller.workStartTime.value),
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: hasStartPhotos ? Colors.green[800] : Colors.black,
+                                            ),
+                                          ),
+                                          if (hasStartPhotos)
+                                            Padding(
+                                              padding: const EdgeInsets.only(left: 4),
+                                              child: Icon(
+                                                Icons.check_circle,
+                                                color: Colors.green,
+                                                size: 16,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  if (hasStartPhotos)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Text(
+                                        'Dari metadata foto',
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 12,
+                                          color: Colors.green[700],
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey[300],
+                            ),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Waktu Selesai',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 14,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    InkWell(
+                                      onTap: () => _selectTime(context, false),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: Colors.grey[300]!),
+                                          borderRadius: BorderRadius.circular(8),
+                                          color: Colors.white,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.access_time,
+                                              color: hasEndPhotos ? Colors.green : Colors.grey,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              controller.workEndTime.value != null
+                                                  ? DateFormat('HH:mm').format(controller.workEndTime.value!)
+                                                  : '--:--',
+                                              style: GoogleFonts.dmSans(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: hasEndPhotos ? Colors.green[800] : Colors.black,
+                                              ),
+                                            ),
+                                            if (hasEndPhotos)
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 4),
+                                                child: Icon(
+                                                  Icons.check_circle,
+                                                  color: Colors.green,
+                                                  size: 16,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    if (hasEndPhotos)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Text(
+                                          'Dari metadata foto',
+                                          style: GoogleFonts.dmSans(
+                                            fontSize: 12,
+                                            color: Colors.green[700],
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (!hasStartPhotos || !hasEndPhotos)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              'Waktu dapat diisi manual atau otomatis dari metadata foto',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                                fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }),
+
+            const SizedBox(height: 24),
+
+            // Foto Awal Pekerjaan
+            Text(
+              'Foto Awal Pekerjaan',
+              style: GoogleFonts.dmSans(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Obx(
+              () => controller.startPhotos.isEmpty
+                  ? _buildPhotoSelector(
+                      context,
+                      'Tambahkan foto awal pekerjaan',
+                      () async {
+                        final photos = await controller
+                            .pickAndUploadMultiplePhotos(ImageSource.gallery);
+                        for (var photo in photos) {
+                          controller.addStartPhoto(photo);
+                        }
+                      },
+                    )
+                  : _buildPhotoList(context, controller.startPhotos, (photoId) {
+                      controller.removeStartPhoto(photoId);
+                    }),
+            ),
+            const SizedBox(height: 16),
+
+            // Foto Akhir Pekerjaan
+            Text(
+              'Foto Akhir Pekerjaan',
+              style: GoogleFonts.dmSans(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Obx(
+              () => controller.endPhotos.isEmpty
+                  ? _buildPhotoSelector(
+                      context,
+                      'Tambahkan foto akhir pekerjaan',
+                      () async {
+                        final photos = await controller
+                            .pickAndUploadMultiplePhotos(ImageSource.gallery);
+                        for (var photo in photos) {
+                          controller.addEndPhoto(photo);
+                        }
+                      },
+                    )
+                  : _buildPhotoList(context, controller.endPhotos, (photoId) {
+                      controller.removeEndPhoto(photoId);
+                    }),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Obx(
-          () => controller.endPhotos.isEmpty
-              ? _buildPhotoSelector(
-                  context,
-                  'Tambahkan foto akhir pekerjaan',
-                  () async {
-                    final photos = await controller
-                        .pickAndUploadMultiplePhotos(ImageSource.gallery);
-                    for (var photo in photos) {
-                      controller.addEndPhoto(photo);
-                    }
-                  },
-                )
-              : _buildPhotoList(controller.endPhotos, (photoId) {
-                  controller.removeEndPhoto(photoId);
-                }),
-        ),
+        Obx(() => controller.isUploadingPhoto.value
+            ? Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        value: controller.uploadProgress.value > 0 && controller.uploadProgress.value < 1.0
+                            ? controller.uploadProgress.value
+                            : null,
+                        color: FigmaColors.primary,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Mengupload foto...'
+                        + (controller.uploadProgress.value > 0 && controller.uploadProgress.value < 1.0
+                            ? ' ${(controller.uploadProgress.value * 100).toStringAsFixed(0)}%'
+                            : ''),
+                        style: GoogleFonts.dmSans(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : const SizedBox.shrink()),
       ],
     );
   }
@@ -330,7 +364,7 @@ class PhotoTimeStepWidget extends StatelessWidget {
   Widget _buildPhotoSelector(
       BuildContext context, String label, VoidCallback onTap) {
     return InkWell(
-      onTap: onTap,
+      onTap: () => _showPhotoSourceBottomSheet(context, label == 'Tambahkan foto awal pekerjaan'),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -362,7 +396,116 @@ class PhotoTimeStepWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildPhotoList(List<WorkPhoto> photos, Function(String) onRemove) {
+  void _showPhotoSourceBottomSheet(BuildContext context, bool isStartPhoto) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Pilih Sumber Foto',
+              style: GoogleFonts.dmSans(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Camera option
+                InkWell(
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final photos = await controller.pickAndUploadMultiplePhotos(ImageSource.camera);
+                    for (var photo in photos) {
+                      if (isStartPhoto) {
+                        controller.addStartPhoto(photo);
+                      } else {
+                        controller.addEndPhoto(photo);
+                      }
+                    }
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: FigmaColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.camera_alt,
+                          color: FigmaColors.primary,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Kamera',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Gallery option
+                InkWell(
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final photos = await controller.pickAndUploadMultiplePhotos(ImageSource.gallery);
+                    for (var photo in photos) {
+                      if (isStartPhoto) {
+                        controller.addStartPhoto(photo);
+                      } else {
+                        controller.addEndPhoto(photo);
+                      }
+                    }
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: FigmaColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.photo_library,
+                          color: FigmaColors.primary,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Galeri',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoList(BuildContext context, List<WorkPhoto> photos, Function(String) onRemove) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -440,24 +583,11 @@ class PhotoTimeStepWidget extends StatelessWidget {
 
         // Add more button
         TextButton.icon(
-          onPressed: () async {
-            // Get controller
-            final controller = Get.find<AddWorkReportController>();
-
-            // Check if this is start or end photos
-            if (photos.isNotEmpty && photos == controller.startPhotos) {
-              final newPhotos = await controller
-                  .pickAndUploadMultiplePhotos(ImageSource.gallery);
-              for (var photo in newPhotos) {
-                controller.addStartPhoto(photo);
-              }
-            } else {
-              final newPhotos = await controller
-                  .pickAndUploadMultiplePhotos(ImageSource.gallery);
-              for (var photo in newPhotos) {
-                controller.addEndPhoto(photo);
-              }
-            }
+          onPressed: () {
+            _showPhotoSourceBottomSheet(
+              context,
+              photos == controller.startPhotos,
+            );
           },
           icon: const Icon(Icons.add_photo_alternate, size: 20),
           label: const Text('Tambah foto'),

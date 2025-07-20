@@ -318,15 +318,32 @@ class ActivityDetailResponse {
       print('[RATE JSON DEBUG] boqVolumeNR: ${json['boqVolumeNR']}');
       print('[RATE JSON DEBUG] ==========================================');
       
-      // Extract rates from workItem.rates if available
+      // Extract rates from json['rates'] first (new structure), or from workItem.rates if available (old structure)
       double rateNR = 0.0;
       double rateR = 0.0;
       String? rateDescriptionNR;
       String? rateDescriptionR;
       
-      if (json['workItem'] != null) {
+      // Check for rates in the new structure first (directly in activityDetails)
+      if (json['rates'] != null) {
+        print('[RATE JSON DEBUG] Found rates in new structure (top level): ${json['rates']}');
+        final rates = json['rates'] as Map<String, dynamic>;
+        if (rates['nr'] != null) {
+          final nrRate = rates['nr'] as Map<String, dynamic>;
+          rateNR = _parseDouble(nrRate['rate']) ?? 0.0;
+          rateDescriptionNR = nrRate['description']?.toString();
+        }
+        if (rates['r'] != null) {
+          final rRate = rates['r'] as Map<String, dynamic>;
+          rateR = _parseDouble(rRate['rate']) ?? 0.0;
+          rateDescriptionR = rRate['description']?.toString();
+        }
+      } 
+      // Fallback to old structure (nested in workItem)
+      else if (json['workItem'] != null) {
         final workItem = json['workItem'] as Map<String, dynamic>;
         if (workItem['rates'] != null) {
+          print('[RATE JSON DEBUG] Falling back to rates in old structure (workItem.rates): ${workItem['rates']}');
           final rates = workItem['rates'] as Map<String, dynamic>;
           if (rates['nr'] != null) {
             final nrRate = rates['nr'] as Map<String, dynamic>;

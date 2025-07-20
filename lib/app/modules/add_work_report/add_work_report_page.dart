@@ -301,7 +301,7 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
         // Step 4: Tenaga Kerja
         Step(
           title: Text(
-            'Tenaga Kerja',
+            'Tenaga Kerja (Opsional)',
             style: GoogleFonts.dmSans(
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -319,7 +319,7 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
         // Step 5: Peralatan
         Step(
           title: Text(
-            'Peralatan',
+            'Peralatan (Opsional)',
             style: GoogleFonts.dmSans(
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -327,9 +327,7 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
           ),
           content: EquipmentStepWidget(controller: controller),
           isActive: controller.currentStep.value >= 4,
-          state: controller.currentStep.value > 4 ||
-                  (controller.currentStep.value == 4 &&
-                      controller.selectedEquipment.isNotEmpty)
+          state: controller.currentStep.value > 4
               ? StepState.complete
               : controller.currentStep.value == 4
                   ? StepState.indexed
@@ -339,7 +337,7 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
         // Step 6: Material
         Step(
           title: Text(
-            'Material',
+            'Material (Opsional)',
             style: GoogleFonts.dmSans(
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -359,7 +357,7 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
         // Step 7: Biaya Lainnya
         Step(
           title: Text(
-            'Biaya Lainnya',
+            'Biaya Lainnya (Opsional)',
             style: GoogleFonts.dmSans(
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -367,9 +365,7 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
           ),
           content: OtherCostStepWidget(controller: otherCostController),
           isActive: controller.currentStep.value >= 6,
-          state: controller.currentStep.value > 6 ||
-                  (controller.currentStep.value == 6 &&
-                      otherCostController.otherCosts.isNotEmpty)
+          state: controller.currentStep.value > 6
               ? StepState.complete
               : controller.currentStep.value == 6
                   ? StepState.indexed
@@ -379,7 +375,7 @@ class AddWorkReportPage extends GetView<AddWorkReportController> {
         // Step 8: Rincian Biaya
         Step(
           title: Text(
-            'Rincian Biaya',
+            'Rincian Biaya (Opsional)',
             style: GoogleFonts.dmSans(
               fontWeight: FontWeight.bold,
               fontSize: 16,

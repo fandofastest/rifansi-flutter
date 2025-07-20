@@ -51,9 +51,44 @@ class WorkProgressController extends GetxController {
   }
 
   void initializeFromWorkItems(List<Map<String, dynamic>> workItems) {
+    // Simpan data temporary sebelum clear
+    final tempProgresses = <String, WorkProgress>{};
+    for (var progress in workProgresses) {
+      if (progress.progressVolumeR > 0 || progress.progressVolumeNR > 0) {
+        tempProgresses[progress.workItemId] = progress;
+      }
+    }
+    
     workProgresses.clear();
+    
     for (var workItem in workItems) {
-      workProgresses.add(WorkProgress.fromWorkItem(workItem));
+      final workItemId = workItem['workItemId'] ?? workItem['id'] ?? '';
+      
+      // Cek apakah ada data temporary untuk workItem ini
+      if (tempProgresses.containsKey(workItemId)) {
+        // Gunakan data temporary yang sudah ada
+        final tempProgress = tempProgresses[workItemId]!;
+        workProgresses.add(WorkProgress(
+          workItemId: workItemId,
+          workItemName: workItem['workItem']?['name'] ?? workItem['name'] ?? '',
+          unit: workItem['workItem']?['unit']?['name'] ?? workItem['unit'] ?? '',
+          boqVolumeR: workItem['boqVolume']?['r'] ?? 0.0,
+          boqVolumeNR: workItem['boqVolume']?['nr'] ?? 0.0,
+          progressVolumeR: tempProgress.progressVolumeR, // Gunakan nilai temporary
+          progressVolumeNR: tempProgress.progressVolumeNR, // Gunakan nilai temporary
+          workingDays: tempProgress.workingDays,
+          rateR: workItem['rates']?['r']?['rate'] ?? 0.0,
+          rateNR: workItem['rates']?['nr']?['rate'] ?? 0.0,
+          dailyTargetR: workItem['dailyTarget']?['r'] ?? 0.0,
+          dailyTargetNR: workItem['dailyTarget']?['nr'] ?? 0.0,
+          rateDescriptionR: workItem['rates']?['r']?['description'] ?? '',
+          rateDescriptionNR: workItem['rates']?['nr']?['description'] ?? '',
+          remarks: tempProgress.remarks, // Gunakan remarks temporary
+        ));
+      } else {
+        // Buat item baru tanpa progress
+        workProgresses.add(WorkProgress.fromWorkItem(workItem));
+      }
     }
     calculateTotalProgress();
   }
