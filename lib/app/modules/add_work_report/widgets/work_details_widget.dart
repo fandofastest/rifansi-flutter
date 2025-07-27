@@ -18,11 +18,11 @@ class WorkDetailsWidget extends StatelessWidget {
     return Obx(() {
       final selectedSpk = controller.selectedSpk.value;
 
-      print('[WorkDetailsWidget] === DEBUG BUILD ===');
-      print('[WorkDetailsWidget] selectedSpk: ${selectedSpk?.spkNo}');
-      print('[WorkDetailsWidget] selectedSpk.id: ${selectedSpk?.id}');
-      print(
-          '[WorkDetailsWidget] controller.workItems.length: ${controller.workItems.length}');
+      // print('[WorkDetailsWidget] === DEBUG BUILD ===');
+      // print('[WorkDetailsWidget] selectedSpk: ${selectedSpk?.spkNo}');
+      // print('[WorkDetailsWidget] selectedSpk.id: ${selectedSpk?.id}');
+      // print(
+      //     '[WorkDetailsWidget] controller.workItems.length: ${controller.workItems.length}');
 
       // Print semua workItems untuk debug
       for (int i = 0; i < controller.workItems.length; i++) {
