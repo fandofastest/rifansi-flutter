@@ -45,6 +45,9 @@ class AddWorkReportController extends GetxController {
   final selectedSpk = Rx<Spk?>(null);
   final spkList = <Spk>[].obs;
   final searchKeyword = ''.obs;
+  
+  // Temporary storage for progress data from draft
+  final Map<String, Map<String, dynamic>> _draftProgressData = {};
 
   // Form data
   final reportDate = DateTime.now().obs;
@@ -900,31 +903,17 @@ class AddWorkReportController extends GetxController {
   // Method helper untuk mengupdate work items untuk SPK yang dipilih
   Future<void> _updateWorkItemsForSelectedSPK(Spk spk) async {
     try {
-      print('[AddWorkReport] === _updateWorkItemsForSelectedSPK START ===');
-      print(
-          '[AddWorkReport] Updating work items for selected SPK: ${spk.spkNo}');
+      // Null check removed as it's not needed and causes lint warning
+      
+      print('[AddWorkReport] Checking for draft progress data: ${_draftProgressData.length} items saved');
+      print('[AddWorkReport] Updating work items for selected SPK: ${spk.spkNo}');
       print(
           '[AddWorkReport] Current workItems count before update: ${workItems.length}');
 
       final service = Get.find<GraphQLService>();
 
-      // PERBAIKAN: Pastikan spkDetailsWithProgress ter-set untuk step 8
-      print('[AddWorkReport] Setting spkDetailsWithProgress...');
-      try {
-        final spkDetailWithProgress =
-            await service.fetchSPKDetailsWithProgress(spk.id);
-        if (spkDetailWithProgress != null) {
-          spkDetailsWithProgress.value = spkDetailWithProgress;
-          print('[AddWorkReport] spkDetailsWithProgress berhasil di-set');
-          print(
-              '[AddWorkReport] dailyActivities count: ${spkDetailWithProgress.dailyActivities.length}');
-        } else {
-          print(
-              '[AddWorkReport] WARNING: fetchSPKDetailsWithProgress returned null');
-        }
-      } catch (e) {
-        print('[AddWorkReport] ERROR setting spkDetailsWithProgress: $e');
-      }
+      // Menggunakan satu sumber data (fetchSPKWithProgressBySpkId)
+      // spkDetailsWithProgress akan di-set setelah data diterima di bawah.
 
       print(
           '[AddWorkReport] Calling fetchSPKWithProgressBySpkId for SPK ID: ${spk.id}');
@@ -933,6 +922,15 @@ class AddWorkReportController extends GetxController {
       print(
           '[AddWorkReport] GraphQL response received. Keys: ${spkWithProgress.keys}');
       print('[AddWorkReport] Full GraphQL response: $spkWithProgress');
+
+      // Konversi ke model dan set sebagai sumber tunggal untuk seluruh UI
+      try {
+        spkDetailsWithProgress.value =
+            SpkDetailWithProgressResponse.fromJson(spkWithProgress);
+        print('[AddWorkReport] spkDetailsWithProgress berhasil di-set (single source)');
+      } catch (e) {
+        print('[AddWorkReport] ERROR parsing SpkDetailWithProgressResponse: $e');
+      }
 
       final workItemsData =
           spkWithProgress['workItems'] as List<dynamic>? ?? [];
@@ -994,6 +992,10 @@ class AddWorkReportController extends GetxController {
           'amount': amount,
           'spentAmount': spentAmount,
           'remainingAmount': remainingAmount,
+          // Tambahan field sesuai data backend
+          'boqVolume': {'nr': boqNr, 'r': boqR}, // Tambahkan boqVolume untuk form
+          'rates': item['rates'] ?? {'nr': {'rate': 0}, 'r': {'rate': 0}}, // Tambahkan rates
+          'description': item['description'] ?? '',
         };
 
         updatedWorkItems.add(enrichedItem);
@@ -1158,8 +1160,7 @@ class AddWorkReportController extends GetxController {
         print(
             '[AddWorkReport] - spkDetailsWithProgress.value: ${spkDetailsWithProgress.value}');
         print('[AddWorkReport] - selectedSpk.value: ${selectedSpk.value}');
-        print(
-            '[AddWorkReport] - selectedSpk.value?.id: ${selectedSpk.value?.id}');
+        print('[AddWorkReport] - selectedSpk.value?.id: ${selectedSpk.value?.id}');
         print('[AddWorkReport] - workItems.length: ${workItems.length}');
 
         if (spkDetailsWithProgress.value != null) {
@@ -1264,7 +1265,7 @@ class AddWorkReportController extends GetxController {
             workProgressController
                 .initializeFromWorkItems(fallbackWorkItemsForProgress);
       workProgressController.workProgresses.forEach((element) {
-        print('xxzxtestxx'+element.workItemName+element.progressVolumeR.toString());
+        print('xxzxtestxx'+element.workItemName+element.progressVolumeNR.toString());
       });
 
             // Proceed to WorkProgressForm with fallback data
@@ -2042,7 +2043,6 @@ Total Cost: Rp ${entry.totalCost}
 
       print(
           '[AddWorkReport] Data sementara berhasil disimpan untuk SPK: $spkId dengan status: $activityStatus');
-      print('[AddWorkReport] Progress data saved: ${activityDetails.length} items');
 
       // Refresh data lokal di DailyActivityController jika ada
       try {
@@ -2398,43 +2398,32 @@ Total Cost: Rp ${entry.totalCost}
       }
 
 
-      // Load progress data dari draft jika ada
+      // Load progress data dari draft jika ada - SIMPAN SEMENTARA KE STORAGE
+      // PENTING: JANGAN load draft progress sekarang, kita akan menggunakan data ini nanti
+      // setelah workItems diload dan diproses
+      _draftProgressData.clear();
+      
       if (dailyActivity.activityDetails.isNotEmpty) {
-        print('[AddWorkReport] xxzxtest Loading ${dailyActivity.activityDetails.length} progress items from draft');
+        print('[AddWorkReport] Loading ${dailyActivity.activityDetails.length} progress items from draft (saved to temporary storage)');
 
         try {
-          final workProgressController = Get.find<WorkProgressController>();
-          // Inisialisasi workProgresses dengan data dari draft
-          workProgressController.workProgresses.clear();
-
+          // Buat map untuk menyimpan data progress berdasarkan workItemId
           for (var detail in dailyActivity.activityDetails) {
-            // Langsung buat WorkProgress dari detail tanpa matching
-            final workProgress = WorkProgress(
-              workItemId: detail.workItemId,
-              workItemName: detail.workItemId, // Gunakan workItemId sebagai name
-              unit: '', // Default empty string
-              boqVolumeR: 0.0, // Default 0
-              boqVolumeNR: 0.0, // Default 0
-              progressVolumeR: detail.actualQuantity.r,
-              progressVolumeNR: detail.actualQuantity.nr,
-              workingDays: 1, // Default value
-              rateR: 0.0, // Default 0
-              rateNR: 0.0, // Default 0
-              dailyTargetR: 0.0, // Default 0
-              dailyTargetNR: 0.0, // Default 0
-              rateDescriptionR: '', // Default empty string
-              rateDescriptionNR: '', // Default empty string
-              remarks: detail.remarks,
-            );
-            workProgressController.workProgresses.add(workProgress);
-            print('xxxx11 ${workProgress.workItemName}: R=${workProgress.progressVolumeR}, NR=${workProgress.progressVolumeNR}');
+            if (detail.workItemId.isNotEmpty) {
+              _draftProgressData[detail.workItemId] = {
+                'progressVolumeR': detail.actualQuantity.r,
+                'progressVolumeNR': detail.actualQuantity.nr,
+                'remarks': detail.remarks,
+              };
+              
+              print('[AddWorkReport] Saved draft progress for item ${detail.workItemId}: ' +
+                    'R=${detail.actualQuantity.r}, NR=${detail.actualQuantity.nr}');
+            }
           }
-
-          // Recalculate total progress
-          workProgressController.calculateTotalProgress();
-          print('[AddWorkReport] Successfully loaded ${workProgressController.workProgresses.length} progress items from draft');
+          print('[AddWorkReport] Successfully saved ${_draftProgressData.length} progress items to temporary storage');
         } catch (e) {
-          print('[AddWorkReport] Error loading progress data from draft: $e');
+          print('[AddWorkReport] Error processing progress data from draft: $e');
+          _draftProgressData.clear();
         }
       } else {
         print('[AddWorkReport] No progress data found in draft');
