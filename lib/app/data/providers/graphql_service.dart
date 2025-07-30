@@ -14,8 +14,9 @@ import '../models/spk_detail_with_progress_response.dart' as spk_progress;
 
 class GraphQLService extends GetxService {
   late GraphQLClient client;
+  // final String baseUrl = 'https://berifansi.fando.id/graphql';
   final String baseUrl = 'https://app25.rifansi.co.id/graphql';
-  // final String baseUrl = 'https://lap3000.fando.id/graphql';
+
 
   Future<GraphQLService> init() async {
     final HttpLink httpLink = HttpLink(baseUrl);

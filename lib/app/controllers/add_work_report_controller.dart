@@ -950,11 +950,12 @@ class AddWorkReportController extends GetxController {
       List<Map<String, dynamic>> updatedWorkItems = [];
 
       for (var item in workItemsData) {
-        print('[AddWorkReport] Processing work item: ${item['name']}');
-        print('[AddWorkReport] - Item data: $item');
-        print('[AddWorkReport] - Progress: ${item['progressPercentage']}%');
-        print('[AddWorkReport] - Completed: ${item['completedVolume']}');
-        print('[AddWorkReport] - Remaining: ${item['remainingVolume']}');
+
+        print('[AddWorkReport] Processing work item: ${item}'); 
+
+
+        
+
 
         // Safe casting untuk nilai numerik
         final boqNr = (item['boqVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
@@ -1962,7 +1963,7 @@ Total Cost: Rp ${entry.totalCost}
                 nr: progress.progressVolumeNR,
                 r: progress.progressVolumeR,
               ),
-              status: 'COMPLETED',
+              status: activityStatus,
               remarks: progress.remarks ?? '',
             );
           }).toList();
@@ -2066,9 +2067,7 @@ Total Cost: Rp ${entry.totalCost}
 
       // Ambil data dari HiveService menggunakan model dari activity_input
       final dailyActivity = await _hiveService.getDailyActivity(spkId);
-      dailyActivity?.activityDetails.forEach((element) {
-        print('xxzxtest'+element.actualQuantity.nr.toString());
-      });
+
 
       if (dailyActivity == null) {
         print('[AddWorkReport] Tidak ada data sementara untuk SPK: $spkId');
@@ -2088,7 +2087,7 @@ Total Cost: Rp ${entry.totalCost}
       print('[AddWorkReport] SPK list available:');
       for (int i = 0; i < spkList.length; i++) {
         final spk = spkList[i];
-        print('[AddWorkReport]   $i: ${spk.spkNo} (ID: ${spk.id})');
+        // print('[AddWorkReport]   $i: ${spk.spkNo} (ID: ${spk.id})');
       }
 
       final spkFromList =
@@ -2133,29 +2132,29 @@ Total Cost: Rp ${entry.totalCost}
       }
 
       // Tambahkan print untuk debug data draft
-      print('[AddWorkReport] === DATA DRAFT YANG DIMUAT ===');
-      print('spkId: \\${dailyActivity.spkId}');
-      print('spkDetails: \\${dailyActivity.spkDetails}');
-      print('date: \\${dailyActivity.date}');
-      print('areaId: \\${dailyActivity.areaId}');
-      print('weather: \\${dailyActivity.weather}');
-      print('status: \\${dailyActivity.status}');
-      print('workStartTime: \\${dailyActivity.workStartTime}');
-      print('workEndTime: \\${dailyActivity.workEndTime}');
-      print('startImages: \\${dailyActivity.startImages}');
-      print('finishImages: \\${dailyActivity.finishImages}');
-      print('closingRemarks: \\${dailyActivity.closingRemarks}');
-      print('progressPercentage: \\${dailyActivity.progressPercentage}');
-      print('activityDetails: \\${dailyActivity.activityDetails}');
-      print('equipmentLogs: \\${dailyActivity.equipmentLogs}');
-      print('manpowerLogs: \\${dailyActivity.manpowerLogs}');
-      print('materialUsageLogs: \\${dailyActivity.materialUsageLogs}');
-      print('otherCosts: \\${dailyActivity.otherCosts}');
-      print('createdAt: \\${dailyActivity.createdAt}');
-      print('updatedAt: \\${dailyActivity.updatedAt}');
-      print('localId: \\${dailyActivity.localId}');
-      print('lastSyncAttempt: \\${dailyActivity.lastSyncAttempt}');
-      print('[AddWorkReport] === END DATA DRAFT ===');
+      // print('[AddWorkReport] === DATA DRAFT YANG DIMUAT ===');
+      // print('spkId: \\${dailyActivity.spkId}');
+      // print('spkDetails: \\${dailyActivity.spkDetails}');
+      // print('date: \\${dailyActivity.date}');
+      // print('areaId: \\${dailyActivity.areaId}');
+      // print('weather: \\${dailyActivity.weather}');
+      // print('status: \\${dailyActivity.status}');
+      // print('workStartTime: \\${dailyActivity.workStartTime}');
+      // print('workEndTime: \\${dailyActivity.workEndTime}');
+      // print('startImages: \\${dailyActivity.startImages}');
+      // print('finishImages: \\${dailyActivity.finishImages}');
+      // print('closingRemarks: \\${dailyActivity.closingRemarks}');
+      // print('progressPercentage: \\${dailyActivity.progressPercentage}');
+      // print('activityDetails: \\${dailyActivity.activityDetails}');
+      // print('equipmentLogs: \\${dailyActivity.equipmentLogs}');
+      // print('manpowerLogs: \\${dailyActivity.manpowerLogs}');
+      // print('materialUsageLogs: \\${dailyActivity.materialUsageLogs}');
+      // print('otherCosts: \\${dailyActivity.otherCosts}');
+      // print('createdAt: \\${dailyActivity.createdAt}');
+      // print('updatedAt: \\${dailyActivity.updatedAt}');
+      // print('localId: \\${dailyActivity.localId}');
+      // print('lastSyncAttempt: \\${dailyActivity.lastSyncAttempt}');
+      // print('[AddWorkReport] === END DATA DRAFT ===');
 
       // Pastikan data personnel roles dan equipment sudah dimuat
       if (personnelRoles.isEmpty) {
