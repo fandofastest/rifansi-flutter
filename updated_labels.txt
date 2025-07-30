@@ -1,0 +1,24 @@
+Rekomendasi label yang lebih jelas untuk bagian "Informasi Hari Ini" di halaman Home:
+
+1. Label "SPK" menjadi "Total SPK"
+   - Menunjukkan jumlah keseluruhan Surat Perintah Kerja yang aktif saat ini
+
+2. Label "Total" menjadi "Total Laporan"
+   - Menunjukkan jumlah keseluruhan laporan aktivitas (dari server dan lokal)
+
+3. Label "Disetujui" menjadi "Total Laporan Disetujui"
+   - Menunjukkan jumlah keseluruhan laporan yang telah disetujui
+
+4. Label "Ditolak" menjadi "Total Laporan Ditolak"
+   - Menunjukkan jumlah keseluruhan laporan yang ditolak
+
+5. Label "Rusak" menjadi "Total Alat Rusak"
+   - Menunjukkan jumlah keseluruhan peralatan yang dalam kondisi rusak
+
+6. Label "Siap" menjadi "Total Alat Siap"
+   - Menunjukkan jumlah keseluruhan peralatan yang siap digunakan
+
+Catatan untuk developer:
+Mengubah label-label ini dengan menambahkan kata "Total" di awal akan meningkatkan kejelasan 
+informasi bagi pengguna dan menekankan bahwa angka yang ditampilkan merupakan jumlah keseluruhan, 
+bukan jumlah sebagian atau relatif terhadap nilai lain.

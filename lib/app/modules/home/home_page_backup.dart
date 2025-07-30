@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_theme.dart';
+import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
+import '../../controllers/spk_controller.dart';
 import '../../controllers/daily_activity_controller.dart';
 import '../../controllers/equipment_controller.dart';
-import '../../controllers/spk_controller.dart';
 import '../../routes/app_routes.dart';
 
 class HomePage extends StatelessWidget {
@@ -242,7 +241,7 @@ class HomePage extends StatelessWidget {
                         Expanded(
                           child: Obx(() => _InfoStatCompact(
                                 icon: Icons.assignment,
-                                title: 'Total SPK',
+                                title: 'SPK',
                                 value: '${spkController.spks.length}',
                               )),
                         ),
@@ -250,7 +249,7 @@ class HomePage extends StatelessWidget {
                         Expanded(
                           child: Obx(() => _InfoStatCompact(
                                 icon: Icons.work,
-                                title: 'Total Laporan',
+                                title: 'Total',
                                 value:
                                     '${activityController.totalReportsCount}',
                               )),
@@ -259,7 +258,7 @@ class HomePage extends StatelessWidget {
                         Expanded(
                           child: Obx(() => _InfoStatCompact(
                                 icon: Icons.check_circle,
-                                title: 'Total Laporan Disetujui',
+                                title: 'Disetujui',
                                 value:
                                     '${activityController.approvedReportsCount}',
                               )),
@@ -272,7 +271,7 @@ class HomePage extends StatelessWidget {
                         Expanded(
                           child: Obx(() => _InfoStatCompact(
                                 icon: Icons.cancel,
-                                title: 'Total Laporan Ditolak',
+                                title: 'Ditolak',
                                 value:
                                     '${activityController.rejectedReportsCount}',
                               )),
@@ -281,7 +280,7 @@ class HomePage extends StatelessWidget {
                         Expanded(
                           child: Obx(() => _InfoStatCompact(
                                 icon: Icons.build_circle,
-                                title: 'Total Alat Rusak',
+                                title: 'Alat Rusak',
                                 value:
                                     '${equipmentController.damagedEquipmentCount}',
                               )),
@@ -290,7 +289,7 @@ class HomePage extends StatelessWidget {
                         Expanded(
                           child: Obx(() => _InfoStatCompact(
                                 icon: Icons.build,
-                                title: 'Total Alat Siap',
+                                title: 'Alat Siap',
                                 value:
                                     '${equipmentController.readyEquipmentCount}',
                               )),
@@ -304,7 +303,7 @@ class HomePage extends StatelessWidget {
                         Expanded(
                           child: Obx(() => _InfoStatCompact(
                                 icon: Icons.assignment,
-                                title: 'Total SPK',
+                                title: 'SPK',
                                 value: '${spkController.spks.length}',
                               )),
                         ),
@@ -312,7 +311,7 @@ class HomePage extends StatelessWidget {
                         Expanded(
                           child: Obx(() => _InfoStatCompact(
                                 icon: Icons.work,
-                                title: 'Total Laporan',
+                                title: 'Total',
                                 value:
                                     '${activityController.totalReportsCount}',
                               )),
@@ -334,7 +333,7 @@ class HomePage extends StatelessWidget {
                         Expanded(
                           child: Obx(() => _InfoStatCompact(
                                 icon: Icons.check_circle,
-                                title: 'Total Laporan Disetujui',
+                                title: 'Disetujui',
                                 value:
                                     '${activityController.approvedReportsCount}',
                               )),
@@ -343,7 +342,7 @@ class HomePage extends StatelessWidget {
                         Expanded(
                           child: Obx(() => _InfoStatCompact(
                                 icon: Icons.cancel,
-                                title: 'Total Laporan Ditolak',
+                                title: 'Ditolak',
                                 value:
                                     '${activityController.rejectedReportsCount}',
                               )),
@@ -532,79 +531,15 @@ class _InfoStatVertical extends StatelessWidget {
   }
 }
 
-class _InfoStatCompact extends StatefulWidget {
+class _InfoStatCompact extends StatelessWidget {
   final IconData icon;
   final String title;
   final String value;
-  
   const _InfoStatCompact({
     required this.icon,
     required this.title,
     required this.value,
   });
-  
-  @override
-  State<_InfoStatCompact> createState() => _InfoStatCompactState();
-}
-
-class _InfoStatCompactState extends State<_InfoStatCompact> 
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  bool _isOverflowing = false;
-  final GlobalKey _textKey = GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    );
-    
-    // Cek overflow setelah layout selesai
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      checkOverflow();
-      if (_isOverflowing) {
-        _controller.repeat(reverse: true);
-      }
-    });
-  }
-
-  void checkOverflow() {
-    // Menggunakan cara sederhana untuk memeriksa overflow
-    final BuildContext? context = _textKey.currentContext;
-    if (context != null) {
-      final RenderBox box = context.findRenderObject() as RenderBox;
-      final double availableWidth = box.size.width;
-      
-      final TextPainter painter = TextPainter(
-        text: TextSpan(
-          text: widget.title,
-          style: GoogleFonts.dmSans(
-            color: Colors.white.withOpacity(0.9),
-            fontWeight: FontWeight.w500,
-            fontSize: 10,
-          ),
-        ),
-        maxLines: 1,
-        textDirection: TextDirection.ltr,
-      );
-      painter.layout(maxWidth: double.infinity);
-      
-      if (painter.width > availableWidth) {
-        setState(() {
-          _isOverflowing = true;
-        });
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -618,13 +553,13 @@ class _InfoStatCompactState extends State<_InfoStatCompact>
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            widget.icon,
+            icon,
             color: Colors.white,
             size: 16,
           ),
           const SizedBox(height: 4),
           Text(
-            widget.value,
+            value,
             style: GoogleFonts.dmSans(
               color: Colors.white,
               fontWeight: FontWeight.w800,
@@ -632,45 +567,16 @@ class _InfoStatCompactState extends State<_InfoStatCompact>
             ),
           ),
           const SizedBox(height: 2),
-          ClipRect(
-            child: _isOverflowing
-              ? SlideTransition(
-                  position: Tween<Offset>(
-                    begin: Offset.zero,
-                    end: const Offset(-0.2, 0.0),
-                  ).animate(
-                    CurvedAnimation(
-                      parent: _controller,
-                      curve: Curves.easeInOut,
-                    ),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    child: Text(
-                      widget.title,
-                      key: _textKey,
-                      style: GoogleFonts.dmSans(
-                        color: Colors.white.withOpacity(0.9),
-                        fontWeight: FontWeight.w500,
-                        fontSize: 10,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                    ),
-                  ),
-                )
-              : Text(
-                  widget.title,
-                  key: _textKey,
-                  style: GoogleFonts.dmSans(
-                    color: Colors.white.withOpacity(0.9),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 10,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+          Text(
+            title,
+            style: GoogleFonts.dmSans(
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w500,
+              fontSize: 10,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
