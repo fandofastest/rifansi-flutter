@@ -21,7 +21,7 @@ class EquipmentReportController extends GetxController {
 
   // Upload configuration
   final String uploadToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Njc0MmVhZTYzY2NhN2RkZGY1ZmJjOCIsImlhdCI6MTc1NDA1MzAxNywiZXhwIjoxNzg1MTU3MDE3fQ.ThpwP9O3hK6mTzj1EcWGrtBUgn1Fsif8lK4pss7fPz4';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Njc0MmVhZTYzY2NhN2RkZGY1ZmJjOCIsImlhdCI6MTc1MzkyOTg4MSwiZXhwIjoxNzg1MDMzODgxfQ.A47XpnYz5HfJ2TlMXy6WLET5RnFLXT3YKwoEOsOLxA8';
   final String uploadUrl = 'https://api-app25.rifansi.co.id/api/files/upload';
 
   @override
