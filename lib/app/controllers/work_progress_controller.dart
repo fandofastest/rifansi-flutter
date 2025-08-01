@@ -51,45 +51,87 @@ class WorkProgressController extends GetxController {
   }
 
   void initializeFromWorkItems(List<Map<String, dynamic>> workItems) {
-    // Simpan data temporary sebelum clear
-    final tempProgresses = <String, WorkProgress>{};
+    print('========== DEBUG: initializeFromWorkItems ==========');
+    
+    // STORE PROGRESS DATA FOR ITEMS THAT ACTUALLY HAVE PROGRESS
+    // 1. Collect workItems that have progress
+    List<WorkProgress> itemsWithProgress = [];
     for (var progress in workProgresses) {
       if (progress.progressVolumeR > 0 || progress.progressVolumeNR > 0) {
-        tempProgresses[progress.workItemId] = progress;
+        print('Found item with progress: ${progress.workItemName} (ID: ${progress.workItemId}) - R:${progress.progressVolumeR}, NR:${progress.progressVolumeNR}');
+        itemsWithProgress.add(progress);
       }
     }
     
+    print('Total items with progress: ${itemsWithProgress.length}');
+    
+    // Clear existing list
     workProgresses.clear();
     
-    for (var workItem in workItems) {
+    // REBUILD THE LIST WITH NEW WORK ITEMS
+    // 2. For each workItem in the new list
+    print('Processing ${workItems.length} work items from API');
+    
+    for (int i = 0; i < workItems.length; i++) {
+      var workItem = workItems[i];
       final workItemId = workItem['workItemId'] ?? workItem['id'] ?? '';
+      final workItemName = workItem['workItem']?['name'] ?? workItem['name'] ?? 'Unknown';
       
-      // Cek apakah ada data temporary untuk workItem ini
-      if (tempProgresses.containsKey(workItemId)) {
-        // Gunakan data temporary yang sudah ada
-        final tempProgress = tempProgresses[workItemId]!;
+      print('Processing item $i: ID=$workItemId, Name=$workItemName');
+      
+      // Check if this workItem had progress before
+      bool hasProgress = false;
+      WorkProgress? existingProgress;
+      
+      for (var item in itemsWithProgress) {
+        if (item.workItemId == workItemId) {
+          hasProgress = true;
+          existingProgress = item;
+          break;
+        }
+      }
+      
+      if (hasProgress && existingProgress != null) {
+        print(' - FOUND progress data for this item: R=${existingProgress.progressVolumeR}, NR=${existingProgress.progressVolumeNR}');
+        // Create new WorkProgress with data from API but keep progress values
         workProgresses.add(WorkProgress(
           workItemId: workItemId,
           workItemName: workItem['workItem']?['name'] ?? workItem['name'] ?? '',
           unit: workItem['workItem']?['unit']?['name'] ?? workItem['unit'] ?? '',
-          boqVolumeR: workItem['boqVolume']?['r'] ?? 0.0,
-          boqVolumeNR: workItem['boqVolume']?['nr'] ?? 0.0,
-          progressVolumeR: tempProgress.progressVolumeR, // Gunakan nilai temporary
-          progressVolumeNR: tempProgress.progressVolumeNR, // Gunakan nilai temporary
-          workingDays: tempProgress.workingDays,
-          rateR: workItem['rates']?['r']?['rate'] ?? 0.0,
-          rateNR: workItem['rates']?['nr']?['rate'] ?? 0.0,
-          dailyTargetR: workItem['dailyTarget']?['r'] ?? 0.0,
-          dailyTargetNR: workItem['dailyTarget']?['nr'] ?? 0.0,
+          boqVolumeR: (workItem['boqVolume']?['r'] as num?)?.toDouble() ?? 0.0,
+          boqVolumeNR: (workItem['boqVolume']?['nr'] as num?)?.toDouble() ?? 0.0,
+          // Use existing progress values
+          progressVolumeR: existingProgress.progressVolumeR,
+          progressVolumeNR: existingProgress.progressVolumeNR,
+          workingDays: existingProgress.workingDays,
+          rateR: (workItem['rates']?['r']?['rate'] as num?)?.toDouble() ?? 0.0,
+          rateNR: (workItem['rates']?['nr']?['rate'] as num?)?.toDouble() ?? 0.0,
+          dailyTargetR: (workItem['dailyTarget']?['r'] as num?)?.toDouble() ?? 0.0,
+          dailyTargetNR: (workItem['dailyTarget']?['nr'] as num?)?.toDouble() ?? 0.0,
           rateDescriptionR: workItem['rates']?['r']?['description'] ?? '',
           rateDescriptionNR: workItem['rates']?['nr']?['description'] ?? '',
-          remarks: tempProgress.remarks, // Gunakan remarks temporary
+          remarks: existingProgress.remarks
         ));
       } else {
-        // Buat item baru tanpa progress
+        // Item doesn't have any previous progress, create with zero progress
+        print(' - NO progress data found, adding with zero progress');
         workProgresses.add(WorkProgress.fromWorkItem(workItem));
       }
     }
+    print('\nFinished processing. Final items: ${workProgresses.length}');
+    int itemsWithProgressCount = 0;
+    
+    for (int i = 0; i < workProgresses.length; i++) {
+      var progress = workProgresses[i];
+      if (progress.progressVolumeR > 0 || progress.progressVolumeNR > 0) {
+        itemsWithProgressCount++;
+        print('Final item $i: ID=${progress.workItemId}, Name=${progress.workItemName} HAS PROGRESS R=${progress.progressVolumeR}, NR=${progress.progressVolumeNR}');
+      }
+    }
+    
+    print('Total items with progress after processing: $itemsWithProgressCount');
+    print('========== END DEBUG ==========');
+    
     calculateTotalProgress();
   }
 

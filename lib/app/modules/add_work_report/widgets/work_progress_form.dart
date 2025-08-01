@@ -7,7 +7,7 @@ import '../../../data/models/work_progress_model.dart';
 import 'package:intl/intl.dart';
 import '../../../controllers/add_work_report_controller.dart';
 import '../../../controllers/material_controller.dart';
-import '../../../data/models/daily_activity_model.dart';
+// Tidak menggunakan daily_activity_model lagi
 import '../../../controllers/other_cost_controller.dart';
 import '../../../controllers/daily_activity_controller.dart';
 
@@ -250,58 +250,74 @@ class WorkProgressForm extends StatelessWidget {
 
   Widget _buildProgressInputs(WorkProgress progress, int index) {
     final addWorkReportController = Get.find<AddWorkReportController>();
-    final spkDetail = addWorkReportController.spkDetailsWithProgress.value;
-    final dailyActivities = spkDetail?.dailyActivities ?? [];
-    final workItems =
-        dailyActivities.isNotEmpty ? dailyActivities.first.workItems : [];
-    final workItemDetail = workItems.isNotEmpty ? workItems[index] : null;
-
-    // Cari data work item yang sesuai dari controller workItems
-    final matchingWorkItem = addWorkReportController.workItems.firstWhere(
+    final selectedSpk = addWorkReportController.selectedSpk.value;
+    
+    // Langsung ambil data dari workItems yang sudah di-enrich di controller
+    // dengan filtering berdasarkan nama work item dan spkId
+    final workItemData = addWorkReportController.workItems.firstWhere(
       (item) =>
           item['name'] == progress.workItemName &&
-          item['spkId'] == addWorkReportController.selectedSpk.value?.id,
+          item['spkId'] == selectedSpk?.id,
       orElse: () => <String, dynamic>{},
     );
 
-    // Tentukan jenis BOQ yang aktif
-    final bool isN = progress.boqVolumeR > 0;
-    final bool isNR = progress.boqVolumeNR > 0;
+    // Debug info
+    print('[WorkProgressForm] Item: ${progress.workItemName}');
+    print('[WorkProgressForm] workItemData keys: ${workItemData.keys.toString()}');
+    print('[WorkProgressForm] workItemData full: $workItemData');
+    
+    // Tentukan jenis volume (remote / non-remote)
+    final String volumeType = (workItemData['volumeType'] ?? 'nr').toString();
+    final bool isRemote = volumeType == 'r';
+    final bool isN = isRemote; // isN berarti tipe 'r' (remote) - alias untuk kompatibilitas
+    
+    print('[WorkProgressForm] boqVolume raw: ${workItemData['boqVolume']}');
+    print('[WorkProgressForm] volumeType: $volumeType, isRemote: $isRemote');
 
-    // Ambil data volume yang tepat berdasarkan jenis BOQ
-    final double dailyTargetVolume =
-        isN ? progress.dailyTargetR : progress.dailyTargetNR;
-    final double boqVolume = isN ? progress.boqVolumeR : progress.boqVolumeNR;
+    // Ambil data langsung dari workItemData yang sudah di-enrich
+    final Map<String, dynamic> dailyTarget = workItemData['dailyTarget'] ?? {'nr': 0.0, 'r': 0.0};
+    final Map<String, dynamic> completedVolume = workItemData['completedVolume'] ?? {'nr': 0.0, 'r': 0.0};
+    final Map<String, dynamic> remainingVolume = workItemData['remainingVolume'] ?? {'nr': 0.0, 'r': 0.0};
 
-    // Ambil completedVolume dan remainingVolume dari matchingWorkItem atau workItemDetail
-    final double completedVolume = isN
-        ? (matchingWorkItem['completedVolume']?['r'] ??
-            workItemDetail?.progressAchieved.r ??
-            0.0)
-        : (matchingWorkItem['completedVolume']?['nr'] ??
-            workItemDetail?.progressAchieved.nr ??
-            0.0);
+    final double dailyTargetVolume = isRemote 
+        ? (dailyTarget['r']?.toDouble() ?? 0.0)
+        : (dailyTarget['nr']?.toDouble() ?? 0.0);
+        
+    // BOQ Volume diambil dari boqVolume sesuai tipe volume (r/nr)
+    final Map<String, dynamic> boqVolumeMap = workItemData['boqVolume'] ?? {'nr': 0.0, 'r': 0.0};
+    final double boqVolume = isRemote
+        ? (boqVolumeMap['r']?.toDouble() ?? 0.0)
+        : (boqVolumeMap['nr']?.toDouble() ?? 0.0);
+        
+    // Ambil rate sesuai tipe volume
+    final Map<String, dynamic> rates = workItemData['rates'] ?? {'nr': {'rate': 0}, 'r': {'rate': 0}};
+    final double rate = isRemote
+        ? (rates['r']?['rate']?.toDouble() ?? 0.0)
+        : (rates['nr']?['rate']?.toDouble() ?? 0.0);
 
-    final double remainingVolume = isN
-        ? (matchingWorkItem['remainingVolume']?['r'] ??
-            (boqVolume - completedVolume))
-        : (matchingWorkItem['remainingVolume']?['nr'] ??
-            (boqVolume - completedVolume));
+    // Ambil completedVolume dan remainingVolume dari data yang sudah diambil
+    final double completedVol = isRemote
+        ? (completedVolume['r']?.toDouble() ?? 0.0)
+        : (completedVolume['nr']?.toDouble() ?? 0.0);
+
+    final double remainingVol = isRemote
+        ? (remainingVolume['r']?.toDouble() ?? 0.0)
+        : (remainingVolume['nr']?.toDouble() ?? 0.0);
 
     // Cek apakah item sudah ada progress (untuk highlight kuning)
     final bool hasProgress =
-        isN ? progress.progressVolumeR > 0 : progress.progressVolumeNR > 0;
+        isRemote ? progress.progressVolumeR > 0 : progress.progressVolumeNR > 0;
 
     // Hitung volume sisa untuk validasi
-    final double volumeSisa = remainingVolume;
+    final double volumeSisa = remainingVol;
     final bool canInput = volumeSisa > 0;
 
     // Debug: Log data yang digunakan
     print('[WorkProgressForm] Item: ${progress.workItemName}');
-    print('[WorkProgressForm] isN: $isN, dailyTarget: $dailyTargetVolume');
+    print('[WorkProgressForm] isRemote: $isRemote, dailyTarget: $dailyTargetVolume');
     print(
-        '[WorkProgressForm] boqVolume: $boqVolume, completed: $completedVolume, remaining: $remainingVolume');
-    print('[WorkProgressForm] matchingWorkItem keys: ${matchingWorkItem.keys}');
+        '[WorkProgressForm] boqVolume: $boqVolume, completed: $completedVol, remaining: $remainingVol');
+    print('[WorkProgressForm] workItemData keys: ${workItemData.keys}');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -489,7 +505,7 @@ class WorkProgressForm extends StatelessWidget {
                           dailyTargetVolume > 0 ? Colors.blue : Colors.grey),
                       _buildInfoChip(
                           'Volume Selesai',
-                          '${numberFormat.format(completedVolume)} ${progress.unit}',
+                          '${numberFormat.format(completedVol)} ${progress.unit}',
                           Colors.green),
                     ],
                   ),
@@ -497,8 +513,8 @@ class WorkProgressForm extends StatelessWidget {
                     children: [
                       _buildInfoChip(
                           'Volume Sisa',
-                          '${numberFormat.format(remainingVolume)} ${progress.unit}',
-                          remainingVolume > 0 ? Colors.orange : Colors.red),
+                          '${numberFormat.format(remainingVol)} ${progress.unit}',
+                          remainingVol > 0 ? Colors.orange : Colors.red),
                       _buildInfoChip(
                           'Progress Harian',
                           '${numberFormat.format(isN ? progress.dailyProgressPercentageR : progress.dailyProgressPercentageNR)}%',
@@ -543,8 +559,8 @@ class WorkProgressForm extends StatelessWidget {
                           ),
                           decoration: InputDecoration(
                             hintText: canInput
-                                ? 'Masukkan volume progress (maks: ${numberFormat.format(remainingVolume)})'
-                                : 'Tidak dapat diisi (volume sisa: ${numberFormat.format(remainingVolume)})',
+                                ? 'Masukkan volume progress (maks: ${numberFormat.format(remainingVol)})'
+                                : 'Tidak dapat diisi (volume sisa: ${numberFormat.format(remainingVol)})',
                             hintStyle: GoogleFonts.dmSans(
                               fontSize: 12,
                               color:
@@ -582,8 +598,8 @@ class WorkProgressForm extends StatelessWidget {
 
                             final volume = double.tryParse(
                                 value?.replaceAll(',', '') ?? '');
-                            if (volume != null && volume > remainingVolume) {
-                              return 'Volume tidak boleh melebihi sisa: ${numberFormat.format(remainingVolume)}';
+                            if (volume != null && volume > remainingVol) {
+                              return 'Volume tidak boleh melebihi sisa: ${numberFormat.format(remainingVol)}';
                             }
                             return null;
                           },
@@ -595,10 +611,10 @@ class WorkProgressForm extends StatelessWidget {
                                     0.0;
 
                             // Validasi tidak melebihi volume sisa
-                            if (volume > remainingVolume) {
+                            if (volume > remainingVol) {
                               Get.snackbar(
                                 'Peringatan',
-                                'Volume progress tidak boleh melebihi volume sisa: ${numberFormat.format(remainingVolume)} ${progress.unit}',
+                                'Volume progress tidak boleh melebihi volume sisa: ${numberFormat.format(remainingVol)} ${progress.unit}',
                                 snackPosition: SnackPosition.BOTTOM,
                                 backgroundColor: Colors.orange[100],
                                 colorText: Colors.orange[900],
@@ -607,7 +623,7 @@ class WorkProgressForm extends StatelessWidget {
                               return;
                             }
 
-                            if (isN) {
+                            if (isRemote) {
                               controller.updateProgressR(index, volume);
                             } else {
                               controller.updateProgressNR(index, volume);
@@ -1543,6 +1559,15 @@ class WorkProgressForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // DEBUG: Print all loaded workProgresses
+    print('==== DEBUG: WorkProgressForm opened ====');
+    print('Total workProgresses: [32m${controller.workProgresses.length}[0m');
+    for (int i = 0; i < controller.workProgresses.length; i++) {
+      final p = controller.workProgresses[i];
+      print('[$i] ID: ${p.workItemId}, Name: ${p.workItemName}, ProgressR: ${p.progressVolumeR}, ProgressNR: ${p.progressVolumeNR}');
+    }
+    print('==== END DEBUG ====');
+
     final spkDetail =
         Get.find<AddWorkReportController>().spkDetailsWithProgress.value;
     final dailyActivities = spkDetail?.dailyActivities ?? [];
