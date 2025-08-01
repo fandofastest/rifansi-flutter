@@ -14,8 +14,8 @@ import '../models/spk_detail_with_progress_response.dart' as spk_progress;
 
 class GraphQLService extends GetxService {
   late GraphQLClient client;
-  // final String baseUrl = 'https://app25.rifansi.co.id/graphql';
-  final String baseUrl = 'https://localhost3000.fando.id/graphql';
+  final String baseUrl = 'https://app25.rifansi.co.id/graphql';
+  // final String baseUrl = 'https://localhost3000.fando.id/graphql';
 
   Future<GraphQLService> init() async {
     final HttpLink httpLink = HttpLink(baseUrl);
@@ -171,17 +171,46 @@ class GraphQLService extends GetxService {
     }
   ''';
 
-  Future<List<Spk>> fetchSPKs(
-      {String? startDate,
-      String? endDate,
-      String? locationId,
-      String? keyword}) async {
+  static const String getSPKsNoDetailsQuery = r'''
+    query GetSPKs(
+      $startDate: String, $endDate: String, $locationId: ID, $keyword: String
+    ) {
+      spks(startDate: $startDate, endDate: $endDate, locationId: $locationId, keyword: $keyword) {
+        id
+        spkNo
+        wapNo
+        title
+        projectName
+        date
+        contractor
+        workDescription
+        location {
+          id
+          name
+        }
+        startDate
+        endDate
+        budget
+      }
+    }
+  ''';
+
+  Future<List<Spk>> fetchSPKs({
+    String? startDate,
+    String? endDate,
+    String? locationId,
+    String? keyword,
+    bool withDetails = true,
+  }) async {
     final variables = <String, dynamic>{};
     if (startDate != null) variables['startDate'] = startDate;
     if (endDate != null) variables['endDate'] = endDate;
     if (locationId != null) variables['locationId'] = locationId;
     if (keyword != null && keyword.isNotEmpty) variables['keyword'] = keyword;
-    final result = await query(getSPKsQuery, variables: variables);
+
+    final queryDoc = withDetails ? getSPKsQuery : getSPKsNoDetailsQuery;
+    final result = await query(queryDoc, variables: variables);
+
     if (result.hasException) {
       throw Exception(result.exception.toString());
     }
