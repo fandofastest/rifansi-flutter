@@ -78,8 +78,8 @@ class AddWorkReportController extends GetxController {
 
   // Token untuk upload
   final String uploadToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Njc0MmVhZTYzY2NhN2RkZGY1ZmJjOCIsImlhdCI6MTc1MTYxNTQzNSwiZXhwIjoxNzgyNzE5NDM1fQ.6MVR9qFqfWuzdPnxIgI7soMYdbAIluruGhQHhTVljGA';
-  final String uploadUrl = 'http://api-app25.rifansi.co.id/api/files/upload';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Njc0MmVhZTYzY2NhN2RkZGY1ZmJjOCIsImlhdCI6MTc1NDA1MzAxNywiZXhwIjoxNzg1MTU3MDE3fQ.ThpwP9O3hK6mTzj1EcWGrtBUgn1Fsif8lK4pss7fPz4';
+  final String uploadUrl = 'https://api-app25.rifansi.co.id/api/files/upload';
 
   // Layanan Hive untuk penyimpanan lokal
   late HiveService _hiveService;
