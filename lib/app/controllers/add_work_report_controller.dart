@@ -78,8 +78,8 @@ class AddWorkReportController extends GetxController {
 
   // Token untuk upload
   final String uploadToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Njc0MmVhZTYzY2NhN2RkZGY1ZmJjOCIsImlhdCI6MTc1MTYxNTQzNSwiZXhwIjoxNzgyNzE5NDM1fQ.6MVR9qFqfWuzdPnxIgI7soMYdbAIluruGhQHhTVljGA';
-  final String uploadUrl = 'http://api-app25.rifansi.co.id/api/files/upload';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Njc0MmVhZTYzY2NhN2RkZGY1ZmJjOCIsImlhdCI6MTc1MzkyOTg4MSwiZXhwIjoxNzg1MDMzODgxfQ.A47XpnYz5HfJ2TlMXy6WLET5RnFLXT3YKwoEOsOLxA8';
+  final String uploadUrl = 'https://api-app25.rifansi.co.id/api/files/upload';
 
   // Layanan Hive untuk penyimpanan lokal
   late HiveService _hiveService;
@@ -877,23 +877,23 @@ class AddWorkReportController extends GetxController {
       await _updateWorkItemsForSelectedSPK(spk);
 
       // Cek apakah ada draft untuk SPK ini pada hari ini
-      final hasDraft = await hasTodayDraft(spk.id);
-      if (hasDraft) {
-        print('[AddWorkReport] Draft found for today, loading draft data...');
-        // Muat data sementara
-        await loadTemporaryData(spk.id);
-      } else {
-        print('[AddWorkReport] No draft for today, checking for old drafts...');
-        // Hapus draft lama jika ada (bukan hari ini)
-        final existingDraft = await _hiveService.getDailyActivity(spk.id);
-        if (existingDraft != null) {
-          print('[AddWorkReport] Found old draft, clearing it...');
-          await clearTemporaryData(spk.id);
-        }
-      }
+      // final hasDraft = await hasTodayDraft(spk.id);
+      // if (hasDraft) {
+      //   print('[AddWorkReport] Draft found for today, loading draft data...');
+      //   // Muat data sementara
+      //   await loadTemporaryData(spk.id);
+      // } else {
+      //   print('[AddWorkReport] No draft for today, checking for old drafts...');
+      //   // Hapus draft lama jika ada (bukan hari ini)
+      //   final existingDraft = await _hiveService.getDailyActivity(spk.id);
+      //   if (existingDraft != null) {
+      //     print('[AddWorkReport] Found old draft, clearing it...');
+      //     await clearTemporaryData(spk.id);
+      //   }
+      // }
 
-      print('[AddWorkReport] === selectSPK END ===');
-      print('[AddWorkReport] Final workItems count: ${workItems.length}');
+      // print('[AddWorkReport] === selectSPK END ===');
+      // print('[AddWorkReport] Final workItems count: ${workItems.length}');
     } catch (e) {
       print('[AddWorkReport] Error in selectSPK: $e');
       error.value = e.toString();
@@ -905,57 +905,33 @@ class AddWorkReportController extends GetxController {
     try {
       // Null check removed as it's not needed and causes lint warning
       
-      print('[AddWorkReport] Checking for draft progress data: ${_draftProgressData.length} items saved');
-      print('[AddWorkReport] Updating work items for selected SPK: ${spk.spkNo}');
-      print(
-          '[AddWorkReport] Current workItems count before update: ${workItems.length}');
-
+   
       final service = Get.find<GraphQLService>();
 
       // Menggunakan satu sumber data (fetchSPKWithProgressBySpkId)
       // spkDetailsWithProgress akan di-set setelah data diterima di bawah.
 
-      print(
-          '[AddWorkReport] Calling fetchSPKWithProgressBySpkId for SPK ID: ${spk.id}');
 
       final spkWithProgress = await service.fetchSPKWithProgressBySpkId(spk.id);
-      print(
-          '[AddWorkReport] GraphQL response received. Keys: ${spkWithProgress.keys}');
-      print('[AddWorkReport] Full GraphQL response: $spkWithProgress');
+      
 
       // Konversi ke model dan set sebagai sumber tunggal untuk seluruh UI
       try {
         spkDetailsWithProgress.value =
             SpkDetailWithProgressResponse.fromJson(spkWithProgress);
-        print('[AddWorkReport] spkDetailsWithProgress berhasil di-set (single source)');
+        
       } catch (e) {
         print('[AddWorkReport] ERROR parsing SpkDetailWithProgressResponse: $e');
       }
 
       final workItemsData =
           spkWithProgress['workItems'] as List<dynamic>? ?? [];
-      print(
-          '[AddWorkReport] Found ${workItemsData.length} work items for SPK ${spk.spkNo}');
+      
 
-      if (workItemsData.isEmpty) {
-        print(
-            '[AddWorkReport] WARNING: No work items found in GraphQL response!');
-        print('[AddWorkReport] This could mean:');
-        print('[AddWorkReport] 1. SPK has no work items defined');
-        print('[AddWorkReport] 2. GraphQL query returned empty workItems');
-        print('[AddWorkReport] 3. There\'s an issue with the GraphQL endpoint');
-        return;
-      }
-
+ 
       List<Map<String, dynamic>> updatedWorkItems = [];
 
       for (var item in workItemsData) {
-
-        print('[AddWorkReport] Processing work item: ${item}'); 
-
-
-        
-
 
         // Safe casting untuk nilai numerik
         final boqNr = (item['boqVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
@@ -980,6 +956,8 @@ class AddWorkReportController extends GetxController {
             (item['remainingAmount'] as num?)?.toDouble() ?? 0.0;
 
         final enrichedItem = {
+          'id': item['id'] ?? '',  // Tambahkan ID dari respons API
+          'workItemId': item['id'] ?? '',  // Tambahkan workItemId dari respons API
           'spkId': spk.id,
           'spkNo': spk.spkNo,
           'name': item['name'] ?? '',
@@ -1000,27 +978,26 @@ class AddWorkReportController extends GetxController {
         };
 
         updatedWorkItems.add(enrichedItem);
-        print(
-            '[AddWorkReport] Added work item: ${enrichedItem['name']} (${enrichedItem['progressPercentage']}%)');
+       
       }
 
       // PERBAIKAN: Clear dan replace workItems instead of merging to prevent duplicates
-      print(
-          '[AddWorkReport] Clearing existing workItems to prevent duplicates...');
-      print('[AddWorkReport] Old workItems count: ${workItems.length}');
+      
+          
+      
 
       // Clear dan set ulang dengan data baru untuk SPK ini
       workItems.value = updatedWorkItems;
 
-      print('[AddWorkReport] New workItems count: ${workItems.length}');
-      print('[AddWorkReport] === _updateWorkItemsForSelectedSPK END ===');
+      
+     
     } catch (e) {
-      print('[AddWorkReport] Error updating work items for selected SPK: $e');
-      print('[AddWorkReport] Stack trace: ${StackTrace.current}');
+      
+      
 
       // Fallback ke data SPK biasa jika gagal
       if (spk.workItems != null) {
-        print('[AddWorkReport] Using fallback work items data');
+      
         List<Map<String, dynamic>> fallbackItems = [];
 
         for (var workItem in spk.workItems!) {
@@ -1047,8 +1024,7 @@ class AddWorkReportController extends GetxController {
 
         // Clear dan set dengan fallback data
         workItems.value = fallbackItems;
-        print(
-            '[AddWorkReport] Updated work items with fallback data. Total: ${workItems.length}');
+       
       }
     }
   }
@@ -1232,11 +1208,35 @@ class AddWorkReportController extends GetxController {
                 '[AddWorkReport] Fallback workItems: ${filteredWorkItems.map((w) => w['name']).toList()}');
 
             // Create fallback workItemsForProgress using workItems
+            // Debug: print detail filteredWorkItems
+            print('[AddWorkReport] FALLBACK DEBUG: Showing workItems structure');
+            for (var item in filteredWorkItems.take(2)) { // Print details of first 2 items only
+              print('---- Item keys: ${item.keys.toList()}');
+              print('---- id: ${item['id']}');
+              print('---- _id: ${item['_id']}'); // MongoDB sering gunakan _id
+              print('---- name: ${item['name']}');
+              print('---- boqVolume: ${item['boqVolume']}');
+              print('---- dailyTarget: ${item['dailyTarget']}');
+              print('---- unit: ${item['unit']}');
+            }
+            
             final fallbackWorkItemsForProgress = filteredWorkItems.map((item) {
+              // Extract id dengan berbagai alternatif
+              final workItemId = item['id']?.toString() ?? 
+                                item['_id']?.toString() ?? 
+                                item['workItemId']?.toString() ?? 
+                                '';
+              
+              if (workItemId.isEmpty) {
+                print('[AddWorkReport] WARNING: Found item with EMPTY ID: ${item['name'] ?? 'Unknown'}');
+              } else {
+                print('[AddWorkReport] Item ID extracted: $workItemId for ${item['name'] ?? 'Unknown'}');
+              }
+              
               return {
-                'workItemId': item['id'],
+                'workItemId': workItemId, // Gunakan ID yang sudah diekstrak
                 'workItem': {
-                  'id': item['id'],
+                  'id': workItemId, // Gunakan ID yang sama
                   'name': item['name'],
                   'unit': {'name': item['unit']},
                 },
@@ -1483,6 +1483,7 @@ workProgressController.workProgresses.forEach((element) {
         }
       }
 
+      // Get semua controller yang dibutuhkan
       final workProgressController = Get.find<WorkProgressController>();
       final materialController = Get.find<MaterialController>();
       final otherCostController = Get.find<OtherCostController>();
@@ -1508,6 +1509,49 @@ workProgressController.workProgresses.forEach((element) {
       print('workItems: $workItems');
       print('===============================================');
 
+      // Debug: Print workItemId information before creating payload
+      print('\n[AddWorkReport] DEBUG SUBMIT: workProgresses count = ${workProgressController.workProgresses.length}');
+      
+      // Debug: Print workItemId dari beberapa item pertama
+      for (var i = 0; i < workProgressController.workProgresses.length && i < 3; i++) {
+        final p = workProgressController.workProgresses[i];
+        print('[AddWorkReport] DEBUG ITEM $i:');
+        print('   - workItemId: "${p.workItemId}"');
+        print('   - workItemName: ${p.workItemName}');
+        print('   - progressVolumes: R=${p.progressVolumeR}, NR=${p.progressVolumeNR}');
+        if (p.workItemId.isEmpty) {
+          print('   \u26a0\ufe0f WARNING: Empty workItemId detected!');
+        }
+      }
+      
+      // Process workProgresses to create activityDetails dengan validasi ID
+      final activityDetailsList = workProgressController
+          .workProgresses
+          .map((p) {
+            // Verifikasi workItemId tidak kosong - gunakan fallback jika kosong
+            final workItemId = p.workItemId.isNotEmpty 
+                ? p.workItemId 
+                : '000000000000000000000000'; // Fallback ke ID dummy jika kosong
+            
+            if (p.workItemId.isEmpty) {
+              print('[AddWorkReport] Using fallback ID for item: ${p.workItemName}');
+            }
+            
+            return <String, dynamic>{
+                "workItemId": workItemId,
+                "actualQuantity": <String, dynamic>{
+                  "nr": p.progressVolumeNR, // Nilai tidak null, tidak perlu pengecekan
+                  "r": p.progressVolumeR, // Nilai tidak null, tidak perlu pengecekan
+                },
+                "status": (p.progressVolumeR >= (p.dailyTargetR ?? 0.0) &&
+                        p.progressVolumeNR >= (p.dailyTargetNR ?? 0.0))
+                    ? 'Completed'
+                    : 'In Progress',
+                "remarks": p.remarks ?? '',
+              };
+          })
+          .toList();
+      
       // Create fresh input data to avoid any cached references
       final freshInput = <String, dynamic>{
         "spkId": selectedSpk.value!.id,
@@ -1518,21 +1562,7 @@ workProgressController.workProgresses.forEach((element) {
         "closingRemarks": remarks.value,
         "startImages": startPhotos.map((p) => p.accessUrl).toList(),
         "finishImages": endPhotos.map((p) => p.accessUrl).toList(),
-        "activityDetails": Get.find<WorkProgressController>()
-            .workProgresses
-            .map((p) => <String, dynamic>{
-                  "workItemId": p.workItemId,
-                  "actualQuantity": <String, dynamic>{
-                    "nr": p.progressVolumeNR ?? 0.0,
-                    "r": p.progressVolumeR ?? 0.0,
-                  },
-                  "status": (p.progressVolumeR >= (p.dailyTargetR ?? 0.0) &&
-                          p.progressVolumeNR >= (p.dailyTargetNR ?? 0.0))
-                      ? 'Completed'
-                      : 'In Progress',
-                  "remarks": p.remarks ?? '',
-                })
-            .toList(),
+        "activityDetails": activityDetailsList,
         "equipmentLogs": selectedEquipment
             .map((e) => <String, dynamic>{
                   "equipmentId": e.equipment.id,

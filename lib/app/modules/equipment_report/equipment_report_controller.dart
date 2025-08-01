@@ -21,8 +21,8 @@ class EquipmentReportController extends GetxController {
 
   // Upload configuration
   final String uploadToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MmE5NzUzOTRlNGQ3ZWJkMDc1YjM2NyIsImlhdCI6MTc0NzYyMTgyMywiZXhwIjoxNzc4NzI1ODIzfQ.teq_-tgZBuaQQ5h3DxcY5xHmZIIEA6NA8omq2NLnGq8';
-  final String uploadUrl = 'https://cloudfiles.fando.id/api/files/upload';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Njc0MmVhZTYzY2NhN2RkZGY1ZmJjOCIsImlhdCI6MTc1MzkyOTg4MSwiZXhwIjoxNzg1MDMzODgxfQ.A47XpnYz5HfJ2TlMXy6WLET5RnFLXT3YKwoEOsOLxA8';
+  final String uploadUrl = 'https://api-app25.rifansi.co.id/api/files/upload';
 
   @override
   void onInit() {
