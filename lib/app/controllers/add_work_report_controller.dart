@@ -79,8 +79,8 @@ class AddWorkReportController extends GetxController {
 
   // Token untuk upload
   final String uploadToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Njc0MmVhZTYzY2NhN2RkZGY1ZmJjOCIsImlhdCI6MTc1MTYxNTQzNSwiZXhwIjoxNzgyNzE5NDM1fQ.6MVR9qFqfWuzdPnxIgI7soMYdbAIluruGhQHhTVljGA';
-  final String uploadUrl = 'http://api-app25.rifansi.co.id/api/files/upload';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Njc0MmVhZTYzY2NhN2RkZGY1ZmJjOCIsImlhdCI6MTc1MzkyOTg4MSwiZXhwIjoxNzg1MDMzODgxfQ.A47XpnYz5HfJ2TlMXy6WLET5RnFLXT3YKwoEOsOLxA8';
+  final String uploadUrl = 'https://api-app25.rifansi.co.id/api/files/upload';
 
   // Layanan Hive untuk penyimpanan lokal
   late HiveService _hiveService;
@@ -132,6 +132,7 @@ class AddWorkReportController extends GetxController {
           print('[AddWorkReport] SPK list empty, fetching SPKs first...');
           await fetchSPKs();
         }
+
 
         // Load draft data
         final loadSuccess = await loadTemporaryData(args['spkId']);
@@ -218,7 +219,7 @@ class AddWorkReportController extends GetxController {
       final completer = Completer<bool>();
 
       // Set timeout 8 detik
-      Timer(const Duration(seconds: 8), () {
+      Timer(const Duration(seconds: 20), () {
         if (!completer.isCompleted) {
           print('[AddWorkReport] Timeout fetchSPKs');
           error.value = 'Timeout: Proses terlalu lama';
@@ -240,6 +241,7 @@ class AddWorkReportController extends GetxController {
           .fetchSPKs(
         locationId: locationId,
         keyword: searchKey,
+        withDetails: false,
       )
           .then((result) {
         if (!completer.isCompleted) {
@@ -312,7 +314,7 @@ class AddWorkReportController extends GetxController {
       final completer = Completer<bool>();
 
       // Set timeout 8 detik
-      Timer(const Duration(seconds: 8), () {
+      Timer(const Duration(seconds: 20), () {
         if (!completer.isCompleted) {
           print('[AddWorkReport] Timeout fetchSPKsWithProgress');
           error.value = 'Timeout: Proses terlalu lama';
@@ -330,8 +332,10 @@ class AddWorkReportController extends GetxController {
 
       // Fetch data SPK biasa terlebih dahulu untuk mendapatkan list SPK
       final service = Get.find<GraphQLService>();
+      print('fetchSPKs withDetails: false');
       service
           .fetchSPKs(
+            withDetails: false,
         locationId: locationId,
         keyword: searchKey,
       )
@@ -350,72 +354,72 @@ class AddWorkReportController extends GetxController {
                   '[AddWorkReport] Fetching progress for SPK: ${spk.id} - ${spk.spkNo}');
 
               // Fetch detail progress untuk setiap SPK menggunakan query baru
-              final spkWithProgress =
-                  await service.fetchSPKWithProgressBySpkId(spk.id);
+              // final spkWithProgress =
+              //     await service.fetchSPKWithProgressBySpkId(spk.id);
 
-              print(
-                  '[AddWorkReport] SPK ${spk.spkNo} progress data keys: ${spkWithProgress.keys}');
+              // print(
+              //     '[AddWorkReport] SPK ${spk.spkNo} progress data keys: ${spkWithProgress.keys}');
 
-              final workItemsData =
-                  spkWithProgress['workItems'] as List<dynamic>? ?? [];
-              print(
-                  '[AddWorkReport] SPK ${spk.spkNo} has ${workItemsData.length} work items');
+              // final workItemsData =
+              //     spkWithProgress['workItems'] as List<dynamic>? ?? [];
+              // print(
+              //     '[AddWorkReport] SPK ${spk.spkNo} has ${workItemsData.length} work items');
 
-              for (var item in workItemsData) {
-                print('[AddWorkReport] Processing work item: ${item['name']}');
-                print('[AddWorkReport] - boqVolume: ${item['boqVolume']}');
-                print(
-                    '[AddWorkReport] - completedVolume: ${item['completedVolume']}');
-                print(
-                    '[AddWorkReport] - remainingVolume: ${item['remainingVolume']}');
-                print(
-                    '[AddWorkReport] - progressPercentage: ${item['progressPercentage']}');
+              // for (var item in workItemsData) {
+              //   print('[AddWorkReport] Processing work item: ${item['name']}');
+              //   print('[AddWorkReport] - boqVolume: ${item['boqVolume']}');
+              //   print(
+              //       '[AddWorkReport] - completedVolume: ${item['completedVolume']}');
+              //   print(
+              //       '[AddWorkReport] - remainingVolume: ${item['remainingVolume']}');
+              //   print(
+              //       '[AddWorkReport] - progressPercentage: ${item['progressPercentage']}');
 
-                // Safe casting untuk nilai numerik
-                final boqNr =
-                    (item['boqVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
-                final boqR =
-                    (item['boqVolume']?['r'] as num?)?.toDouble() ?? 0.0;
-                final dailyTargetNr =
-                    (item['dailyTarget']?['nr'] as num?)?.toDouble() ?? 0.0;
-                final dailyTargetR =
-                    (item['dailyTarget']?['r'] as num?)?.toDouble() ?? 0.0;
-                final completedNr =
-                    (item['completedVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
-                final completedR =
-                    (item['completedVolume']?['r'] as num?)?.toDouble() ?? 0.0;
-                final remainingNr =
-                    (item['remainingVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
-                final remainingR =
-                    (item['remainingVolume']?['r'] as num?)?.toDouble() ?? 0.0;
-                final progress =
-                    (item['progressPercentage'] as num?)?.toDouble() ?? 0.0;
-                final amount = (item['amount'] as num?)?.toDouble() ?? 0.0;
-                final spentAmount =
-                    (item['spentAmount'] as num?)?.toDouble() ?? 0.0;
-                final remainingAmount =
-                    (item['remainingAmount'] as num?)?.toDouble() ?? 0.0;
+              //   // Safe casting untuk nilai numerik
+              //   final boqNr =
+              //       (item['boqVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
+              //   final boqR =
+              //       (item['boqVolume']?['r'] as num?)?.toDouble() ?? 0.0;
+              //   final dailyTargetNr =
+              //       (item['dailyTarget']?['nr'] as num?)?.toDouble() ?? 0.0;
+              //   final dailyTargetR =
+              //       (item['dailyTarget']?['r'] as num?)?.toDouble() ?? 0.0;
+              //   final completedNr =
+              //       (item['completedVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
+              //   final completedR =
+              //       (item['completedVolume']?['r'] as num?)?.toDouble() ?? 0.0;
+              //   final remainingNr =
+              //       (item['remainingVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
+              //   final remainingR =
+              //       (item['remainingVolume']?['r'] as num?)?.toDouble() ?? 0.0;
+              //   final progress =
+              //       (item['progressPercentage'] as num?)?.toDouble() ?? 0.0;
+              //   final amount = (item['amount'] as num?)?.toDouble() ?? 0.0;
+              //   final spentAmount =
+              //       (item['spentAmount'] as num?)?.toDouble() ?? 0.0;
+              //   final remainingAmount =
+              //       (item['remainingAmount'] as num?)?.toDouble() ?? 0.0;
 
-                final enrichedItem = {
-                  'spkId': spk.id,
-                  'spkNo': spk.spkNo,
-                  'name': item['name'] ?? '',
-                  'volume': boqNr + boqR,
-                  'unit': item['unit']?['name'] ?? '',
-                  'volumeType': boqR > 0 ? 'r' : 'nr',
-                  'dailyTarget': {'nr': dailyTargetNr, 'r': dailyTargetR},
-                  'completedVolume': {'nr': completedNr, 'r': completedR},
-                  'remainingVolume': {'nr': remainingNr, 'r': remainingR},
-                  'progressPercentage': progress,
-                  'amount': amount,
-                  'spentAmount': spentAmount,
-                  'remainingAmount': remainingAmount,
-                };
+              //   final enrichedItem = {
+              //     'spkId': spk.id,
+              //     'spkNo': spk.spkNo,
+              //     'name': item['name'] ?? '',
+              //     'volume': boqNr + boqR,
+              //     'unit': item['unit']?['name'] ?? '',
+              //     'volumeType': boqR > 0 ? 'r' : 'nr',
+              //     'dailyTarget': {'nr': dailyTargetNr, 'r': dailyTargetR},
+              //     'completedVolume': {'nr': completedNr, 'r': completedR},
+              //     'remainingVolume': {'nr': remainingNr, 'r': remainingR},
+              //     'progressPercentage': progress,
+              //     'amount': amount,
+              //     'spentAmount': spentAmount,
+              //     'remainingAmount': remainingAmount,
+              //   };
 
-                enrichedWorkItems.add(enrichedItem);
-                print(
-                    '[AddWorkReport] Added enriched item: ${enrichedItem['name']} with ${enrichedItem['progressPercentage']}% progress');
-              }
+              //   enrichedWorkItems.add(enrichedItem);
+              //   print(
+              //       '[AddWorkReport] Added enriched item: ${enrichedItem['name']} with ${enrichedItem['progressPercentage']}% progress');
+              // }
             } catch (e) {
               print(
                   '[AddWorkReport] Error fetching progress for SPK ${spk.id}: $e');
@@ -908,7 +912,7 @@ class AddWorkReportController extends GetxController {
     endPhotos.removeWhere((p) => p.id == photoId);
   }
 
-  void selectSPK(Spk spk) async {
+  Future<void> selectSPK(Spk spk) async {
     try {
       print('[AddWorkReport] === selectSPK START ===');
       print('[AddWorkReport] Selecting SPK: ${spk.spkNo}');
@@ -926,23 +930,23 @@ class AddWorkReportController extends GetxController {
       await _updateWorkItemsForSelectedSPK(spk);
 
       // Cek apakah ada draft untuk SPK ini pada hari ini
-      final hasDraft = await hasTodayDraft(spk.id);
-      if (hasDraft) {
-        print('[AddWorkReport] Draft found for today, loading draft data...');
-        // Muat data sementara
-        await loadTemporaryData(spk.id);
-      } else {
-        print('[AddWorkReport] No draft for today, checking for old drafts...');
-        // Hapus draft lama jika ada (bukan hari ini)
-        final existingDraft = await _hiveService.getDailyActivity(spk.id);
-        if (existingDraft != null) {
-          print('[AddWorkReport] Found old draft, clearing it...');
-          await clearTemporaryData(spk.id);
-        }
-      }
+      // final hasDraft = await hasTodayDraft(spk.id);
+      // if (hasDraft) {
+      //   print('[AddWorkReport] Draft found for today, loading draft data...');
+      //   // Muat data sementara
+      //   await loadTemporaryData(spk.id);
+      // } else {
+      //   print('[AddWorkReport] No draft for today, checking for old drafts...');
+      //   // Hapus draft lama jika ada (bukan hari ini)
+      //   final existingDraft = await _hiveService.getDailyActivity(spk.id);
+      //   if (existingDraft != null) {
+      //     print('[AddWorkReport] Found old draft, clearing it...');
+      //     await clearTemporaryData(spk.id);
+      //   }
+      // }
 
-      print('[AddWorkReport] === selectSPK END ===');
-      print('[AddWorkReport] Final workItems count: ${workItems.length}');
+      // print('[AddWorkReport] === selectSPK END ===');
+      // print('[AddWorkReport] Final workItems count: ${workItems.length}');
     } catch (e) {
       print('[AddWorkReport] Error in selectSPK: $e');
       error.value = e.toString();
@@ -954,57 +958,33 @@ class AddWorkReportController extends GetxController {
     try {
       // Null check removed as it's not needed and causes lint warning
       
-      print('[AddWorkReport] Checking for draft progress data: ${_draftProgressData.length} items saved');
-      print('[AddWorkReport] Updating work items for selected SPK: ${spk.spkNo}');
-      print(
-          '[AddWorkReport] Current workItems count before update: ${workItems.length}');
-
+   
       final service = Get.find<GraphQLService>();
 
       // Menggunakan satu sumber data (fetchSPKWithProgressBySpkId)
       // spkDetailsWithProgress akan di-set setelah data diterima di bawah.
 
-      print(
-          '[AddWorkReport] Calling fetchSPKWithProgressBySpkId for SPK ID: ${spk.id}');
 
       final spkWithProgress = await service.fetchSPKWithProgressBySpkId(spk.id);
-      print(
-          '[AddWorkReport] GraphQL response received. Keys: ${spkWithProgress.keys}');
-      print('[AddWorkReport] Full GraphQL response: $spkWithProgress');
+      
 
       // Konversi ke model dan set sebagai sumber tunggal untuk seluruh UI
       try {
         spkDetailsWithProgress.value =
             SpkDetailWithProgressResponse.fromJson(spkWithProgress);
-        print('[AddWorkReport] spkDetailsWithProgress berhasil di-set (single source)');
+        
       } catch (e) {
         print('[AddWorkReport] ERROR parsing SpkDetailWithProgressResponse: $e');
       }
 
       final workItemsData =
           spkWithProgress['workItems'] as List<dynamic>? ?? [];
-      print(
-          '[AddWorkReport] Found ${workItemsData.length} work items for SPK ${spk.spkNo}');
+      
 
-      if (workItemsData.isEmpty) {
-        print(
-            '[AddWorkReport] WARNING: No work items found in GraphQL response!');
-        print('[AddWorkReport] This could mean:');
-        print('[AddWorkReport] 1. SPK has no work items defined');
-        print('[AddWorkReport] 2. GraphQL query returned empty workItems');
-        print('[AddWorkReport] 3. There\'s an issue with the GraphQL endpoint');
-        return;
-      }
-
+ 
       List<Map<String, dynamic>> updatedWorkItems = [];
 
       for (var item in workItemsData) {
-
-        print('[AddWorkReport] Processing work item: ${item}'); 
-
-
-        
-
 
         // Safe casting untuk nilai numerik
         final boqNr = (item['boqVolume']?['nr'] as num?)?.toDouble() ?? 0.0;
@@ -1029,6 +1009,8 @@ class AddWorkReportController extends GetxController {
             (item['remainingAmount'] as num?)?.toDouble() ?? 0.0;
 
         final enrichedItem = {
+          'id': item['id'] ?? '',  // Tambahkan ID dari respons API
+          'workItemId': item['id'] ?? '',  // Tambahkan workItemId dari respons API
           'spkId': spk.id,
           'spkNo': spk.spkNo,
           'name': item['name'] ?? '',
@@ -1049,27 +1031,26 @@ class AddWorkReportController extends GetxController {
         };
 
         updatedWorkItems.add(enrichedItem);
-        print(
-            '[AddWorkReport] Added work item: ${enrichedItem['name']} (${enrichedItem['progressPercentage']}%)');
+       
       }
 
       // PERBAIKAN: Clear dan replace workItems instead of merging to prevent duplicates
-      print(
-          '[AddWorkReport] Clearing existing workItems to prevent duplicates...');
-      print('[AddWorkReport] Old workItems count: ${workItems.length}');
+      
+          
+      
 
       // Clear dan set ulang dengan data baru untuk SPK ini
       workItems.value = updatedWorkItems;
 
-      print('[AddWorkReport] New workItems count: ${workItems.length}');
-      print('[AddWorkReport] === _updateWorkItemsForSelectedSPK END ===');
+      
+     
     } catch (e) {
-      print('[AddWorkReport] Error updating work items for selected SPK: $e');
-      print('[AddWorkReport] Stack trace: ${StackTrace.current}');
+      
+      
 
       // Fallback ke data SPK biasa jika gagal
       if (spk.workItems != null) {
-        print('[AddWorkReport] Using fallback work items data');
+      
         List<Map<String, dynamic>> fallbackItems = [];
 
         for (var workItem in spk.workItems!) {
@@ -1096,8 +1077,7 @@ class AddWorkReportController extends GetxController {
 
         // Clear dan set dengan fallback data
         workItems.value = fallbackItems;
-        print(
-            '[AddWorkReport] Updated work items with fallback data. Total: ${workItems.length}');
+       
       }
     }
   }
@@ -1281,11 +1261,35 @@ class AddWorkReportController extends GetxController {
                 '[AddWorkReport] Fallback workItems: ${filteredWorkItems.map((w) => w['name']).toList()}');
 
             // Create fallback workItemsForProgress using workItems
+            // Debug: print detail filteredWorkItems
+            print('[AddWorkReport] FALLBACK DEBUG: Showing workItems structure');
+            for (var item in filteredWorkItems.take(2)) { // Print details of first 2 items only
+              print('---- Item keys: ${item.keys.toList()}');
+              print('---- id: ${item['id']}');
+              print('---- _id: ${item['_id']}'); // MongoDB sering gunakan _id
+              print('---- name: ${item['name']}');
+              print('---- boqVolume: ${item['boqVolume']}');
+              print('---- dailyTarget: ${item['dailyTarget']}');
+              print('---- unit: ${item['unit']}');
+            }
+            
             final fallbackWorkItemsForProgress = filteredWorkItems.map((item) {
+              // Extract id dengan berbagai alternatif
+              final workItemId = item['id']?.toString() ?? 
+                                item['_id']?.toString() ?? 
+                                item['workItemId']?.toString() ?? 
+                                '';
+              
+              if (workItemId.isEmpty) {
+                print('[AddWorkReport] WARNING: Found item with EMPTY ID: ${item['name'] ?? 'Unknown'}');
+              } else {
+                print('[AddWorkReport] Item ID extracted: $workItemId for ${item['name'] ?? 'Unknown'}');
+              }
+              
               return {
-                'workItemId': item['id'],
+                'workItemId': workItemId, // Gunakan ID yang sudah diekstrak
                 'workItem': {
-                  'id': item['id'],
+                  'id': workItemId, // Gunakan ID yang sama
                   'name': item['name'],
                   'unit': {'name': item['unit']},
                 },
@@ -1532,6 +1536,7 @@ workProgressController.workProgresses.forEach((element) {
         }
       }
 
+      // Get semua controller yang dibutuhkan
       final workProgressController = Get.find<WorkProgressController>();
       final materialController = Get.find<MaterialController>();
       final otherCostController = Get.find<OtherCostController>();
@@ -1557,6 +1562,49 @@ workProgressController.workProgresses.forEach((element) {
       print('workItems: $workItems');
       print('===============================================');
 
+      // Debug: Print workItemId information before creating payload
+      print('\n[AddWorkReport] DEBUG SUBMIT: workProgresses count = ${workProgressController.workProgresses.length}');
+      
+      // Debug: Print workItemId dari beberapa item pertama
+      for (var i = 0; i < workProgressController.workProgresses.length && i < 3; i++) {
+        final p = workProgressController.workProgresses[i];
+        print('[AddWorkReport] DEBUG ITEM $i:');
+        print('   - workItemId: "${p.workItemId}"');
+        print('   - workItemName: ${p.workItemName}');
+        print('   - progressVolumes: R=${p.progressVolumeR}, NR=${p.progressVolumeNR}');
+        if (p.workItemId.isEmpty) {
+          print('   \u26a0\ufe0f WARNING: Empty workItemId detected!');
+        }
+      }
+      
+      // Process workProgresses to create activityDetails dengan validasi ID
+      final activityDetailsList = workProgressController
+          .workProgresses
+          .map((p) {
+            // Verifikasi workItemId tidak kosong - gunakan fallback jika kosong
+            final workItemId = p.workItemId.isNotEmpty 
+                ? p.workItemId 
+                : '000000000000000000000000'; // Fallback ke ID dummy jika kosong
+            
+            if (p.workItemId.isEmpty) {
+              print('[AddWorkReport] Using fallback ID for item: ${p.workItemName}');
+            }
+            
+            return <String, dynamic>{
+                "workItemId": workItemId,
+                "actualQuantity": <String, dynamic>{
+                  "nr": p.progressVolumeNR, // Nilai tidak null, tidak perlu pengecekan
+                  "r": p.progressVolumeR, // Nilai tidak null, tidak perlu pengecekan
+                },
+                "status": (p.progressVolumeR >= (p.dailyTargetR ?? 0.0) &&
+                        p.progressVolumeNR >= (p.dailyTargetNR ?? 0.0))
+                    ? 'Completed'
+                    : 'In Progress',
+                "remarks": p.remarks ?? '',
+              };
+          })
+          .toList();
+      
       // Create fresh input data to avoid any cached references
       final freshInput = <String, dynamic>{
         "spkId": selectedSpk.value!.id,
@@ -1567,21 +1615,7 @@ workProgressController.workProgresses.forEach((element) {
         "closingRemarks": remarks.value,
         "startImages": startPhotos.map((p) => p.accessUrl).toList(),
         "finishImages": endPhotos.map((p) => p.accessUrl).toList(),
-        "activityDetails": Get.find<WorkProgressController>()
-            .workProgresses
-            .map((p) => <String, dynamic>{
-                  "workItemId": p.workItemId,
-                  "actualQuantity": <String, dynamic>{
-                    "nr": p.progressVolumeNR ?? 0.0,
-                    "r": p.progressVolumeR ?? 0.0,
-                  },
-                  "status": (p.progressVolumeR >= (p.dailyTargetR ?? 0.0) &&
-                          p.progressVolumeNR >= (p.dailyTargetNR ?? 0.0))
-                      ? 'Completed'
-                      : 'In Progress',
-                  "remarks": p.remarks ?? '',
-                })
-            .toList(),
+        "activityDetails": activityDetailsList,
         "equipmentLogs": selectedEquipment
             .map((e) => <String, dynamic>{
                   "equipmentId": e.equipment.id,
@@ -2003,9 +2037,21 @@ Total Cost: Rp ${entry.totalCost}
       try {
         final workProgressController = Get.find<WorkProgressController>();
         if (workProgressController.workProgresses.isNotEmpty) {
-          print('[AddWorkReport] Saving ${workProgressController.workProgresses.length} progress items to draft');
+          print('[AddWorkReport] === SAVING PROGRESS DATA TO DRAFT ===');
+          print('[AddWorkReport] Found ${workProgressController.workProgresses.length} progress items to save');
+          
+          for (int i = 0; i < workProgressController.workProgresses.length; i++) {
+            final progress = workProgressController.workProgresses[i];
+            print('[AddWorkReport] Progress Item $i:');
+            print('[AddWorkReport]   - workItemId: ${progress.workItemId}');
+            print('[AddWorkReport]   - workItemName: ${progress.workItemName}');
+            print('[AddWorkReport]   - progressVolumeR: ${progress.progressVolumeR}');
+            print('[AddWorkReport]   - progressVolumeNR: ${progress.progressVolumeNR}');
+            print('[AddWorkReport]   - remarks: ${progress.remarks}');
+          }
+          
           activityDetails = workProgressController.workProgresses.map((progress) {
-            return activity_input.ActivityDetail(
+            final activityDetail = activity_input.ActivityDetail(
               id: progress.workItemId,
               workItemId: progress.workItemId,
               actualQuantity: activity_input.Quantity(
@@ -2015,11 +2061,19 @@ Total Cost: Rp ${entry.totalCost}
               status: activityStatus,
               remarks: progress.remarks ?? '',
             );
+            
+            print('[AddWorkReport] Created ActivityDetail for ${progress.workItemName}: R=${activityDetail.actualQuantity.r}, NR=${activityDetail.actualQuantity.nr}');
+            return activityDetail;
           }).toList();
-          print('[AddWorkReport] Successfully converted ${activityDetails.length} progress items for draft');
+          
+          print('[AddWorkReport] === PROGRESS DATA CONVERSION COMPLETE ===');
+          print('[AddWorkReport] Total ActivityDetails created: ${activityDetails.length}');
+        } else {
+          print('[AddWorkReport] No progress data found in WorkProgressController');
         }
       } catch (e) {
         print('[AddWorkReport] Error getting progress data for draft: $e');
+        print('[AddWorkReport] Stack trace: ${StackTrace.current}');
         // Continue without progress data if there's an error
       }
 
@@ -2114,9 +2168,31 @@ Total Cost: Rp ${entry.totalCost}
       print('[AddWorkReport] Mulai memuat data sementara untuk SPK: $spkId');
       print('[AddWorkReport] Current spkList.length: ${spkList.length}');
 
+      // Pastikan daftar SPK sudah tersedia
+      if (spkList.isEmpty) {
+        print('[AddWorkReport] spkList masih kosong, mengambil daftar SPK...');
+        await fetchSPKs();
+        print('[AddWorkReport] spkList diisi dengan ${spkList.length} items');
+      }
+
       // Ambil data dari HiveService menggunakan model dari activity_input
       final dailyActivity = await _hiveService.getDailyActivity(spkId);
 
+      // Debug log untuk memeriksa apakah data work progress input tersimpan
+      if (dailyActivity != null && dailyActivity.activityDetails.isNotEmpty) {
+        print('[AddWorkReport] Data work progress tersimpan di draft:');
+        print('[AddWorkReport] Jumlah activity details: ${dailyActivity.activityDetails.length}');
+        for (int i = 0; i < dailyActivity.activityDetails.length; i++) {
+          final activity = dailyActivity.activityDetails[i];
+          print('[AddWorkReport] Activity $i:');
+          print('[AddWorkReport]   - workItemId: ${activity.workItemId}');
+          print('[AddWorkReport]   - actualQuantity.r: ${activity.actualQuantity.r}');
+          print('[AddWorkReport]   - actualQuantity.nr: ${activity.actualQuantity.nr}');
+          print('[AddWorkReport]   - remarks: ${activity.remarks}');
+        }
+      } else {
+        print('[AddWorkReport] Tidak ada data work progress tersimpan di draft');
+      }
 
       if (dailyActivity == null) {
         print('[AddWorkReport] Tidak ada data sementara untuk SPK: $spkId');
@@ -2145,6 +2221,8 @@ Total Cost: Rp ${entry.totalCost}
         selectedSpk.value = spkFromList;
         print(
             '[AddWorkReport] selectedSpk berhasil diset dari spkList: ${spkFromList.spkNo}');
+        // Panggil selectSPK agar perilaku sama seperti saat pengguna memilih SPK
+        await selectSPK(spkFromList);
       } else {
         print(
             '[AddWorkReport] WARNING: SPK dengan ID ${dailyActivity.spkId} tidak ditemukan di spkList');
@@ -2168,6 +2246,8 @@ Total Cost: Rp ${entry.totalCost}
           selectedSpk.value = spkFromListAfterReload;
           print(
               '[AddWorkReport] selectedSpk berhasil diset setelah reload: ${spkFromListAfterReload.spkNo}');
+          // Panggil selectSPK agar perilaku sama seperti saat pengguna memilih SPK
+          await selectSPK(spkFromListAfterReload);
         } else {
           print(
               '[AddWorkReport] ERROR: SPK dengan ID ${dailyActivity.spkId} tetap tidak ditemukan setelah reload');
@@ -2447,16 +2527,25 @@ Total Cost: Rp ${entry.totalCost}
 
 
       // Load progress data dari draft jika ada - SIMPAN SEMENTARA KE STORAGE
-      // PENTING: JANGAN load draft progress sekarang, kita akan menggunakan data ini nanti
-      // setelah workItems diload dan diproses
+      // Load draft progress data for later use
       _draftProgressData.clear();
       
+      print('[AddWorkReport] === LOADING PROGRESS DATA FROM DRAFT ===');
+      print('[AddWorkReport] activityDetails count: ${dailyActivity.activityDetails.length}');
+      
       if (dailyActivity.activityDetails.isNotEmpty) {
-        print('[AddWorkReport] Loading ${dailyActivity.activityDetails.length} progress items from draft (saved to temporary storage)');
+        print('[AddWorkReport] Found ${dailyActivity.activityDetails.length} progress items in draft');
 
         try {
           // Buat map untuk menyimpan data progress berdasarkan workItemId
-          for (var detail in dailyActivity.activityDetails) {
+          for (int i = 0; i < dailyActivity.activityDetails.length; i++) {
+            final detail = dailyActivity.activityDetails[i];
+            print('[AddWorkReport] Processing draft progress item $i:');
+            print('[AddWorkReport]   - workItemId: ${detail.workItemId}');
+            print('[AddWorkReport]   - actualQuantity.r: ${detail.actualQuantity.r}');
+            print('[AddWorkReport]   - actualQuantity.nr: ${detail.actualQuantity.nr}');
+            print('[AddWorkReport]   - remarks: ${detail.remarks}');
+            
             if (detail.workItemId.isNotEmpty) {
               _draftProgressData[detail.workItemId] = {
                 'progressVolumeR': detail.actualQuantity.r,
@@ -2465,16 +2554,25 @@ Total Cost: Rp ${entry.totalCost}
               };
               
               print('[AddWorkReport] Saved draft progress for item ${detail.workItemId}: ' +
-                    'R=${detail.actualQuantity.r}, NR=${detail.actualQuantity.nr}');
+                    'R=${detail.actualQuantity.r}, NR=${detail.actualQuantity.nr}, remarks="${detail.remarks}"');
+            } else {
+              print('[AddWorkReport] Skipped item with empty workItemId');
             }
           }
-          print('[AddWorkReport] Successfully saved ${_draftProgressData.length} progress items to temporary storage');
+          print('[AddWorkReport] === DRAFT PROGRESS DATA LOADING COMPLETE ===');
+          print('[AddWorkReport] Total items saved to _draftProgressData: ${_draftProgressData.length}');
+          
+          // Debug: Print all saved draft data
+          _draftProgressData.forEach((workItemId, data) {
+            print('[AddWorkReport] Draft data for $workItemId: R=${data['progressVolumeR']}, NR=${data['progressVolumeNR']}, remarks="${data['remarks']}"');
+          });
         } catch (e) {
           print('[AddWorkReport] Error processing progress data from draft: $e');
+          print('[AddWorkReport] Stack trace: ${StackTrace.current}');
           _draftProgressData.clear();
         }
       } else {
-        print('[AddWorkReport] No progress data found in draft');
+        print('[AddWorkReport] No progress data found in draft - activityDetails is empty');
       }
 
       print('[AddWorkReport] Berhasil memuat semua data untuk SPK: $spkId');
@@ -2508,6 +2606,19 @@ Total Cost: Rp ${entry.totalCost}
             '[AddWorkReport] WARNING: selectedSpk.value is null, cannot load work items');
       }
 
+      // Apply draft progress data to WorkProgressController if available
+      // First check if we have a WorkProgressController instance
+      try {
+        if (Get.isRegistered<WorkProgressController>() && workItems.isNotEmpty) {
+          await _applyDraftProgressData(workItems);
+        } else {
+          print('[AddWorkReport] WorkProgressController not yet registered or workItems empty. Will apply draft data later.');
+          // We'll try to apply draft data later when workItems are loaded
+        }  
+      } catch (e) {
+        print('[AddWorkReport] Error checking WorkProgressController: $e');
+      }
+
       print('[AddWorkReport] === LOAD TEMPORARY DATA FINAL STATUS ===');
       print(
           '[AddWorkReport] selectedSpk: ${selectedSpk.value?.spkNo ?? 'NULL'}');
@@ -2528,6 +2639,80 @@ Total Cost: Rp ${entry.totalCost}
         'Error',
         'Gagal memuat data draft: ${e.toString()}',
         isError: true,
+      );
+      return false;
+    }
+  }
+
+  // Method to apply draft progress data to WorkProgressController
+  Future<bool> _applyDraftProgressData(List<dynamic> workItemsList) async {
+    if (_draftProgressData.isEmpty) {
+      print('[AddWorkReport] No draft progress data to apply');
+      return true;
+    }
+
+    print('[AddWorkReport] Applying draft progress data...');
+    print('[AddWorkReport] Draft progress data count: ${_draftProgressData.length}');
+
+    try {
+      if (!Get.isRegistered<WorkProgressController>()) {
+        print('[AddWorkReport] WorkProgressController not registered, registering now');
+        final controller = WorkProgressController();
+        Get.put(controller);
+      }
+
+      final workProgressController = Get.find<WorkProgressController>();
+      
+      // Initialize if empty
+      if (workProgressController.workProgresses.isEmpty && workItemsList.isNotEmpty) {
+        print('[AddWorkReport] Initializing WorkProgressController with ${workItemsList.length} work items');
+        
+        // Convert workItemsList to List<Map<String, dynamic>> as required by initializeFromWorkItems
+        List<Map<String, dynamic>> typedWorkItems = workItemsList
+            .map((item) => item is Map<String, dynamic> ? item : Map<String, dynamic>.from(item as Map))
+            .toList();
+            
+        workProgressController.initializeFromWorkItems(typedWorkItems);
+      }
+
+      // Apply draft progress data
+      int updatedCount = 0;
+      for (int i = 0; i < workProgressController.workProgresses.length; i++) {
+        final workProgress = workProgressController.workProgresses[i];
+        final workItemId = workProgress.workItemId;
+        
+        if (_draftProgressData.containsKey(workItemId)) {
+          final progressData = _draftProgressData[workItemId]!;
+          
+          // Update through WorkProgressController's methods since fields are final
+          workProgressController.updateWorkProgress(
+            workItemId,
+            progressData['progressVolumeR'] ?? 0.0,
+            progressData['progressVolumeNR'] ?? 0.0,
+            progressData['remarks'],
+          );
+          
+          updatedCount++;
+        }
+      }
+
+      print('[AddWorkReport] === DRAFT PROGRESS DATA APPLIED SUCCESSFULLY ===');
+      print('[AddWorkReport] Updated workProgresses count: $updatedCount/${workProgressController.workProgresses.length}');
+      return true;
+      
+    } catch (e) {
+      print('[AddWorkReport] Error applying draft progress data: $e');
+      print('[AddWorkReport] Stack trace: ${StackTrace.current}');
+      
+      Get.snackbar(
+        'Error',
+        'Failed to apply draft progress data: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+        margin: const EdgeInsets.all(10),
+        icon: const Icon(Icons.error, color: Colors.white),
       );
       return false;
     }

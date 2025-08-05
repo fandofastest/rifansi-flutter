@@ -205,6 +205,46 @@ class WorkProgressController extends GetxController {
       );
     }
   }
+  
+  // Update work progress by workItemId (for draft data loading)
+  bool updateWorkProgress(String workItemId, double progressVolumeR, double progressVolumeNR, String? remarks) {
+    print('[WorkProgressController] Updating work progress for ID: $workItemId');
+    print('[WorkProgressController] Values - R: $progressVolumeR, NR: $progressVolumeNR, Remarks: $remarks');
+    
+    int index = -1;
+    for (int i = 0; i < workProgresses.length; i++) {
+      if (workProgresses[i].workItemId == workItemId) {
+        index = i;
+        break;
+      }
+    }
+    
+    if (index >= 0) {
+      final progress = workProgresses[index];
+      workProgresses[index] = WorkProgress(
+        workItemId: progress.workItemId,
+        workItemName: progress.workItemName,
+        unit: progress.unit,
+        boqVolumeR: progress.boqVolumeR,
+        boqVolumeNR: progress.boqVolumeNR,
+        progressVolumeR: progressVolumeR,
+        progressVolumeNR: progressVolumeNR,
+        workingDays: progress.workingDays,
+        rateR: progress.rateR,
+        rateNR: progress.rateNR,
+        dailyTargetR: progress.dailyTargetR,
+        dailyTargetNR: progress.dailyTargetNR,
+        rateDescriptionR: progress.rateDescriptionR,
+        rateDescriptionNR: progress.rateDescriptionNR,
+        remarks: remarks ?? progress.remarks,
+      );
+      calculateTotalProgress();
+      return true;
+    }
+    
+    print('[WorkProgressController] Warning: WorkItemId $workItemId not found');
+    return false;
+  }
 
   double get totalProgressPercentage => totalProgress.value;
 

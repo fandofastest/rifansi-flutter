@@ -172,17 +172,46 @@ class GraphQLService extends GetxService {
     }
   ''';
 
-  Future<List<Spk>> fetchSPKs(
-      {String? startDate,
-      String? endDate,
-      String? locationId,
-      String? keyword}) async {
+  static const String getSPKsNoDetailsQuery = r'''
+    query GetSPKs(
+      $startDate: String, $endDate: String, $locationId: ID, $keyword: String
+    ) {
+      spks(startDate: $startDate, endDate: $endDate, locationId: $locationId, keyword: $keyword) {
+        id
+        spkNo
+        wapNo
+        title
+        projectName
+        date
+        contractor
+        workDescription
+        location {
+          id
+          name
+        }
+        startDate
+        endDate
+        budget
+      }
+    }
+  ''';
+
+  Future<List<Spk>> fetchSPKs({
+    String? startDate,
+    String? endDate,
+    String? locationId,
+    String? keyword,
+    bool withDetails = true,
+  }) async {
     final variables = <String, dynamic>{};
     if (startDate != null) variables['startDate'] = startDate;
     if (endDate != null) variables['endDate'] = endDate;
     if (locationId != null) variables['locationId'] = locationId;
     if (keyword != null && keyword.isNotEmpty) variables['keyword'] = keyword;
-    final result = await query(getSPKsQuery, variables: variables);
+
+    final queryDoc = withDetails ? getSPKsQuery : getSPKsNoDetailsQuery;
+    final result = await query(queryDoc, variables: variables);
+
     if (result.hasException) {
       throw Exception(result.exception.toString());
     }
