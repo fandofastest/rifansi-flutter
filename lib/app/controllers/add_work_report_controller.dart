@@ -28,6 +28,7 @@ import 'package:collection/collection.dart';
 import 'package:rifansi/app/data/models/daily_activity_model.dart'
     as daily_activity_model;
 import 'package:rifansi/app/data/models/other_cost_model.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:rifansi/app/data/providers/storage_service.dart';
 import 'package:rifansi/app/controllers/material_controller.dart';
 import 'package:rifansi/app/controllers/other_cost_controller.dart';
@@ -627,6 +628,43 @@ class AddWorkReportController extends GetxController {
     }
   }
 
+  // Metode untuk kompresi gambar sebelum upload
+  Future<File> compressImage(File file, {int quality = 70}) async {
+    try {
+      // Ambil ekstensi file
+      final path = file.path;
+      final lastIndex = path.lastIndexOf('.');
+      final ext = lastIndex != -1 ? path.substring(lastIndex) : '.jpg';
+
+      // Buat path untuk file hasil kompresi
+      final targetPath = path.substring(0, lastIndex) + '_compressed' + ext;
+
+      // Kompresi gambar menggunakan flutter_image_compress
+      final result = await FlutterImageCompress.compressAndGetFile(
+        file.path,
+        targetPath,
+        quality: quality,
+        // Format tergantung dari ekstensi file
+        format: ext.toLowerCase().endsWith('.png')
+            ? CompressFormat.png
+            : CompressFormat.jpeg,
+      );
+
+      if (result == null) {
+        print('[ImageCompress] Failed to compress image');
+        return file; // Return file asli jika kompresi gagal
+      }
+
+      print('[ImageCompress] Original size: ${file.lengthSync()} bytes, '
+          'Compressed size: ${File(result.path).lengthSync()} bytes');
+
+      return File(result.path);
+    } catch (e) {
+      print('[ImageCompress] Error compressing image: $e');
+      return file; // Return file asli jika terjadi error
+    }
+  }
+
   Future<List<WorkPhoto>> pickAndUploadMultiplePhotos(
       ImageSource source) async {
     try {
@@ -649,9 +687,17 @@ class AddWorkReportController extends GetxController {
 
       // Upload dan proses setiap foto
       for (var image in images) {
+        // Langkah 1: Buat File dari XFile
         final File file = File(image.path);
+
+        // Langkah 2: Kompresi gambar sebelum upload
+        final File compressedFile = await compressImage(file);
+
+        // Langkah 3: Ambil waktu foto (dari file asli untuk memastikan metadata exif tidak hilang)
         final DateTime? photoTime = await getPhotoCreationTime(file);
-        final WorkPhoto? uploadedPhoto = await uploadPhoto(file);
+
+        // Langkah 4: Upload file yang sudah dikompresi
+        final WorkPhoto? uploadedPhoto = await uploadPhoto(compressedFile);
 
         if (uploadedPhoto != null) {
           uploadedPhotos.add(uploadedPhoto);
@@ -710,9 +756,12 @@ class AddWorkReportController extends GetxController {
       // Dapatkan metadata foto
       final File file = File(image.path);
       final DateTime? photoTime = await getPhotoCreationTime(file);
-
+      
+      // Kompresi gambar sebelum upload
+      final File compressedFile = await compressImage(file);
+      
       // Upload foto
-      final WorkPhoto? uploadedPhoto = await uploadPhoto(file);
+      final WorkPhoto? uploadedPhoto = await uploadPhoto(compressedFile);
 
       if (uploadedPhoto != null && photoTime != null) {
         // Gabungkan tanggal dari reportDate dengan waktu dari foto
