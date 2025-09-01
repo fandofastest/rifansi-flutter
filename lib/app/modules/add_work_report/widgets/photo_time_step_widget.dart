@@ -604,8 +604,8 @@ class PhotoTimeStepWidget extends StatelessWidget {
     showDatePicker(
       context: context,
       initialDate: controller.reportDate.value,
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime(1900, 1, 1),
+      lastDate: DateTime(2100, 12, 31),
     ).then((date) {
       if (date != null) {
         controller.setReportDate(date);

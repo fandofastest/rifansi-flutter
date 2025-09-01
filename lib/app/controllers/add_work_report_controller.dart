@@ -1008,6 +1008,14 @@ class AddWorkReportController extends GetxController {
         final remainingAmount =
             (item['remainingAmount'] as num?)?.toDouble() ?? 0.0;
 
+        // Tentukan volumeType dan selectedRate berdasarkan BOQ dan rates
+        final String volumeType = boqR > 0 ? 'r' : 'nr';
+        final double rateNr =
+            (item['rates']?['nr']?['rate'] as num?)?.toDouble() ?? 0.0;
+        final double rateR =
+            (item['rates']?['r']?['rate'] as num?)?.toDouble() ?? 0.0;
+        final double selectedRate = volumeType == 'r' ? rateR : rateNr;
+
         final enrichedItem = {
           'id': item['id'] ?? '',  // Tambahkan ID dari respons API
           'workItemId': item['id'] ?? '',  // Tambahkan workItemId dari respons API
@@ -1016,7 +1024,7 @@ class AddWorkReportController extends GetxController {
           'name': item['name'] ?? '',
           'volume': boqNr + boqR,
           'unit': item['unit']?['name'] ?? '',
-          'volumeType': boqR > 0 ? 'r' : 'nr',
+          'volumeType': volumeType,
           'dailyTarget': {'nr': dailyTargetNr, 'r': dailyTargetR},
           'completedVolume': {'nr': completedNr, 'r': completedR},
           'remainingVolume': {'nr': remainingNr, 'r': remainingR},
@@ -1026,7 +1034,11 @@ class AddWorkReportController extends GetxController {
           'remainingAmount': remainingAmount,
           // Tambahan field sesuai data backend
           'boqVolume': {'nr': boqNr, 'r': boqR}, // Tambahkan boqVolume untuk form
-          'rates': item['rates'] ?? {'nr': {'rate': 0}, 'r': {'rate': 0}}, // Tambahkan rates
+          'rates': item['rates'] ?? {
+            'nr': {'rate': rateNr, 'description': null},
+            'r': {'rate': rateR, 'description': null}
+          }, // Tambahkan rates
+          'selectedRate': selectedRate,
           'description': item['description'] ?? '',
         };
 
@@ -1057,14 +1069,20 @@ class AddWorkReportController extends GetxController {
           final boqNr = workItem.boqVolume.nr.toDouble();
           final boqR = workItem.boqVolume.r.toDouble();
           final amount = (workItem.amount ?? 0).toDouble();
+          final String volumeType = boqR > 0 ? 'r' : 'nr';
+          final double rateNr = (workItem.rates.nr.rate).toDouble();
+          final double rateR = (workItem.rates.r.rate).toDouble();
+          final double selectedRate = volumeType == 'r' ? rateR : rateNr;
 
           fallbackItems.add({
+            'id': workItem.workItemId ?? '',
+            'workItemId': workItem.workItemId ?? '',
             'spkId': spk.id,
             'spkNo': spk.spkNo,
             'name': workItem.workItem?.name ?? '',
             'volume': boqNr + boqR,
             'unit': workItem.workItem?.unit?.name ?? '',
-            'volumeType': boqR > 0 ? 'r' : 'nr',
+            'volumeType': volumeType,
             'dailyTarget': {'nr': 0.0, 'r': 0.0},
             'completedVolume': {'nr': 0.0, 'r': 0.0},
             'remainingVolume': {'nr': boqNr, 'r': boqR},
@@ -1072,6 +1090,13 @@ class AddWorkReportController extends GetxController {
             'amount': amount,
             'spentAmount': 0.0,
             'remainingAmount': amount,
+            'boqVolume': {'nr': boqNr, 'r': boqR},
+            'rates': {
+              'nr': {'rate': rateNr, 'description': workItem.rates.nr.description},
+              'r': {'rate': rateR, 'description': workItem.rates.r.description},
+            },
+            'selectedRate': selectedRate,
+            'description': workItem.description ?? '',
           });
         }
 
