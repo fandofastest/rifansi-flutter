@@ -238,7 +238,7 @@ class ManpowerListWidget extends StatelessWidget {
                   style: GoogleFonts.dmSans(fontSize: 14),
                 ),
                 Text(
-                  'Total biaya: Rp ${numberFormat.format(controller.selectedManpower.fold(0.0, (sum, item) => sum + (item.personCount * (item.manpowerDailyRate ?? 0.0))))}',
+                  'Total biaya: Rp ${numberFormat.format(controller.selectedManpower.fold(0.0, (sum, item) => sum + item.totalCost))}',
                   style: GoogleFonts.dmSans(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

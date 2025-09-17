@@ -1655,9 +1655,8 @@ workProgressController.workProgresses.forEach((element) {
         "manpowerLogs": selectedManpower
             .map((m) => <String, dynamic>{
                   "role": m.personnelRole.id,
-                  "personCount": m.personCount ?? 0,
-                  "workingHours": m.normalHoursPerPerson,
-                  "hourlyRate": m.normalHourlyRate ?? 0.0,
+                  "personCount": m.personCount,
+                  "hourlyRate": m.normalHourlyRate,
                 })
             .toList(),
         "materialUsageLogs": materialController.selectedMaterials
@@ -3068,7 +3067,11 @@ class ManpowerEntry {
 
   double get totalOvertimeCost => totalOvertimeHours * overtimeHourlyRate;
 
-  double get totalCost => totalNormalCost + totalOvertimeCost;
+  // PERMINTAAN: Step 4 menjadi acuan utama.
+  // totalCost disederhanakan mengikuti rumus di Step 4 (ringkasan tenaga kerja):
+  // totalCost = personCount * manpowerDailyRate (tanpa perhitungan jam/OT)
+  // Jika manpowerDailyRate null, fallback ke normalHourlyRate * 8.
+  double get totalCost => personCount * (manpowerDailyRate ?? (normalHourlyRate * 8));
 
   Map<String, dynamic> toJson() {
     return {
