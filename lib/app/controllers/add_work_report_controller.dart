@@ -1656,6 +1656,7 @@ workProgressController.workProgresses.forEach((element) {
             .map((m) => <String, dynamic>{
                   "role": m.personnelRole.id,
                   "personCount": m.personCount ?? 0,
+                  "workingHours": m.normalHoursPerPerson,
                   "hourlyRate": m.normalHourlyRate ?? 0.0,
                 })
             .toList(),
