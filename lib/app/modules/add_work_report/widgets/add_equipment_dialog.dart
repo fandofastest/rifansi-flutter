@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../controllers/add_work_report_controller.dart';
@@ -30,6 +31,7 @@ class _AddEquipmentDialogState extends State<AddEquipmentDialog> {
   double? fuelIn;
   bool isBrokenReported = false;
   String? remarks;
+  final TextEditingController _dropdownSearchController = TextEditingController();
 
   List<Equipment> get _availableEquipment {
     final authController = Get.find<AuthController>();
@@ -49,6 +51,17 @@ class _AddEquipmentDialogState extends State<AddEquipmentDialog> {
       
       return isNotSelected && isFromUserArea;
     }).toList();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _dropdownSearchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -95,7 +108,6 @@ class _AddEquipmentDialogState extends State<AddEquipmentDialog> {
                 ),
                 const SizedBox(height: 10),
               ],
-              
               // Show message when no equipment available
               if (availableEquipment.isEmpty) ...[
                 Container(
@@ -144,17 +156,29 @@ class _AddEquipmentDialogState extends State<AddEquipmentDialog> {
                   ],
                 ),
               ] else ...[
-                DropdownButtonFormField<Equipment>(
+                DropdownButtonFormField2<Equipment>(
                   value: selectedEquipment,
                   isExpanded: true,
-                  hint: const Text('Pilih Peralatan'),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                    labelText: 'Pilih Peralatan',
+                  ),
                   items: availableEquipment
-                      .map((eq) => DropdownMenuItem(
+                      .map((eq) => DropdownMenuItem<Equipment>(
                             value: eq,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('${eq.equipmentCode} - ${eq.equipmentType}'),
+                                Text(
+                                  '${eq.equipmentCode} - ${eq.equipmentType}',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 if (eq.area != null)
                                   Text(
                                     'Area: ${eq.area!.name}',
@@ -162,6 +186,8 @@ class _AddEquipmentDialogState extends State<AddEquipmentDialog> {
                                       fontSize: 11,
                                       color: Colors.grey[600],
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                               ],
                             ),
@@ -172,7 +198,36 @@ class _AddEquipmentDialogState extends State<AddEquipmentDialog> {
                       selectedEquipment = eq;
                       selectedContract = eq?.contracts.isNotEmpty == true ? eq!.contracts.first : null;
                     });
-                                    },
+                  },
+                  dropdownSearchData: DropdownSearchData(
+                    searchController: _dropdownSearchController,
+                    searchInnerWidgetHeight: 56,
+                    searchInnerWidget: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TextField(
+                        controller: _dropdownSearchController,
+                        decoration: InputDecoration(
+                          hintText: 'Cari peralatan (kode/jenis/area)',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    searchMatchFn: (item, searchValue) {
+                      final eq = item.value as Equipment;
+                      final q = searchValue.toLowerCase();
+                      final code = eq.equipmentCode.toLowerCase();
+                      final type = eq.equipmentType.toLowerCase();
+                      final area = (eq.area?.name ?? '').toLowerCase();
+                      return code.contains(q) || type.contains(q) || area.contains(q);
+                    },
+                  ),
+                  onMenuStateChange: (isOpen) {
+                    if (!isOpen) {
+                      _dropdownSearchController.clear();
+                    }
+                  },
                 ),
                 if (selectedEquipment != null && selectedEquipment!.contracts.length > 1) ...[
                   const SizedBox(height: 8),
